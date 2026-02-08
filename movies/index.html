@@ -2,105 +2,104 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>The Humps Files // Movies </title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NEONSIMILAR</title>
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <div class="bg-grid" aria-hidden="true"></div>
-  <div class="scanlines" aria-hidden="true"></div>
-
-  <header class="topbar">
-    <div class="brand">
-      <div class="logo" aria-hidden="true">⟦NS⟧</div>
-      <div class="brandText">
-        <div class="title">NEONSIMILAR</div>
-        <div class="subtitle">similar finder • why-it-matches • trailers • watchlist • 2000 → now</div>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <div class="logo">[NS]</div>
+        <div>
+          <div class="name">NEONSIMILAR</div>
+          <div class="sub">similar finder • why-it-matches</div>
+        </div>
       </div>
-    </div>
 
-    <div class="topActions">
-      <button id="watchlistBtn" class="btn">Watchlist</button>
-      <button id="random" class="btn primary">Random</button>
-    </div>
-  </header>
+      <div class="topBtns">
+        <button id="watchlistBtn" class="btn">Watchlist</button>
+        <button id="random" class="btn primary">Random</button>
+      </div>
+    </header>
 
-  <main class="wrap">
-    <section class="panel">
-      <h1>Search</h1>
+    <section class="card">
+      <h2>Search</h2>
       <p class="muted">
-        Search a title (2000+). Tap a suggestion. Similar results are sorted by closest match, and you’ll see <span class="neon">why</span>.
+        Search a title (1950+). Tap a suggestion. Similar results are sorted by closest match, and you’ll see <span class="accent">why</span>.
       </p>
 
-      <div class="searchRow">
-        <div class="searchBox">
-          <label for="q">Movie</label>
-          <input id="q" type="text" inputmode="search" placeholder="Blade Runner 2049" autocomplete="off" />
-          <div id="suggest" class="suggest hidden" role="listbox" aria-label="Search suggestions"></div>
-        </div>
-        <button id="go" class="btn">Search</button>
-      </div>
+      <label class="lbl">Movie</label>
+      <input id="q" class="input" placeholder="Blade, Heat, Alien..." autocomplete="off" />
+      <div id="suggest" class="suggest hidden"></div>
+
+      <button id="go" class="btn full">Search</button>
 
       <div class="filters">
         <div class="filter">
-          <label for="minRating">Min rating</label>
+          <div class="lblRow">
+            <label class="lbl">Min rating</label>
+            <span id="minRatingVal" class="muted">0/10</span>
+          </div>
           <input id="minRating" type="range" min="0" max="10" step="0.5" value="0" />
-          <div class="tiny muted"><span id="minRatingVal">0</span>/10</div>
         </div>
 
         <div class="filter">
-          <label for="genre">Genre</label>
-          <select id="genre">
-            <option value="">Any</option>
-          </select>
-        </div>
-
-        <div class="filter">
-          <label for="year">Year</label>
-          <select id="year">
-            <option value="2000">2000+</option>
+          <label class="lbl">Genre</label>
+          <select id="genre" class="select">
+            <option value="any">Any</option>
           </select>
         </div>
       </div>
     </section>
 
-    <section class="panel">
-      <div class="panelHead">
+    <section class="card">
+      <div class="sectionTitle">
         <h2>Target</h2>
-        <div id="meta" class="meta muted">No selection yet.</div>
+        <div id="meta" class="muted">Ready.</div>
       </div>
 
-      <div id="target" class="target hidden"></div>
+      <div id="target" class="targetBox">
+        <div class="muted">No selection yet.</div>
+      </div>
+
       <div id="trailer" class="trailer hidden"></div>
 
-      <div class="targetActions hidden" id="targetActions">
+      <div id="targetActions" class="actions hidden">
         <button id="addWatch" class="btn">Add to Watchlist</button>
         <button id="copyLink" class="btn">Copy Share Link</button>
-        <button id="openImdb" class="btn">IMDb</button>
+        <button id="openImdb" class="btn">TMDb</button>
       </div>
     </section>
 
-    <section class="panel">
-      <div class="panelHead">
+    <section class="card">
+      <div class="sectionTitle">
         <h2>Similar</h2>
-        <div class="meta muted">Sorted by closest match (genres + keywords + cast overlap on top).</div>
+        <div class="muted">Sorted by closest match (genres + keywords + cast overlap on top).</div>
       </div>
-      <div id="results" class="results"></div>
+
+      <!-- IMPORTANT: This is where similar chips render -->
+      <div id="results" class="chips">
+        <div class="muted">No similar titles found (try another movie).</div>
+      </div>
     </section>
 
-    <footer class="foot muted">/movies • cyberpunk monospace • TMDb via local proxy • responsive layout</footer>
-  </main>
+    <footer class="foot muted">
+      /movies • cyberpunk monospace • TMDb via local proxy • responsive layout
+    </footer>
+  </div>
 
-  <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Watchlist">
+  <!-- Watchlist Modal -->
+  <div id="modal" class="modal hidden">
     <div class="modalCard">
-      <div class="modalHead">
-        <div><strong>Watchlist</strong> <span class="muted tiny">(saved on this device)</span></div>
+      <div class="modalTop">
+        <h3>Watchlist</h3>
         <button id="closeModal" class="btn">Close</button>
       </div>
       <div id="watchlist" class="watchlist"></div>
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
