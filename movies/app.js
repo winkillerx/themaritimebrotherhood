@@ -298,9 +298,9 @@ function initUI() {
   els.randomBtn.addEventListener("click", doRandom);
 
   document.addEventListener("click", (e) => {
-    if (!els.suggest.contains(e.target) && e.target !== els.q) els.suggest.classList.add("hidden");
-  });
-}
+    if (!els.suggest.contains(e.target) && e.target !== els.q) els.suggest.classList.add("
+ }
+                            
 initUI();
 renderTarget(null);
 clearResults();
