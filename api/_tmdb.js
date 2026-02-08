@@ -40,6 +40,7 @@ export function posterUrl(movie) {
 }
 
 export function normalizeMovie(movie) {
+  const genreIds = Array.isArray(movie.genre_ids) ? movie.genre_ids : [];
   return {
     id: movie.id,
     title: movie.title || movie.name || "Untitled",
@@ -47,6 +48,6 @@ export function normalizeMovie(movie) {
     rating: typeof movie.vote_average === "number" ? movie.vote_average : null,
     overview: movie.overview || "",
     poster: posterUrl(movie),
-    genres: movie.genre_ids || [],
+    genres: genreIds, // ids for now; resolve.js should convert to names
   };
 }
