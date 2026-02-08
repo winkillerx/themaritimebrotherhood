@@ -1,105 +1,72 @@
-/* NEONSIMILAR /movies
-   - Uses local Node proxy endpoints:
-     /api/search?q=
-     /api/movie/:id
-     /api/movie/:id/similar
-     /api/movie/:id/videos
-     /api/movie/:id/keywords
-     /api/movie/:id/credits
-     /api/genres
-     /api/random
-*/
+/* app.js — NEONSIMILAR (fixed for /movies subpath + visible error messages) */
 
 const $ = (s) => document.querySelector(s);
+const el = {
+  q: $("#q"),
+  suggest: $("#suggest"),
+  go: $("#go"),
+  random: $("#random"),
+  results: $("#results"),
+  target: $("#target"),
+  trailerBtn: $("#trailer"),
+  meta: $("#meta"),
+  minRating: $("#minRating"),
+  minRatingVal: $("#minRatingVal"),
+  genre: $("#genre"),
+  year: $("#year"),
 
-const q = $("#q");
-const suggest = $("#suggest");
-const go = $("#go");
-const randomBtn = $("#random");
+  targetActions: $("#targetActions"),
+  addWatch: $("#addWatch"),
+  copyLink: $("#copyLink"),
+  openImdb: $("#openImdb"),
 
-const targetEl = $("#target");
-const trailerEl = $("#trailer");
-const resultsEl = $("#results");
-const meta = $("#meta");
+  watchlistBtn: $("#watchlistBtn"),
+  modal: $("#modal"),
+  closeModal: $("#closeModal"),
+  watchlist: $("#watchlist"),
+};
 
-const minRating = $("#minRating");
-const minRatingVal = $("#minRatingVal");
-const genreSel = $("#genre");
-const yearSel = $("#year");
+let state = {
+  target: null,
+  similar: [],
+  lastQuery: "",
+  lastSuggest: [],
+};
 
-const targetActions = $("#targetActions");
-const addWatch = $("#addWatch");
-const copyLink = $("#copyLink");
-const openImdb = $("#openImdb");
+// --- IMPORTANT FIX: support deploying under /movies ---
+const API_BASE = window.location.pathname.startsWith("/movies") ? "/movies" : "";
 
-const watchlistBtn = $("#watchlistBtn");
-const modal = $("#modal");
-const closeModal = $("#closeModal");
-const watchlistEl = $("#watchlist");
-
-const IMG = (path, size="w342") => path ? `https://image.tmdb.org/t/p/${size}${path}` : "";
-
-let currentTarget = null;
-let genreMap = new Map(); // id->name
-let targetKeywords = new Set();
-let targetCast = new Set();
-let imdbUrl = null;
-
-const WATCH_KEY = "ns_watchlist_v1";
-
-function norm(s){ return (s || "").toString().toLowerCase().trim(); }
-function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
-
-async function api(url){
-  const res = await fetch(url);
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || "Request failed");
-  return data;
+// optional: show where we think we are (helps debugging)
+function setMeta(msg) {
+  if (!el.meta) return;
+  el.meta.textContent = msg || "";
 }
 
-function getWatchlist(){
-  try { return JSON.parse(localStorage.getItem(WATCH_KEY) || "[]"); }
-  catch { return []; }
-}
-function setWatchlist(list){
-  localStorage.setItem(WATCH_KEY, JSON.stringify(list));
+function setError(msg) {
+  setMeta(`⚠️ ${msg}`);
 }
 
-function clearSuggest(){
-  suggest.classList.add("hidden");
-  suggest.innerHTML = "";
-}
+async function api(url, opts = {}) {
+  // If you call /api/..., we prefix /movies when needed.
+  const finalUrl = url.startsWith("/api") ? `${API_BASE}${url}` : url;
 
-function showSuggest(items){
-  if (!items.length) return clearSuggest();
-  suggest.classList.remove("hidden");
-  suggest.innerHTML = items.slice(0, 6).map((m) => {
-    const y = (m.release_date || "").slice(0,4) || "????";
-    const r = Number(m.vote_average || 0).toFixed(1);
-    return `
-      <div class="item" role="option" tabindex="0" data-id="${m.id}">
-        <div><strong>${escapeHtml(m.title)}</strong> <span class="small">(${y}) • ★ ${escapeHtml(r)}</span></div>
-        <div class="small">${escapeHtml((m.overview || "").slice(0, 90))}${(m.overview || "").length > 90 ? "…" : ""}</div>
-      </div>
-    `;
-  }).join("");
-
-  suggest.querySelectorAll(".item").forEach(el => {
-    el.addEventListener("click", async () => {
-      const id = el.getAttribute("data-id");
-      await pickTarget(id, true);
-    });
-    el.addEventListener("keydown", async (e) => {
-      if (e.key === "Enter") {
-        const id = el.getAttribute("data-id");
-        await pickTarget(id, true);
-      }
-    });
+  const res = await fetch(finalUrl, {
+    method: "GET",
+    ...opts,
+    headers: {
+      ...(opts.headers || {}),
+    },
   });
+
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    throw new Error(`API ${res.status} ${res.statusText}${txt ? ` — ${txt}` : ""}`);
+  }
+  return res.json();
 }
 
-function escapeHtml(str){
-  return (str || "")
+function escapeHtml(str = "") {
+  return String(str)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -107,436 +74,414 @@ function escapeHtml(str){
     .replaceAll("'", "&#039;");
 }
 
-document.addEventListener("click", (e) => {
-  if (!suggest.contains(e.target) && e.target !== q) clearSuggest();
-});
+function ratingText(r) {
+  if (r == null) return "—";
+  return `${Number(r).toFixed(1)}/10`;
+}
 
-q.addEventListener("input", async () => {
-  const text = q.value.trim();
-  if (text.length < 2) return clearSuggest();
-  try{
-    const data = await api(`/api/search?q=${encodeURIComponent(text)}`);
-    showSuggest(data.results || []);
-  } catch {
-    clearSuggest();
+function yearOk(y) {
+  const v = String(y || "");
+  if (v === "2000+") return { min: 2000, max: 9999 };
+  if (/^\d{4}$/.test(v)) return { min: Number(v), max: Number(v) };
+  if (/^\d{4}\s*-\s*\d{4}$/.test(v)) {
+    const [a, b] = v.split("-").map((x) => Number(x.trim()));
+    return { min: Math.min(a, b), max: Math.max(a, b) };
   }
-});
+  return { min: 2000, max: 9999 };
+}
 
-q.addEventListener("keydown", (e) => {
-  if (e.key === "Enter"){ e.preventDefault(); doSearch(); }
-  if (e.key === "Escape") clearSuggest();
-});
+function readFilters() {
+  const minRating = Number(el.minRating?.value || 0);
+  const genre = String(el.genre?.value || "any");
+  const yr = yearOk(el.year?.value || "2000+");
+  return { minRating, genre, yearMin: yr.min, yearMax: yr.max };
+}
 
-go.addEventListener("click", doSearch);
+// ---- UI: suggestions ----
+let suggestTimer = null;
 
-randomBtn.addEventListener("click", async () => {
-  const pick = await api(`/api/random`);
-  await pickTarget(pick.id, true);
-});
+function renderSuggest(items) {
+  if (!el.suggest) return;
+  el.suggest.innerHTML = "";
 
-minRating.addEventListener("input", () => {
-  minRatingVal.textContent = minRating.value;
-  if (currentTarget) loadSimilar(currentTarget.id);
-});
+  if (!items || !items.length) return;
 
-genreSel.addEventListener("change", () => {
-  if (currentTarget) loadSimilar(currentTarget.id);
-});
-
-yearSel.addEventListener("change", () => {
-  if (currentTarget) loadSimilar(currentTarget.id);
-});
-
-watchlistBtn.addEventListener("click", () => {
-  renderWatchlist();
-  modal.classList.remove("hidden");
-});
-
-closeModal.addEventListener("click", () => modal.classList.add("hidden"));
-modal.addEventListener("click", (e) => {
-  if (e.target === modal) modal.classList.add("hidden");
-});
-
-addWatch.addEventListener("click", () => {
-  if (!currentTarget) return;
-  const list = getWatchlist();
-  if (!list.some(x => String(x.id) === String(currentTarget.id))) {
-    list.unshift({
-      id: currentTarget.id,
-      title: currentTarget.title,
-      poster_path: currentTarget.poster_path || null,
-      release_date: currentTarget.release_date || null,
-      vote_average: currentTarget.vote_average || null
+  for (const it of items) {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "suggestRow";
+    row.innerHTML = `
+      <span class="sTitle">${escapeHtml(it.title || it.name || "Untitled")}</span>
+      <span class="sYear">${escapeHtml(it.year ? String(it.year) : "")}</span>
+    `;
+    row.addEventListener("click", () => {
+      el.q.value = it.title || it.name || "";
+      el.suggest.innerHTML = "";
+      pickTarget(it);
     });
-    setWatchlist(list.slice(0, 100));
-    meta.textContent = `Added to watchlist: ${currentTarget.title}`;
-  } else {
-    meta.textContent = `Already in watchlist: ${currentTarget.title}`;
-  }
-});
-
-copyLink.addEventListener("click", async () => {
-  if (!currentTarget) return;
-  const u = new URL(window.location.href);
-  u.searchParams.set("m", String(currentTarget.id));
-  const share = u.toString();
-  try{
-    await navigator.clipboard.writeText(share);
-    meta.textContent = "Share link copied.";
-  } catch {
-    prompt("Copy this link:", share);
-  }
-});
-
-openImdb.addEventListener("click", () => {
-  if (!imdbUrl) {
-    meta.textContent = "IMDb link not available for this title.";
-    return;
-  }
-  window.open(imdbUrl, "_blank", "noopener,noreferrer");
-});
-
-
-(function fillYears(){
-  const now = new Date().getFullYear();
-  for (let y = now; y >= 2000; y--){
-    const opt = document.createElement("option");
-    opt.value = String(y);
-    opt.textContent = String(y);
-    yearSel.appendChild(opt);
-  }
-  yearSel.value = "2000";
-})();
-
-async function loadGenres(){
-  try{
-    const data = await api("/api/genres");
-    const genres = data.genres || [];
-    for (const g of genres) genreMap.set(Number(g.id), g.name);
-
-    for (const g of genres){
-      const opt = document.createElement("option");
-      opt.value = String(g.id);
-      opt.textContent = g.name;
-      genreSel.appendChild(opt);
-    }
-  } catch {
-    // optional
+    el.suggest.appendChild(row);
   }
 }
-loadGenres();
 
-async function doSearch(){
-  const text = q.value.trim();
-  if (!text) return;
+async function doSuggest() {
+  const q = (el.q?.value || "").trim();
+  state.lastQuery = q;
 
-  const data = await api(`/api/search?q=${encodeURIComponent(text)}`);
-  const results = data.results || [];
-  clearSuggest();
-
-  if (!results.length){
-    meta.textContent = "No match found (2000+ filter is on). Try another title.";
+  if (!q || q.length < 2) {
+    renderSuggest([]);
     return;
   }
 
-  const exact = results.find(m => norm(m.title) === norm(text));
-  await pickTarget((exact || results[0]).id, true);
+  try {
+    const data = await api(`/api/suggest?q=${encodeURIComponent(q)}`);
+    // expected: { results: [...] }
+    const items = (data && (data.results || data.items)) || [];
+    state.lastSuggest = items;
+    // Only render if user hasn’t changed the query mid-request
+    if ((el.q?.value || "").trim() === q) renderSuggest(items.slice(0, 8));
+    setMeta(`Ready. (${API_BASE || "/"} deployed)`);
+  } catch (e) {
+    renderSuggest([]);
+    setError(`Suggest failed. Check Vercel env + routes. (${e.message})`);
+  }
 }
 
-function passesFilters(movie){
-  const min = Number(minRating.value || 0);
-  const r = Number(movie.vote_average || 0);
-  if (r < min) return false;
+// ---- Target + Similar ----
+function renderTarget(t) {
+  if (!el.target) return;
 
-  const g = genreSel.value;
-  if (g){
-    const ids = movie.genre_ids || [];
-    if (!ids.includes(Number(g))) return false;
+  if (!t) {
+    el.target.innerHTML = `<div class="muted">No selection yet.</div>`;
+    el.targetActions?.classList.add("hidden");
+    return;
   }
 
-  const yFilter = yearSel.value;
-  const y = Number((movie.release_date || "").slice(0,4) || 0);
+  el.targetActions?.classList.remove("hidden");
 
-  if (yFilter === "2000") return y >= 2000;
-  return y === Number(yFilter);
-}
-
-async function pickTarget(id, updateUrl){
-  clearSuggest();
-  const details = await api(`/api/movie/${id}`);
-  currentTarget = details;
-
-  if (updateUrl){
-    const u = new URL(window.location.href);
-    u.searchParams.set("m", String(details.id));
-    window.history.replaceState({}, "", u.toString());
-  }
-
-  renderTarget(details);
-  targetActions.classList.remove("hidden");
-
-  const [kw, cr, ex] = await Promise.allSettled([
-    api(`/api/movie/${details.id}/keywords`),
-    api(`/api/movie/${details.id}/credits`),
-    api(`/api/movie/${details.id}/external_ids`)
-  ]);
-
-  targetKeywords = new Set();
-  if (kw.status === "fulfilled") {
-    for (const k of (kw.value.keywords || [])) targetKeywords.add(norm(k.name));
-  }
-
-  targetCast = new Set();
-  imdbUrl = null;
-  if (cr.status === "fulfilled") {
-    for (const p of (cr.value.cast || []).slice(0, 12)) targetCast.add(norm(p.name));
-  }
-
-  if (ex.status === "fulfilled") {
-    const imdb = ex.value.imdb_id;
-    if (imdb) imdbUrl = `https://www.imdb.com/title/${encodeURIComponent(imdb)}/`;
-  }
-
-
-  await loadTrailer(details.id);
-  await loadSimilar(details.id);
-}
-
-function renderTarget(m){
-  targetEl.classList.remove("hidden");
-  trailerEl.classList.add("hidden");
-  trailerEl.innerHTML = "";
-
-  const y = (m.release_date || "").slice(0,4) || "????";
-    const r = Number(m.vote_average || 0).toFixed(1);
-  meta.textContent = `${m.title} (${y}) • ★ ${Number(m.vote_average || 0).toFixed(1)} • ${m.runtime || "?"}m`;
-
-  const genres = (m.genres || []).map(g => g.name);
-
-  targetEl.innerHTML = `
-    <div class="poster">
-      ${m.poster_path ? `<img src="${IMG(m.poster_path, "w342")}" alt="${escapeHtml(m.title)} poster">` : ""}
-    </div>
-    <div>
-      <div style="font-size:16px; letter-spacing:.04em;">
-        <strong>${escapeHtml(m.title)}</strong> <span class="muted">(${y})</span>
+  const poster = t.poster ? `<img class="poster" src="${escapeHtml(t.poster)}" alt="">` : "";
+  el.target.innerHTML = `
+    <div class="targetCard">
+      ${poster}
+      <div class="tInfo">
+        <div class="tTitle">${escapeHtml(t.title || "Untitled")}</div>
+        <div class="tMeta">
+          <span>${escapeHtml(t.year ? String(t.year) : "")}</span>
+          <span class="dot">•</span>
+          <span>${escapeHtml(ratingText(t.rating))}</span>
+          ${t.genres?.length ? `<span class="dot">•</span><span>${escapeHtml(t.genres.slice(0, 3).join(", "))}</span>` : ""}
+        </div>
+        <div class="tOverview">${escapeHtml(t.overview || "")}</div>
+        <div class="tBtns">
+          <button id="trailerInline" class="btnGhost" type="button">Trailer</button>
+        </div>
       </div>
-      <div class="muted tiny" style="margin-top:6px;">
-        ${escapeHtml(genres.join(" • "))} ${genres.length ? "•" : ""} ★ ${Number(m.vote_average || 0).toFixed(1)} • ${m.runtime || "?"}m
-      </div>
-      <div class="badges">
-        <span class="badge">2000+ only</span>
-        <span class="badge">TMDb</span>
-        <span class="badge">IMDb link</span>
-        ${m.status ? `<span class="badge">${escapeHtml(m.status)}</span>` : ""}
-      </div>
-      <p class="muted tiny" style="margin-top:10px; line-height:1.5;">
-        ${escapeHtml(m.overview || "No overview available.")}
-      </p>
     </div>
   `;
-}
 
-async function loadTrailer(id){
-  try{
-    const vids = await api(`/api/movie/${id}/videos`);
-    const t = vids.trailer;
-    if (!t) return;
-
-    trailerEl.classList.remove("hidden");
-    trailerEl.innerHTML = `
-      <iframe
-        src="https://www.youtube.com/embed/${encodeURIComponent(t.key)}"
-        title="Trailer"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowfullscreen
-      ></iframe>
-    `;
-  } catch {
-    // optional
+  const trailerInline = $("#trailerInline");
+  if (trailerInline) {
+    trailerInline.addEventListener("click", () => openTrailer(t));
   }
 }
 
-function scoreCandidate(candidate){
-  const candGenres = new Set((candidate.genre_ids || []).map(Number));
-  let genreHits = 0;
-  for (const gid of candGenres) {
-    if ((currentTarget.genres || []).some(g => Number(g.id) === gid)) genreHits++;
-  }
+function renderSimilar(items) {
+  if (!el.results) return;
 
-  const year = Number((candidate.release_date || "").slice(0,4) || 0);
-  const ty = Number((currentTarget.release_date || "").slice(0,4) || 0);
-  const yearDiff = Math.abs(ty - year);
-  const yearBonus = clamp((12 - yearDiff) / 12, 0, 1);
+  el.results.innerHTML = "";
 
-  const ratingBonus = clamp((Number(candidate.vote_average || 0) / 10), 0, 1);
-
-  return (genreHits * 1.8) + (yearBonus * 0.8) + (ratingBonus * 0.6);
-}
-
-async function enrichWhy(candidates){
-  const top = candidates.slice(0, 8);
-
-  const enriched = await Promise.all(top.map(async (m) => {
-    const [kw, cr] = await Promise.allSettled([
-      api(`/api/movie/${m.id}/keywords`),
-      api(`/api/movie/${m.id}/credits`)
-    ]);
-
-    let sharedKeywords = [];
-    if (kw.status === "fulfilled") {
-      const cand = new Set((kw.value.keywords || []).map(k => norm(k.name)));
-      sharedKeywords = [...cand].filter(x => targetKeywords.has(x)).slice(0, 3);
-    }
-
-    let sharedCast = [];
-    if (cr.status === "fulfilled") {
-      const cand = new Set((cr.value.cast || []).slice(0, 12).map(p => norm(p.name)));
-      sharedCast = [...cand].filter(x => targetCast.has(x)).slice(0, 2);
-    }
-
-    return { ...m, _why: { sharedKeywords, sharedCast } };
-  }));
-
-  const map = new Map(enriched.map(x => [x.id, x]));
-  return candidates.map(m => map.get(m.id) || m);
-}
-
-async function loadSimilar(id){
-  resultsEl.innerHTML = `<div class="muted">Loading…</div>`;
-
-  const data = await api(`/api/movie/${id}/similar?page=1`);
-  let list = (data.results || []).filter(passesFilters);
-
-  list = list
-    .map(m => ({ ...m, _score: scoreCandidate(m) }))
-    .sort((a,b) => (b._score || 0) - (a._score || 0))
-    .slice(0, 24);
-
-  list = await enrichWhy(list);
-
-  if (!list.length){
-    resultsEl.innerHTML = `<div class="muted">No similar results match your filters.</div>`;
+  if (!items || !items.length) {
+    el.results.innerHTML = `<div class="muted">No similar titles found (try another movie).</div>`;
     return;
   }
 
-  const targetGenreIds = new Set((currentTarget.genres || []).map(g => Number(g.id)));
-
-  resultsEl.innerHTML = list.map(m => {
-    const y = (m.release_date || "").slice(0,4) || "????";
-    const r = Number(m.vote_average || 0).toFixed(1);
-    const r = Number(m.vote_average || 0).toFixed(1);
-    const why = m._why || {};
-    const whyBadges = [];
-
-    const overlapGenres = (m.genre_ids || [])
-      .filter(gid => targetGenreIds.has(Number(gid)))
-      .map(gid => genreMap.get(Number(gid)) || "Genre")
-      .slice(0, 2);
-
-    for (const g of overlapGenres) whyBadges.push(`<span class="badge">genre: ${escapeHtml(g)}</span>`);
-    if (why.sharedKeywords?.length) whyBadges.push(`<span class="badge">kw: ${escapeHtml(why.sharedKeywords.join(", "))}</span>`);
-    if (why.sharedCast?.length) whyBadges.push(`<span class="badge">cast: ${escapeHtml(why.sharedCast.join(", "))}</span>`);
-
-    const scoreLabel = m._score ? `${(m._score).toFixed(2)}` : "—";
-
-    return `
-      <article class="card" data-id="${m.id}">
-        <div>
-          <div class="cardTitle">${escapeHtml(m.title)}</div>
-          <div class="cardSub">${y} • ★ ${r} • score ${escapeHtml(scoreLabel)}</div>
-        </div>
-
-        <p class="cardOverview">${escapeHtml((m.overview || "").slice(0, 120))}${(m.overview || "").length > 120 ? "…" : ""}</p>
-
-        <div class="cardPoster">
-          ${m.poster_path
-            ? `<img src="${IMG(m.poster_path, "w342")}" alt="">`
-            : `<div class="muted tiny" style="padding:12px;">No poster</div>`}
-        </div>
-
-        <div class="why">
-          ${whyBadges.length ? whyBadges.join("") : `<span class="badge">closest by genres/year/rating</span>`}
-        </div>
-      </article>
+  for (const it of items) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "resultCard";
+    card.innerHTML = `
+      <div class="rTitle">${escapeHtml(it.title || "Untitled")}</div>
+      <div class="rMeta">
+        <span>${escapeHtml(it.year ? String(it.year) : "")}</span>
+        <span class="dot">•</span>
+        <span>${escapeHtml(ratingText(it.rating))}</span>
+        ${it.why?.length ? `<span class="dot">•</span><span class="why">${escapeHtml(it.why.join(" • "))}</span>` : ""}
+      </div>
     `;
-  }).join("");
 
-  resultsEl.querySelectorAll(".card").forEach(card => {
-    card.addEventListener("click", async () => {
-      const mid = card.getAttribute("data-id");
-      await pickTarget(mid, true);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
-  });
-}
-
-function renderWatchlist(){
-  const list = getWatchlist();
-  if (!list.length){
-    watchlistEl.innerHTML = `<div class="muted">Nothing saved yet. Open a movie and hit “Add to Watchlist”.</div>`;
-    return;
+    card.addEventListener("click", () => pickTarget(it));
+    el.results.appendChild(card);
   }
-
-  watchlistEl.innerHTML = list.map(item => {
-    const y = (item.release_date || "").slice(0,4) || "????";
-    const r = item.vote_average ? Number(item.vote_average).toFixed(1) : "—";
-    return `
-      <article class="card" data-id="${item.id}">
-        <div>
-          <div class="cardTitle">${escapeHtml(item.title)}</div>
-          <div class="cardSub">${y} • ★ ${r}</div>
-        </div>
-        <p class="cardOverview">${escapeHtml((m.overview || "").slice(0, 120))}${(m.overview || "").length > 120 ? "…" : ""}</p>
-
-        <div class="cardPoster">
-          ${item.poster_path
-            ? `<img src="${IMG(item.poster_path, "w342")}" alt="">`
-            : `<div class="muted tiny" style="padding:12px;">No poster</div>`}
-        </div>
-        <div class="targetActions">
-          <button class="btn" data-open="${item.id}">Open</button>
-          <button class="btn" data-remove="${item.id}">Remove</button>
-        </div>
-      </article>
-    `;
-  }).join("");
-
-  watchlistEl.querySelectorAll("button[data-open]").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const id = btn.getAttribute("data-open");
-      modal.classList.add("hidden");
-      await pickTarget(id, true);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
-  });
-
-  watchlistEl.querySelectorAll("button[data-remove]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-remove");
-      const next = getWatchlist().filter(x => String(x.id) !== String(id));
-      setWatchlist(next);
-      renderWatchlist();
-    });
-  });
 }
 
-// Deep link support: /?m=12345
-(async function boot(){
-  minRatingVal.textContent = minRating.value;
+async function pickTarget(baseMovie) {
+  try {
+    state.target = baseMovie;
+    renderTarget(baseMovie);
+    setMeta("Finding similar titles…");
 
-  const url = new URL(window.location.href);
-  const mid = url.searchParams.get("m");
-
-  if (mid){
-    try{
-      await pickTarget(mid, false);
-      q.value = currentTarget?.title || "";
+    const f = readFilters();
+    const id = baseMovie.id || baseMovie.tmdbId || baseMovie.imdbId || "";
+    if (!id) {
+      setError("This title has no ID from the API. Try searching again and selecting from suggestions.");
       return;
-    } catch {
-      // ignore
     }
+
+    const data = await api(
+      `/api/similar?id=${encodeURIComponent(id)}&minRating=${encodeURIComponent(f.minRating)}&genre=${encodeURIComponent(
+        f.genre
+      )}&yearMin=${encodeURIComponent(f.yearMin)}&yearMax=${encodeURIComponent(f.yearMax)}`
+    );
+
+    const items = (data && (data.results || data.items || data.similar)) || [];
+    state.similar = items;
+
+    renderSimilar(items);
+    setMeta(`Loaded ${items.length} similar results.`);
+  } catch (e) {
+    renderSimilar([]);
+    setError(`Similar search failed. (${e.message})`);
+  }
+}
+
+// ---- Search button (manual) ----
+async function doSearch() {
+  const q = (el.q?.value || "").trim();
+  if (!q) {
+    setError("Type a movie title first.");
+    return;
   }
 
-  resultsEl.innerHTML = `<div class="muted">Pick a movie above to generate similar results.</div>`;
-})();
+  renderSuggest([]); // hide dropdown
+  setMeta("Searching…");
+
+  try {
+    const f = readFilters();
+    const data = await api(
+      `/api/search?q=${encodeURIComponent(q)}&minRating=${encodeURIComponent(f.minRating)}&genre=${encodeURIComponent(
+        f.genre
+      )}&yearMin=${encodeURIComponent(f.yearMin)}&yearMax=${encodeURIComponent(f.yearMax)}`
+    );
+
+    // expected: { target, results } or { items }
+    const target = data.target || (data.results && data.results[0]) || (data.items && data.items[0]) || null;
+    const items = data.results || data.items || [];
+
+    if (!target) {
+      renderTarget(null);
+      renderSimilar([]);
+      setError("No match found. Try typing a full title (e.g., “Blade (1998)”).");
+      return;
+    }
+
+    state.target = target;
+    renderTarget(target);
+
+    // If backend already returned similar list, show it
+    const similar = data.similar || data.more || items.filter((x) => x.id !== target.id);
+    state.similar = similar;
+
+    renderSimilar(similar);
+    setMeta(`Done. ${similar.length} results.`);
+  } catch (e) {
+    renderTarget(null);
+    renderSimilar([]);
+    setError(`Search failed. (${e.message})`);
+  }
+}
+
+// ---- Trailer ----
+function openTrailer(t) {
+  if (!t) return;
+
+  // If API provides trailer URL, use it; otherwise fallback to YouTube search.
+  const url =
+    t.trailerUrl ||
+    (t.trailerKey ? `https://www.youtube.com/embed/${t.trailerKey}` : null) ||
+    `https://www.youtube.com/results?search_query=${encodeURIComponent((t.title || "") + " trailer")}`;
+
+  if (url.includes("youtube.com/embed/")) {
+    window.open(url, "_blank", "noopener,noreferrer");
+  } else {
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+}
+
+// ---- Watchlist ----
+const WL_KEY = "neonsimilar_watchlist_v1";
+
+function loadWL() {
+  try {
+    return JSON.parse(localStorage.getItem(WL_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+function saveWL(list) {
+  localStorage.setItem(WL_KEY, JSON.stringify(list));
+}
+
+function addToWL(m) {
+  if (!m) return;
+  const wl = loadWL();
+  const id = m.id || m.tmdbId || m.imdbId || `${m.title}-${m.year}`;
+  if (wl.some((x) => (x.id || x.tmdbId || x.imdbId) === id)) return;
+  wl.unshift({ ...m, _savedAt: Date.now() });
+  saveWL(wl);
+  setMeta("Added to Watchlist (saved on this device).");
+}
+
+function openWL() {
+  const wl = loadWL();
+  if (!el.watchlist) return;
+
+  el.watchlist.innerHTML = "";
+  if (!wl.length) {
+    el.watchlist.innerHTML = `<div class="muted">Watchlist is empty.</div>`;
+  } else {
+    for (const it of wl) {
+      const row = document.createElement("div");
+      row.className = "wlRow";
+      row.innerHTML = `
+        <div class="wlTitle">${escapeHtml(it.title || "Untitled")}</div>
+        <div class="wlMeta">${escapeHtml(it.year ? String(it.year) : "")} • ${escapeHtml(ratingText(it.rating))}</div>
+        <button class="wlUse" type="button">Use</button>
+      `;
+      row.querySelector(".wlUse").addEventListener("click", () => {
+        closeModal();
+        pickTarget(it);
+      });
+      el.watchlist.appendChild(row);
+    }
+  }
+  openModal();
+}
+
+function openModal() {
+  el.modal?.classList.add("open");
+}
+function closeModal() {
+  el.modal?.classList.remove("open");
+}
+
+// ---- Share / IMDb ----
+async function copyShareLink() {
+  const t = state.target;
+  if (!t) return setError("Pick a target first.");
+
+  const base = `${location.origin}${location.pathname.replace(/\/index\.html$/, "/")}`;
+  const id = t.id || t.tmdbId || t.imdbId || "";
+  const share = `${base}?m=${encodeURIComponent(id)}`;
+
+  try {
+    await navigator.clipboard.writeText(share);
+    setMeta("Copied share link ✅");
+  } catch {
+    setError("Could not copy link (iOS Safari sometimes blocks clipboard).");
+  }
+}
+
+function openImdb() {
+  const t = state.target;
+  if (!t) return setError("Pick a target first.");
+  if (t.imdbId) {
+    window.open(`https://www.imdb.com/title/${t.imdbId}/`, "_blank", "noopener,noreferrer");
+  } else {
+    // fallback search
+    window.open(
+      `https://www.imdb.com/find/?q=${encodeURIComponent(`${t.title || ""} ${t.year || ""}`)}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  }
+}
+
+// ---- Random ----
+async function doRandom() {
+  setMeta("Picking a random movie…");
+  try {
+    const f = readFilters();
+    const data = await api(
+      `/api/random?minRating=${encodeURIComponent(f.minRating)}&genre=${encodeURIComponent(
+        f.genre
+      )}&yearMin=${encodeURIComponent(f.yearMin)}&yearMax=${encodeURIComponent(f.yearMax)}`
+    );
+
+    const t = data.target || data.movie || data.item || null;
+    if (!t) return setError("Random returned nothing. Try again.");
+
+    pickTarget(t);
+  } catch (e) {
+    setError(`Random failed. (${e.message})`);
+  }
+}
+
+// ---- Init / Events ----
+function bind() {
+  // live slider label
+  if (el.minRating && el.minRatingVal) {
+    const upd = () => (el.minRatingVal.textContent = `${el.minRating.value}/10`);
+    el.minRating.addEventListener("input", upd);
+    upd();
+  }
+
+  // Suggestions typing
+  if (el.q) {
+    el.q.addEventListener("input", () => {
+      clearTimeout(suggestTimer);
+      suggestTimer = setTimeout(doSuggest, 180);
+    });
+
+    el.q.addEventListener("focus", () => {
+      clearTimeout(suggestTimer);
+      suggestTimer = setTimeout(doSuggest, 50);
+    });
+  }
+
+  // Search button
+  el.go?.addEventListener("click", doSearch);
+
+  // Random
+  el.random?.addEventListener("click", doRandom);
+
+  // Actions
+  el.addWatch?.addEventListener("click", () => addToWL(state.target));
+  el.copyLink?.addEventListener("click", copyShareLink);
+  el.openImdb?.addEventListener("click", openImdb);
+  el.watchlistBtn?.addEventListener("click", openWL);
+
+  // Modal close
+  el.closeModal?.addEventListener("click", closeModal);
+  el.modal?.addEventListener("click", (e) => {
+    if (e.target === el.modal) closeModal();
+  });
+
+  // If user hits enter in the input, do search
+  el.q?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      doSearch();
+    }
+  });
+
+  // Load from share link ?m=
+  const params = new URLSearchParams(location.search);
+  const m = params.get("m");
+  if (m) {
+    // Let backend resolve whatever ID it is
+    (async () => {
+      try {
+        setMeta("Loading shared title…");
+        const data = await api(`/api/resolve?id=${encodeURIComponent(m)}`);
+        const t = data.target || data.movie || data.item || null;
+        if (t) pickTarget(t);
+        else setError("Could not resolve shared link.");
+      } catch (e) {
+        setError(`Share resolve failed. (${e.message})`);
+      }
+    })();
+  } else {
+    setMeta(`Ready. (${API_BASE || "/"} deployed)`);
+  }
+}
+
+bind();
