@@ -1,4 +1,4 @@
-// movies/api/_tmdb.js
+// api/_tmdb.js
 export function mustGetKey() {
   const k = process.env.TMDB_KEY;
   if (!k) {
@@ -14,6 +14,7 @@ export async function tmdb(path, params = {}) {
   const url = new URL(`https://api.themoviedb.org/3${path}`);
   url.searchParams.set("api_key", key);
   url.searchParams.set("language", "en-US");
+
   for (const [k, v] of Object.entries(params)) {
     if (v === undefined || v === null || v === "") continue;
     url.searchParams.set(k, String(v));
@@ -35,19 +36,30 @@ export function pickYear(movie) {
   return Number.isFinite(y) ? y : null;
 }
 
-export function posterUrl(movie) {
-  return movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : "";
+// size can be: w500, w780, original, etc.
+export function posterUrl(movie, size = "w500") {
+  return movie.poster_path ? `https://image.tmdb.org/t/p/${size}${movie.poster_path}` : "";
 }
 
 export function normalizeMovie(movie) {
-  const genreIds = Array.isArray(movie.genre_ids) ? movie.genre_ids : [];
+  // If this came from /movie/:id, it has `genres: [{id,name}]`
+  const genreNames =
+    Array.isArray(movie.genres) ? movie.genres.map(g => g?.name).filter(Boolean) : null;
+
+  // If this came from /search/movie or /similar, it has `genre_ids: [id]`
+  const genreIds =
+    Array.isArray(movie.genre_ids) ? movie.genre_ids : [];
+
   return {
     id: movie.id,
     title: movie.title || movie.name || "Untitled",
     year: pickYear(movie),
     rating: typeof movie.vote_average === "number" ? movie.vote_average : null,
     overview: movie.overview || "",
-    poster: posterUrl(movie),
-    genres: genreIds, // ids for now; resolve.js should convert to names
+    poster: posterUrl(movie, "w500"),
+    posterLarge: posterUrl(movie, "w780"),
+    posterOriginal: posterUrl(movie, "original"),
+    // Prefer real names when available; fallback to ids
+    genres: genreNames && genreNames.length ? genreNames : genreIds,
   };
 }
