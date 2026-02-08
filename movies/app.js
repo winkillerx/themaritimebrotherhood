@@ -8,35 +8,27 @@
 */
 
 const els = {
-  // inputs
   q: document.getElementById("q"),
   suggest: document.getElementById("suggest"),
-
-  // buttons (MATCH index.html)
   searchBtn: document.getElementById("go"),
   randomBtn: document.getElementById("random"),
   watchlistBtn: document.getElementById("watchlistBtn"),
 
-  // filters
   minRating: document.getElementById("minRating"),
   minRatingVal: document.getElementById("minRatingVal"),
   genre: document.getElementById("genre"),
   year: document.getElementById("year"),
 
-  // output
   meta: document.getElementById("meta"),
   target: document.getElementById("target"),
-  similar: document.getElementById("similar"),
+  trailer: document.getElementById("trailer"),
 
-  // target actions (MATCH index.html)
   targetActions: document.getElementById("targetActions"),
   addWatch: document.getElementById("addWatch"),
-  openTmdb: document.getElementById("openImdb"), // button label says IMDb, but we’ll open TMDB
+  openImdb: document.getElementById("openImdb"), // button label might say IMDB, we’ll open TMDb (we have TMDb id)
+  copyLink: document.getElementById("copyLink"),
 
-  // modal (MATCH index.html)
-  modal: document.getElementById("modal"),
-  closeModal: document.getElementById("closeModal"),
-  watchlist: document.getElementById("watchlist"),
+  similar: document.getElementById("similar"),
 };
 
 const API_BASE = ""; // API lives at /api
@@ -77,12 +69,13 @@ async function apiGet(path, params = {}) {
 
 function getFilters() {
   const minRating = Number(els.minRating?.value || 0) || 0;
-  const genre = els.genre?.value || "";
+  const genre = String(els.genre?.value || "any").toLowerCase();
   const yearRaw = (els.year?.value || "").trim();
 
   let yearMin = "";
   let yearMax = "";
 
+  // Default your UI shows "2000+"
   if (yearRaw && yearRaw !== "Any") {
     const m = yearRaw.match(/^(\d{4})\+$/);
     if (m) {
@@ -104,12 +97,20 @@ function setMeta(msg, isError = false) {
   els.meta.classList.toggle("warn", isError);
 }
 
+function clearSimilar() {
+  if (!els.similar) return;
+  els.similar.innerHTML = `<div class="muted">No similar titles found (try another movie).</div>`;
+}
+
 function renderTarget(m) {
-  if (!els.target) return;
+  if (els.trailer) {
+    els.trailer.classList.add("hidden");
+    els.trailer.innerHTML = "";
+  }
 
   if (!m) {
     els.target.innerHTML = `<div class="muted">No selection yet.</div>`;
-    if (els.targetActions) els.targetActions.classList.add("hidden");
+    els.targetActions?.classList.add("hidden");
     return;
   }
 
@@ -136,23 +137,36 @@ function renderTarget(m) {
 
   if (els.targetActions) els.targetActions.classList.remove("hidden");
 
-  if (els.openTmdb) {
-    els.openTmdb.onclick = () =>
+  if (els.openImdb) {
+    els.openImdb.onclick = () => {
+      // We have TMDb ids; open TMDb reliably
       window.open(`https://www.themoviedb.org/movie/${encodeURIComponent(m.id)}`, "_blank");
+    };
   }
 
-  if (els.addWatch) {
-    els.addWatch.onclick = () => addToWatchlist(m);
+  if (els.copyLink) {
+    els.copyLink.onclick = async () => {
+      try {
+        const u = new URL(location.href);
+        u.searchParams.set("id", String(m.id));
+        await navigator.clipboard.writeText(u.toString());
+        alert("Link copied ✅");
+      } catch {
+        alert("Copy failed (browser blocked clipboard).");
+      }
+    };
   }
+
+  if (els.addWatch) els.addWatch.onclick = () => addToWatchlist(m);
+
+  setMeta(`Ready. Selected: ${m.title}`, false);
 }
 
 function renderSimilar(items) {
-  if (!els.similar) return;
-
   const list = (items || []).filter(Boolean);
 
   if (!list.length) {
-    els.similar.innerHTML = `<div class="muted">No similar titles found (try another movie).</div>`;
+    clearSimilar();
     return;
   }
 
@@ -160,6 +174,7 @@ function renderSimilar(items) {
     const title = esc(m.title || "Untitled");
     const year = esc(m.year || "");
     const rating = (m.rating ?? "").toString();
+
     return `
       <button class="chip" type="button" data-id="${esc(m.id)}" title="${esc(m.overview || "")}">
         <span class="chipTitle">${title} ${year ? `(${year})` : ""}</span>
@@ -168,6 +183,7 @@ function renderSimilar(items) {
     `;
   }).join("");
 
+  // ✅ click handlers
   els.similar.querySelectorAll(".chip").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.getAttribute("data-id");
@@ -178,8 +194,6 @@ function renderSimilar(items) {
 }
 
 function renderSuggestions(items) {
-  if (!els.suggest) return;
-
   const list = (items || []).slice(0, 8);
 
   if (!list.length) {
@@ -199,24 +213,21 @@ function renderSuggestions(items) {
   els.suggest.querySelectorAll(".suggestItem").forEach((b) => {
     b.addEventListener("click", async () => {
       const id = b.getAttribute("data-id");
-      if (els.suggest) els.suggest.classList.add("hidden");
+      els.suggest.classList.add("hidden");
       if (id) await loadById(id);
     });
   });
 }
 
-function clearResults() {
-  if (els.similar) {
-    els.similar.innerHTML = `<div class="muted">No similar titles found (try another movie).</div>`;
-  }
-}
-
 let suggestTimer = null;
 async function onSuggestInput() {
   clearTimeout(suggestTimer);
+  const q = (els.q.value || "").trim();
 
-  const q = (els.q?.value || "").trim();
-  if (q.length < 2) return renderSuggestions([]);
+  if (q.length < 2) {
+    renderSuggestions([]);
+    return;
+  }
 
   suggestTimer = setTimeout(async () => {
     try {
@@ -229,15 +240,16 @@ async function onSuggestInput() {
 }
 
 async function loadById(id) {
-  clearResults();
+  clearSimilar();
   setMeta("Loading…", false);
 
   try {
-    // Resolve full movie details
-    const target = await apiGet("/api/resolve", { id });
+    const r = await apiGet("/api/resolve", { id });
+    const target = r.target || r; // resolve returns {target:...}
+    if (!target?.id) throw new Error("Resolve did not return a target id.");
+
     renderTarget(target);
 
-    // Then fetch similar using the resolved ID + filters
     const f = getFilters();
     const sim = await apiGet("/api/similar", {
       id: target.id,
@@ -248,41 +260,67 @@ async function loadById(id) {
     });
 
     renderSimilar(sim.similar || sim.results || []);
-    setMeta(`Ready. Selected: ${target.title}`, false);
   } catch (e) {
     renderTarget(null);
+    clearSimilar();
     setMeta(`Failed. (API ${e.status || "?"} – ${e.message})`, true);
   }
 }
 
 async function doSearch() {
-  const q = (els.q?.value || "").trim();
+  const q = (els.q.value || "").trim();
   if (!q) return;
 
-  clearResults();
+  clearSimilar();
   setMeta("Searching…", false);
 
   try {
-    // Step 1: search list
+    // 1) search titles
     const data = await apiGet("/api/search", { q });
-    const first = (data.items && data.items[0]) || null;
 
-    if (!first) {
+    // Support both shapes: {items:[...]} and {results:[...]}
+    const list = data.items || data.results || [];
+    const first = data.target || list[0] || null;
+
+    if (!first?.id) {
       renderTarget(null);
       setMeta("No match found.", true);
       return;
     }
 
-    // Step 2: resolve details (critical)
-    await loadById(first.id);
+    // 2) resolve for full details (genres, etc.)
+    const r = await apiGet("/api/resolve", { id: first.id });
+    const target = r.target || r;
+
+    if (!target?.id) {
+      renderTarget(null);
+      setMeta("Resolve failed (missing id).", true);
+      return;
+    }
+
+    // 3) render target
+    renderTarget(target);
+
+    // 4) fetch similar (now id is guaranteed)
+    const f = getFilters();
+    const sim = await apiGet("/api/similar", {
+      id: target.id,
+      minRating: f.minRating,
+      genre: f.genre,
+      yearMin: f.yearMin,
+      yearMax: f.yearMax,
+    });
+
+    renderSimilar(sim.similar || sim.results || []);
   } catch (e) {
     renderTarget(null);
-    setMeta(`Search failed. (API ${e.status || "?"} – ${e.message})`, true);
+    clearSimilar();
+    setMeta(`Failed. (API ${e.status || "?"} – ${e.message})`, true);
   }
 }
 
 async function doRandom() {
-  clearResults();
+  clearSimilar();
   setMeta("Picking random…", false);
 
   try {
@@ -295,20 +333,31 @@ async function doRandom() {
     });
 
     const target = data.target || null;
-    if (!target) {
+    if (!target?.id) {
       renderTarget(null);
       setMeta("Random failed (no target).", true);
       return;
     }
 
-    await loadById(target.id);
+    renderTarget(target);
+
+    const sim = await apiGet("/api/similar", {
+      id: target.id,
+      minRating: f.minRating,
+      genre: f.genre,
+      yearMin: f.yearMin,
+      yearMax: f.yearMax,
+    });
+
+    renderSimilar(sim.similar || sim.results || []);
   } catch (e) {
     renderTarget(null);
+    clearSimilar();
     setMeta(`Random failed. (API ${e.status || "?"} – ${e.message})`, true);
   }
 }
 
-/* Watchlist (localStorage) */
+/* Watchlist */
 const WL_KEY = "neonsimilar_watchlist_v1";
 
 function loadWatchlist() {
@@ -324,118 +373,43 @@ function addToWatchlist(m) {
   if (!m) return;
   const list = loadWatchlist();
   if (list.some((x) => String(x.id) === String(m.id))) return;
-
-  list.unshift({
-    id: m.id,
-    title: m.title,
-    year: m.year,
-    rating: m.rating,
-    poster: m.poster,
-  });
-
+  list.unshift({ id: m.id, title: m.title, year: m.year, rating: m.rating, poster: m.poster });
   saveWatchlist(list);
   alert("Added to Watchlist ✅");
 }
 
-function renderWatchlist() {
-  if (!els.watchlist) return;
-
-  const list = loadWatchlist();
-  if (!list.length) {
-    els.watchlist.innerHTML = `<div class="muted">Your watchlist is empty.</div>`;
-    return;
-  }
-
-  els.watchlist.innerHTML = list.map((m) => `
-    <div class="wlItem">
-      ${m.poster ? `<img class="wlPoster" src="${esc(m.poster)}" alt="" />` : ""}
-      <div class="wlInfo">
-        <div class="wlTitle">${esc(m.title)} <span class="muted">${esc(m.year || "")}</span></div>
-        <div class="muted">⭐ ${esc((m.rating ?? "—").toString())}</div>
-        <div class="wlBtns">
-          <button class="wlOpen" type="button" data-id="${esc(m.id)}">Open</button>
-          <button class="wlRemove" type="button" data-id="${esc(m.id)}">Remove</button>
-        </div>
-      </div>
-    </div>
-  `).join("");
-
-  els.watchlist.querySelectorAll(".wlOpen").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const id = btn.getAttribute("data-id");
-      if (!id) return;
-      closeModal();
-      await loadById(id);
-    });
-  });
-
-  els.watchlist.querySelectorAll(".wlRemove").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-id");
-      if (!id) return;
-      const next = loadWatchlist().filter((x) => String(x.id) !== String(id));
-      saveWatchlist(next);
-      renderWatchlist();
-    });
-  });
-}
-
-function openModal() {
-  if (!els.modal) return;
-  els.modal.classList.remove("hidden");
-  renderWatchlist();
-}
-
-function closeModal() {
-  if (!els.modal) return;
-  els.modal.classList.add("hidden");
-}
-
-/* Init */
 function initUI() {
-  // rating display
   if (els.minRating && els.minRatingVal) {
     const sync = () => (els.minRatingVal.textContent = `${Number(els.minRating.value || 0)}/10`);
     els.minRating.addEventListener("input", sync);
     sync();
   }
 
-  // suggest + enter
-  if (els.q) {
-    els.q.addEventListener("input", onSuggestInput);
-    els.q.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        doSearch();
-      }
-    });
-  }
-
-  // buttons
-  if (els.searchBtn) els.searchBtn.addEventListener("click", doSearch);
-  if (els.randomBtn) els.randomBtn.addEventListener("click", doRandom);
-
-  // watchlist modal
-  if (els.watchlistBtn) els.watchlistBtn.addEventListener("click", openModal);
-  if (els.closeModal) els.closeModal.addEventListener("click", closeModal);
-
-  // close when clicking outside content
-  if (els.modal) {
-    els.modal.addEventListener("click", (e) => {
-      if (e.target === els.modal) closeModal();
-    });
-  }
-
-  // hide suggest on outside click
-  document.addEventListener("click", (e) => {
-    if (!els.suggest || !els.q) return;
-    if (!els.suggest.contains(e.target) && e.target !== els.q) {
-      els.suggest.classList.add("hidden");
+  els.q?.addEventListener("input", onSuggestInput);
+  els.q?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      doSearch();
     }
   });
+
+  els.searchBtn?.addEventListener("click", doSearch);
+  els.randomBtn?.addEventListener("click", doRandom);
+
+  // hide suggestions when tapping elsewhere
+  document.addEventListener("click", (e) => {
+    if (!els.suggest?.contains(e.target) && e.target !== els.q) {
+      els.suggest?.classList.add("hidden");
+    }
+  });
+
+  // If user comes in with ?id=123 load it
+  const url = new URL(location.href);
+  const id = url.searchParams.get("id");
+  if (id) loadById(id);
 }
 
 initUI();
 renderTarget(null);
-clearResults();
+clearSimilar();
 setMeta("Ready.", false);
