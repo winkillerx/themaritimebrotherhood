@@ -1,4 +1,4 @@
-/* app.js — NEONSIMILAR (static frontend)
+/* movies/app.js — NEONSIMILAR (static frontend)
    Works with Vercel Serverless Functions:
    - /api/suggest?q=...
    - /api/search?q=...
@@ -10,6 +10,8 @@
 const els = {
   q: document.getElementById("q"),
   suggest: document.getElementById("suggest"),
+
+  // Your HTML uses these ids (per your latest snippet)
   searchBtn: document.getElementById("go"),
   randomBtn: document.getElementById("random"),
   watchlistBtn: document.getElementById("watchlistBtn"),
@@ -25,13 +27,13 @@ const els = {
 
   targetActions: document.getElementById("targetActions"),
   addWatch: document.getElementById("addWatch"),
-  openImdb: document.getElementById("openImdb"), // button label might say IMDB, we’ll open TMDb (we have TMDb id)
+  openImdb: document.getElementById("openImdb"), // button text might say IMDB, we open TMDb
   copyLink: document.getElementById("copyLink"),
 
   similar: document.getElementById("similar"),
 };
 
-const API_BASE = ""; // API lives at /api
+const API_BASE = ""; // IMPORTANT: keep empty, API is at /api (not /movies/api)
 
 function esc(s = "") {
   return String(s).replace(/[&<>"']/g, (c) => ({
@@ -50,12 +52,17 @@ async function apiGet(path, params = {}) {
     url.searchParams.set(k, String(v));
   }
 
-  const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
-  const text = await res.text();
+  const res = await fetch(url.toString(), {
+    headers: { Accept: "application/json" },
+  });
 
+  const text = await res.text();
   let json;
-  try { json = text ? JSON.parse(text) : {}; }
-  catch { json = { error: text || "Invalid JSON" }; }
+  try {
+    json = text ? JSON.parse(text) : {};
+  } catch {
+    json = { error: text || "Invalid JSON" };
+  }
 
   if (!res.ok) {
     const msg = json?.error || `${res.status} ${res.statusText}`;
@@ -69,17 +76,17 @@ async function apiGet(path, params = {}) {
 
 function getFilters() {
   const minRating = Number(els.minRating?.value || 0) || 0;
-  const genre = String(els.genre?.value || "any").toLowerCase();
-  const yearRaw = (els.year?.value || "").trim();
+  const genre = String(els.genre?.value || "").trim(); // allow "Any" or ""
+  const yearRaw = String(els.year?.value || "").trim();
 
   let yearMin = "";
   let yearMax = "";
 
-  // Default your UI shows "2000+"
+  // Supports "2000+" or "2014" etc
   if (yearRaw && yearRaw !== "Any") {
-    const m = yearRaw.match(/^(\d{4})\+$/);
-    if (m) {
-      yearMin = m[1];
+    const plus = yearRaw.match(/^(\d{4})\+$/);
+    if (plus) {
+      yearMin = plus[1];
       yearMax = "";
     } else if (/^\d{4}$/.test(yearRaw)) {
       yearMin = yearRaw;
@@ -87,7 +94,10 @@ function getFilters() {
     }
   }
 
-  return { minRating, genre, yearMin, yearMax };
+  // Normalize genre: some backends expect empty for Any
+  const g = (genre.toLowerCase() === "any") ? "" : genre;
+
+  return { minRating, genre: g, yearMin, yearMax };
 }
 
 function setMeta(msg, isError = false) {
@@ -102,20 +112,28 @@ function clearSimilar() {
   els.similar.innerHTML = `<div class="muted">No similar titles found (try another movie).</div>`;
 }
 
+function clearTrailer() {
+  if (!els.trailer) return;
+  els.trailer.classList.add("hidden");
+  els.trailer.innerHTML = "";
+}
+
 function renderTarget(m) {
-  if (els.trailer) {
-    els.trailer.classList.add("hidden");
-    els.trailer.innerHTML = "";
-  }
+  clearTrailer();
+
+  if (!els.target) return;
 
   if (!m) {
     els.target.innerHTML = `<div class="muted">No selection yet.</div>`;
     els.targetActions?.classList.add("hidden");
+    setMeta("Ready.", false);
     return;
   }
 
-  const poster = m.poster
-    ? `<img class="poster" src="${esc(m.poster)}" alt="${esc(m.title)} poster" />`
+  // Prefer best poster available from resolve.js
+  const posterSrc = m.posterOriginal || m.posterLarge || m.poster || "";
+  const poster = posterSrc
+    ? `<img class="poster" src="${esc(posterSrc)}" alt="${esc(m.title)} poster" />`
     : "";
 
   const genres = Array.isArray(m.genres) ? m.genres.join(", ") : "";
@@ -126,7 +144,9 @@ function renderTarget(m) {
       ${poster}
       <div class="targetInfo">
         <div class="titleRow">
-          <div class="title">${esc(m.title)} <span class="muted">(${esc(m.year || "")})</span></div>
+          <div class="title">
+            ${esc(m.title)} <span class="muted">(${esc(m.year || "")})</span>
+          </div>
           <div class="pill">⭐ ${esc(rating || "—")}</div>
         </div>
         <div class="muted">${esc(genres)}</div>
@@ -135,11 +155,29 @@ function renderTarget(m) {
     </div>
   `;
 
+  // Auto-embed trailer if resolve returns trailerKey
+  if (els.trailer) {
+    const key = m.trailerKey || "";
+    if (key) {
+      const src = `https://www.youtube.com/embed/${encodeURIComponent(key)}`;
+      els.trailer.innerHTML = `
+        <iframe
+          loading="lazy"
+          src="${src}"
+          title="Trailer"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen
+        ></iframe>
+      `;
+      els.trailer.classList.remove("hidden");
+    }
+  }
+
   if (els.targetActions) els.targetActions.classList.remove("hidden");
 
+  // “IMDB” button opens TMDb (we have TMDb id reliably)
   if (els.openImdb) {
     els.openImdb.onclick = () => {
-      // We have TMDb ids; open TMDb reliably
       window.open(`https://www.themoviedb.org/movie/${encodeURIComponent(m.id)}`, "_blank");
     };
   }
@@ -157,13 +195,16 @@ function renderTarget(m) {
     };
   }
 
-  if (els.addWatch) els.addWatch.onclick = () => addToWatchlist(m);
+  if (els.addWatch) {
+    els.addWatch.onclick = () => addToWatchlist(m);
+  }
 
   setMeta(`Ready. Selected: ${m.title}`, false);
 }
 
 function renderSimilar(items) {
   const list = (items || []).filter(Boolean);
+  if (!els.similar) return;
 
   if (!list.length) {
     clearSimilar();
@@ -174,7 +215,6 @@ function renderSimilar(items) {
     const title = esc(m.title || "Untitled");
     const year = esc(m.year || "");
     const rating = (m.rating ?? "").toString();
-
     return `
       <button class="chip" type="button" data-id="${esc(m.id)}" title="${esc(m.overview || "")}">
         <span class="chipTitle">${title} ${year ? `(${year})` : ""}</span>
@@ -183,7 +223,7 @@ function renderSimilar(items) {
     `;
   }).join("");
 
-  // ✅ click handlers
+  // Click loads that movie via resolve → similar
   els.similar.querySelectorAll(".chip").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.getAttribute("data-id");
@@ -195,6 +235,7 @@ function renderSimilar(items) {
 
 function renderSuggestions(items) {
   const list = (items || []).slice(0, 8);
+  if (!els.suggest) return;
 
   if (!list.length) {
     els.suggest.innerHTML = "";
@@ -222,7 +263,7 @@ function renderSuggestions(items) {
 let suggestTimer = null;
 async function onSuggestInput() {
   clearTimeout(suggestTimer);
-  const q = (els.q.value || "").trim();
+  const q = (els.q?.value || "").trim();
 
   if (q.length < 2) {
     renderSuggestions([]);
@@ -232,7 +273,7 @@ async function onSuggestInput() {
   suggestTimer = setTimeout(async () => {
     try {
       const data = await apiGet("/api/suggest", { q });
-      renderSuggestions(data.results || []);
+      renderSuggestions(data.results || data.items || []);
     } catch {
       renderSuggestions([]);
     }
@@ -244,8 +285,10 @@ async function loadById(id) {
   setMeta("Loading…", false);
 
   try {
+    // resolve returns the full object (per my resolve.js), but support {target:...} too
     const r = await apiGet("/api/resolve", { id });
-    const target = r.target || r; // resolve returns {target:...}
+    const target = r.target || r;
+
     if (!target?.id) throw new Error("Resolve did not return a target id.");
 
     renderTarget(target);
@@ -259,7 +302,7 @@ async function loadById(id) {
       yearMax: f.yearMax,
     });
 
-    renderSimilar(sim.similar || sim.results || []);
+    renderSimilar(sim.similar || sim.results || sim.items || []);
   } catch (e) {
     renderTarget(null);
     clearSimilar();
@@ -268,7 +311,7 @@ async function loadById(id) {
 }
 
 async function doSearch() {
-  const q = (els.q.value || "").trim();
+  const q = (els.q?.value || "").trim();
   if (!q) return;
 
   clearSimilar();
@@ -278,7 +321,7 @@ async function doSearch() {
     // 1) search titles
     const data = await apiGet("/api/search", { q });
 
-    // Support both shapes: {items:[...]} and {results:[...]}
+    // support multiple shapes
     const list = data.items || data.results || [];
     const first = data.target || list[0] || null;
 
@@ -288,7 +331,7 @@ async function doSearch() {
       return;
     }
 
-    // 2) resolve for full details (genres, etc.)
+    // 2) resolve for full details + trailerKey + large posters
     const r = await apiGet("/api/resolve", { id: first.id });
     const target = r.target || r;
 
@@ -301,7 +344,7 @@ async function doSearch() {
     // 3) render target
     renderTarget(target);
 
-    // 4) fetch similar (now id is guaranteed)
+    // 4) fetch similar
     const f = getFilters();
     const sim = await apiGet("/api/similar", {
       id: target.id,
@@ -311,7 +354,7 @@ async function doSearch() {
       yearMax: f.yearMax,
     });
 
-    renderSimilar(sim.similar || sim.results || []);
+    renderSimilar(sim.similar || sim.results || sim.items || []);
   } catch (e) {
     renderTarget(null);
     clearSimilar();
@@ -332,24 +375,30 @@ async function doRandom() {
       yearMax: f.yearMax,
     });
 
-    const target = data.target || null;
+    // random typically returns {target:...}
+    const target = data.target || data;
+
     if (!target?.id) {
       renderTarget(null);
       setMeta("Random failed (no target).", true);
       return;
     }
 
-    renderTarget(target);
+    // If random doesn’t include trailer/posterOriginal, resolve it for full experience
+    const r = await apiGet("/api/resolve", { id: target.id });
+    const full = r.target || r;
+
+    renderTarget(full);
 
     const sim = await apiGet("/api/similar", {
-      id: target.id,
+      id: full.id,
       minRating: f.minRating,
       genre: f.genre,
       yearMin: f.yearMin,
       yearMax: f.yearMax,
     });
 
-    renderSimilar(sim.similar || sim.results || []);
+    renderSimilar(sim.similar || sim.results || sim.items || []);
   } catch (e) {
     renderTarget(null);
     clearSimilar();
@@ -361,8 +410,11 @@ async function doRandom() {
 const WL_KEY = "neonsimilar_watchlist_v1";
 
 function loadWatchlist() {
-  try { return JSON.parse(localStorage.getItem(WL_KEY) || "[]"); }
-  catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(WL_KEY) || "[]");
+  } catch {
+    return [];
+  }
 }
 
 function saveWatchlist(items) {
@@ -373,19 +425,33 @@ function addToWatchlist(m) {
   if (!m) return;
   const list = loadWatchlist();
   if (list.some((x) => String(x.id) === String(m.id))) return;
-  list.unshift({ id: m.id, title: m.title, year: m.year, rating: m.rating, poster: m.poster });
+
+  list.unshift({
+    id: m.id,
+    title: m.title,
+    year: m.year,
+    rating: m.rating,
+    poster: m.posterOriginal || m.posterLarge || m.poster || "",
+  });
+
   saveWatchlist(list);
   alert("Added to Watchlist ✅");
 }
 
 function initUI() {
+  // rating label
   if (els.minRating && els.minRatingVal) {
-    const sync = () => (els.minRatingVal.textContent = `${Number(els.minRating.value || 0)}/10`);
+    const sync = () => {
+      els.minRatingVal.textContent = `${Number(els.minRating.value || 0)}/10`;
+    };
     els.minRating.addEventListener("input", sync);
     sync();
   }
 
+  // suggestions
   els.q?.addEventListener("input", onSuggestInput);
+
+  // enter key submits search
   els.q?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -393,6 +459,7 @@ function initUI() {
     }
   });
 
+  // buttons
   els.searchBtn?.addEventListener("click", doSearch);
   els.randomBtn?.addEventListener("click", doRandom);
 
@@ -403,12 +470,13 @@ function initUI() {
     }
   });
 
-  // If user comes in with ?id=123 load it
+  // load from share link (?id=123)
   const url = new URL(location.href);
   const id = url.searchParams.get("id");
   if (id) loadById(id);
 }
 
+// boot
 initUI();
 renderTarget(null);
 clearSimilar();
