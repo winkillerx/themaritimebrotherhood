@@ -205,43 +205,44 @@ function renderSimilar(items) {
   const list = (items || []).filter(Boolean);
 
   if (!list.length) {
-    els.similar.innerHTML = `<div class="muted">No similar titles found (try another movie).</div>`;
+    els.similar.innerHTML =
+      '<div class="muted">No similar titles found (try another movie).</div>';
     return;
   }
 
-  els.similar.innerHTML = list.map((m) => {
+  let html = "";
+
+  for (const m of list) {
     const title = esc(m.title || "Untitled");
-    const year = m.year ? esc(m.year) : "";
+    const year = m.year ? `(${esc(m.year)})` : "";
     const rating = (m.rating ?? "").toString();
     const overview = esc(m.overview || "");
+
     const poster = m.poster
-      ? `<img class="poster" src="${esc(m.poster)}" alt="${title} poster" loading="lazy" />`
-      : `<div class="poster placeholder"></div>`;
+      ? '<img class="poster" src="' + esc(m.poster) + '" loading="lazy" />'
+      : '<div class="poster placeholder"></div>';
 
-    return `
-      <button class="simCard" type="button" data-id="${esc(m.id)}">
-        <div class="targetGrid">
-          ${poster}
-          <div class="targetInfo">
-            <div class="titleRow">
-              <div class="title">
-                ${title} ${year ? `<span class="muted">(${year})</span>` : ""}
-              </div>
-              <div class="pill">⭐ ${esc(rating || "—")}</div>
-            </div>
-            <div class="overview clamp3">${overview}</div>
-          </div>
-        </div>
-      </button>
-    `;
-  }).join("");
+    html +=
+      '<button class="simCard" type="button" data-id="' + esc(m.id) + '">' +
+        '<div class="targetGrid">' +
+          poster +
+          '<div class="targetInfo">' +
+            '<div class="titleRow">' +
+              '<div class="title">' + title + ' <span class="muted">' + year + '</span></div>' +
+              '<div class="pill">⭐ ' + esc(rating || "—") + '</div>' +
+            '</div>' +
+            '<div class="overview clamp3">' + overview + '</div>' +
+          '</div>' +
+        '</div>' +
+      '</button>';
+  }
 
-  // ✅ click handlers
+  els.similar.innerHTML = html;
+
   els.similar.querySelectorAll(".simCard").forEach((btn) => {
-    btn.addEventListener("click", async () => {
+    btn.addEventListener("click", () => {
       const id = btn.getAttribute("data-id");
-      if (!id) return;
-      await loadById(id);
+      if (id) loadById(id);
     });
   });
 }
