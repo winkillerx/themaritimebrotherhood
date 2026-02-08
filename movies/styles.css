@@ -227,6 +227,55 @@ p { margin: 0 0 14px; }
 
 .foot { text-align: center; margin-top: 10px; }
 
+/* Similar cards: make them look like Target */
+.simCard {
+  width: 100%;
+  border: 1px solid rgba(120, 160, 255, 0.18);
+  border-radius: 16px;
+  background: rgba(10, 16, 30, 0.55);
+  padding: 14px;
+  margin: 10px 0;
+  cursor: pointer;
+  text-align: left;
+  display: block;
+}
+
+.simCard:hover {
+  border-color: rgba(120, 160, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.simCard:active {
+  transform: translateY(0px);
+}
+
+.simCard .targetGrid {
+  align-items: flex-start;
+}
+
+/* Poster sizing inside Similar */
+.simCard .poster {
+  width: 92px;
+  height: 138px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.simCard .poster.placeholder {
+  width: 92px;
+  height: 138px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.06);
+}
+
+/* Clamp overview so similar list stays clean */
+.clamp3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 /* Modal */
 .modal.hidden { display: none; }
 .modal {
