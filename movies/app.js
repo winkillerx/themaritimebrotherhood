@@ -10,20 +10,37 @@
 const els = {
   q: document.getElementById("q"),
   suggest: document.getElementById("suggest"),
-  go: document.getElementById("go"),
-  random: document.getElementById("random"),
-  watchlist: document.getElementById("watchlist"),
+  searchBtn: document.getElementById("searchBtn"),
+  randomBtn: document.getElementById("randomBtn"),
+  watchlistBtn: document.getElementById("watchlistBtn"),
+
   minRating: document.getElementById("minRating"),
   minRatingVal: document.getElementById("minRatingVal"),
   genre: document.getElementById("genre"),
   year: document.getElementById("year"),
+
   meta: document.getElementById("meta"),
   target: document.getElementById("target"),
+  trailer: document.getElementById("trailer"),
+
+  targetActions: document.getElementById("targetActions"),
+  addWatch: document.getElementById("addWatch"),
+  openTmdb: document.getElementById("openTmdb"),
+  openTrailer: document.getElementById("openTrailer"),
+
+  results: document.getElementById("results"), // not used heavily, but kept
   similar: document.getElementById("similar"),
+
+  // Watchlist modal
+  wlModal: document.getElementById("wlModal"),
+  wlList: document.getElementById("wlList"),
+  wlEmpty: document.getElementById("wlEmpty"),
+  wlClear: document.getElementById("wlClear"),
+  wlClose: document.getElementById("wlClose"),
 };
 
-// ALWAYS hit API at /api (do NOT prefix with /movies)
-const API_BASE = "/api";
+// API is at /api (do NOT prefix with /movies)
+const API_BASE = "";
 
 function esc(s = "") {
   return String(s).replace(/[&<>"']/g, (c) => ({
@@ -35,14 +52,28 @@ function esc(s = "") {
   }[c]));
 }
 
-function setMeta(msg, isError = false) {
-  els.meta.textContent = msg;
-  els.meta.classList.toggle("muted", !isError);
-  els.meta.classList.toggle("warn", isError);
-}
+async function apiGet(path, params = {}) {
+  const url = new URL(`${location.origin}${API_BASE}${path}`);
+  for (const [k, v] of Object.entries(params)) {
+    if (v === undefined || v === null || v === "") continue;
+    url.searchParams.set(k, String(v));
+  }
 
-function clearResults() {
-  els.similar.innerHTML = `<div class="muted">No similar titles found (try another movie).</div>`;
+  const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
+  const text = await res.text();
+
+  let json;
+  try { json = text ? JSON.parse(text) : {}; }
+  catch { json = { error: text || "Invalid JSON" }; }
+
+  if (!res.ok) {
+    const msg = json?.error || `${res.status} ${res.statusText}`;
+    const err = new Error(msg);
+    err.status = res.status;
+    err.body = json;
+    throw err;
+  }
+  return json;
 }
 
 function getFilters() {
@@ -66,48 +97,36 @@ function getFilters() {
   return { minRating, genre, yearMin, yearMax };
 }
 
-async function apiGet(path, params = {}) {
-  // path examples: "search", "resolve", "similar", "random", "suggest"
-  const url = new URL(`${location.origin}${API_BASE}/${path}`);
-  for (const [k, v] of Object.entries(params)) {
-    if (v === undefined || v === null || v === "") continue;
-    url.searchParams.set(k, String(v));
-  }
-
-  const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
-  const text = await res.text();
-
-  let json;
-  try {
-    json = text ? JSON.parse(text) : {};
-  } catch {
-    json = { error: text || "Invalid JSON" };
-  }
-
-  if (!res.ok) {
-    const msg = json?.error || `${res.status} ${res.statusText}`;
-    const err = new Error(msg);
-    err.status = res.status;
-    err.body = json;
-    throw err;
-  }
-
-  return json;
+function setMeta(msg, isError = false) {
+  els.meta.textContent = msg;
+  els.meta.classList.toggle("muted", !isError);
+  els.meta.classList.toggle("warn", isError);
 }
 
-function renderTarget(m) {
+function clearResults() {
+  els.results.innerHTML = "";
+  els.similar.innerHTML = `<div class="muted">No similar titles found (try another movie).</div>`;
+}
+
+function renderTarget(movie) {
+  els.trailer.classList.add("hidden");
+  els.trailer.innerHTML = "";
+
+  // If API returned { target: {...} }
+  const m = movie?.target ? movie.target : movie;
+
   if (!m) {
+    els.target.classList.remove("hidden");
     els.target.innerHTML = `<div class="muted">No selection yet.</div>`;
+    els.targetActions.classList.add("hidden");
     return;
   }
 
-  const poster = m.poster
-    ? `<img class="poster" src="${esc(m.poster)}" alt="${esc(m.title)} poster" />`
-    : "";
-
+  const poster = m.poster ? `<img class="poster" src="${esc(m.poster)}" alt="${esc(m.title)} poster" />` : "";
   const genres = Array.isArray(m.genres) ? m.genres.join(", ") : "";
   const rating = (m.rating ?? "").toString();
 
+  els.target.classList.remove("hidden");
   els.target.innerHTML = `
     <div class="targetGrid">
       ${poster}
@@ -121,11 +140,40 @@ function renderTarget(m) {
       </div>
     </div>
   `;
+
+  els.targetActions.classList.remove("hidden");
+
+  els.openTmdb.onclick = () =>
+    window.open(`https://www.themoviedb.org/movie/${encodeURIComponent(m.id)}`, "_blank");
+
+  els.addWatch.onclick = () => addToWatchlist(m);
+
+  els.openTrailer.onclick = async () => {
+    try {
+      // Your /api/tmdb expects ?path=...
+      const data = await apiGet("/api/tmdb", { path: `/movie/${m.id}/videos` });
+      const vids = data?.results || [];
+      const yt =
+        vids.find(v => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser")) ||
+        vids.find(v => v.site === "YouTube");
+
+      if (!yt) return alert("No trailer found.");
+
+      const src = `https://www.youtube.com/embed/${encodeURIComponent(yt.key)}`;
+      els.trailer.innerHTML = `
+        <iframe loading="lazy" src="${src}" title="Trailer"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen></iframe>
+      `;
+      els.trailer.classList.remove("hidden");
+    } catch (e) {
+      alert(`Trailer failed: ${e.message}`);
+    }
+  };
 }
 
 function renderSimilar(items) {
   const list = (items || []).filter(Boolean);
-
   if (!list.length) {
     els.similar.innerHTML = `<div class="muted">No similar titles found (try another movie).</div>`;
     return;
@@ -136,7 +184,7 @@ function renderSimilar(items) {
     const year = esc(m.year || "");
     const rating = (m.rating ?? "").toString();
     return `
-      <button class="chip" data-id="${esc(m.id)}" title="${esc(m.overview || "")}">
+      <button class="chip" type="button" data-id="${esc(m.id)}" title="${esc(m.overview || "")}">
         <span class="chipTitle">${title} ${year ? `(${year})` : ""}</span>
         <span class="chipMeta">⭐ ${esc(rating || "—")}</span>
       </button>
@@ -181,11 +229,15 @@ let suggestTimer = null;
 async function onSuggestInput() {
   clearTimeout(suggestTimer);
   const q = (els.q.value || "").trim();
-  if (q.length < 2) return renderSuggestions([]);
+
+  if (q.length < 2) {
+    renderSuggestions([]);
+    return;
+  }
 
   suggestTimer = setTimeout(async () => {
     try {
-      const data = await apiGet("suggest", { q });
+      const data = await apiGet("/api/suggest", { q });
       renderSuggestions(data.results || []);
     } catch {
       renderSuggestions([]);
@@ -198,14 +250,17 @@ async function loadById(id) {
   setMeta("Loading…", false);
 
   try {
-    // Resolve gives the full movie object for Target
-    const target = await apiGet("resolve", { id });
-    if (!target?.id) throw new Error("Resolve returned no id.");
-
+    const resolved = await apiGet("/api/resolve", { id });
+    const target = resolved?.target || null;
     renderTarget(target);
 
+    if (!target?.id) {
+      setMeta("Resolve failed (missing id).", true);
+      return;
+    }
+
     const f = getFilters();
-    const sim = await apiGet("similar", {
+    const sim = await apiGet("/api/similar", {
       id: target.id,
       minRating: f.minRating,
       genre: f.genre,
@@ -213,39 +268,27 @@ async function loadById(id) {
       yearMax: f.yearMax,
     });
 
-    renderSimilar(sim.similar || sim.results || []);
+    renderSimilar(sim?.similar || sim?.results || []);
     setMeta(`Ready. Selected: ${target.title}`, false);
   } catch (e) {
     renderTarget(null);
-    clearResults();
-    setMeta(`Failed. (API ${e.status || "?"} — ${e.message})`, true);
+    setMeta(`Failed. (API ${e.status || "?"} – ${e.message})`, true);
   }
 }
 
-/**
- * FIXED SEARCH FLOW:
- * 1) /api/search?q=...  -> get items
- * 2) Take first result id
- * 3) /api/resolve?id=... -> FULL TARGET DETAILS
- * 4) /api/similar?id=... -> populate Similar
- */
-async function runSearch(query) {
-  const q = (query || "").trim();
+async function doSearch() {
+  const q = (els.q.value || "").trim();
   if (!q) return;
 
   clearResults();
   setMeta("Searching…", false);
 
   try {
-    // Step 1 — search titles
-    const data = await apiGet("search", { q });
+    // 1) search titles
+    const data = await apiGet("/api/search", { q });
 
-    // Accept multiple possible shapes safely
-    const first =
-      (data.items && data.items[0]) ||
-      (data.results && data.results[0]) ||
-      data.target ||
-      null;
+    // We prefer data.items[0] because it's guaranteed to be from search results
+    const first = (data.items && data.items[0]) || data.target || null;
 
     if (!first?.id) {
       renderTarget(null);
@@ -253,16 +296,22 @@ async function runSearch(query) {
       return;
     }
 
-    // Step 2 — resolve full movie (critical so Target always works)
-    const target = await apiGet("resolve", { id: first.id });
-    if (!target?.id) throw new Error("Resolve returned no id.");
+    // 2) resolve to full movie details
+    const resolved = await apiGet("/api/resolve", { id: first.id });
+    const target = resolved?.target || null;
 
-    // Step 3 — render Target
+    if (!target?.id) {
+      renderTarget(null);
+      setMeta("Resolve failed (missing id).", true);
+      return;
+    }
+
+    // 3) render target
     renderTarget(target);
 
-    // Step 4 — Similar (now id always exists)
+    // 4) load similar using filters
     const f = getFilters();
-    const sim = await apiGet("similar", {
+    const sim = await apiGet("/api/similar", {
       id: target.id,
       minRating: f.minRating,
       genre: f.genre,
@@ -270,51 +319,131 @@ async function runSearch(query) {
       yearMax: f.yearMax,
     });
 
-    renderSimilar(sim.similar || sim.results || []);
+    renderSimilar(sim?.similar || sim?.results || []);
     setMeta(`Ready. Selected: ${target.title}`, false);
   } catch (e) {
     renderTarget(null);
-    clearResults();
-    setMeta(`Failed. (API ${e.status || "?"} — ${e.message})`, true);
+    setMeta(`Search failed. (API ${e.status || "?"} – ${e.message})`, true);
   }
 }
 
-async function runRandom() {
+async function doRandom() {
   clearResults();
   setMeta("Picking random…", false);
 
   try {
     const f = getFilters();
-    const data = await apiGet("random", {
+    const data = await apiGet("/api/random", {
       minRating: f.minRating,
       genre: f.genre,
       yearMin: f.yearMin,
       yearMax: f.yearMax,
     });
 
-    const target = data.target || null;
-    if (!target?.id) throw new Error("Random returned no id.");
+    const target = data?.target || null;
+    renderTarget(target);
 
-    // Resolve for full Target details
-    const full = await apiGet("resolve", { id: target.id });
-    renderTarget(full);
+    if (!target?.id) {
+      setMeta("Random failed (no target).", true);
+      return;
+    }
 
-    const sim = await apiGet("similar", {
-      id: full.id,
+    const sim = await apiGet("/api/similar", {
+      id: target.id,
       minRating: f.minRating,
       genre: f.genre,
       yearMin: f.yearMin,
       yearMax: f.yearMax,
     });
 
-    renderSimilar(sim.similar || sim.results || []);
-    setMeta(`Ready. Selected: ${full.title}`, false);
+    renderSimilar(sim?.similar || sim?.results || []);
+    setMeta(`Ready. Selected: ${target.title}`, false);
   } catch (e) {
     renderTarget(null);
-    clearResults();
-    setMeta(`Random failed. (API ${e.status || "?"} — ${e.message})`, true);
+    setMeta(`Random failed. (API ${e.status || "?"} – ${e.message})`, true);
   }
 }
+
+/* ---------------- Watchlist ---------------- */
+
+const WL_KEY = "neonsimilar_watchlist_v1";
+
+function loadWatchlist() {
+  try { return JSON.parse(localStorage.getItem(WL_KEY) || "[]"); }
+  catch { return []; }
+}
+
+function saveWatchlist(items) {
+  localStorage.setItem(WL_KEY, JSON.stringify(items.slice(0, 200)));
+}
+
+function addToWatchlist(m) {
+  if (!m?.id) return;
+  const list = loadWatchlist();
+  if (list.some((x) => String(x.id) === String(m.id))) {
+    alert("Already in Watchlist ✅");
+    return;
+  }
+  list.unshift({ id: m.id, title: m.title, year: m.year, rating: m.rating, poster: m.poster });
+  saveWatchlist(list);
+  alert("Added to Watchlist ✅");
+}
+
+function removeFromWatchlist(id) {
+  const list = loadWatchlist().filter((x) => String(x.id) !== String(id));
+  saveWatchlist(list);
+  renderWatchlistModal();
+}
+
+function renderWatchlistModal() {
+  const list = loadWatchlist();
+
+  els.wlEmpty.classList.toggle("hidden", list.length !== 0);
+  els.wlList.classList.toggle("hidden", list.length === 0);
+
+  if (!list.length) {
+    els.wlList.innerHTML = "";
+    return;
+  }
+
+  els.wlList.innerHTML = list.map((m) => `
+    <div class="wlItem">
+      <div class="wlTitle">${esc(m.title || "Untitled")} <span class="muted">${esc(m.year || "")}</span></div>
+      <div class="wlActions">
+        <button class="wlOpen" type="button" data-id="${esc(m.id)}">Open</button>
+        <button class="wlRemove" type="button" data-id="${esc(m.id)}">Remove</button>
+      </div>
+    </div>
+  `).join("");
+
+  els.wlList.querySelectorAll(".wlOpen").forEach((b) => {
+    b.addEventListener("click", async () => {
+      const id = b.getAttribute("data-id");
+      if (!id) return;
+      closeWatchlist();
+      await loadById(id);
+    });
+  });
+
+  els.wlList.querySelectorAll(".wlRemove").forEach((b) => {
+    b.addEventListener("click", () => {
+      const id = b.getAttribute("data-id");
+      if (!id) return;
+      removeFromWatchlist(id);
+    });
+  });
+}
+
+function openWatchlist() {
+  renderWatchlistModal();
+  els.wlModal.classList.remove("hidden");
+}
+
+function closeWatchlist() {
+  els.wlModal.classList.add("hidden");
+}
+
+/* ---------------- Init ---------------- */
 
 function initUI() {
   if (els.minRating && els.minRatingVal) {
@@ -327,19 +456,33 @@ function initUI() {
   els.q.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      runSearch(els.q.value);
+      doSearch();
     }
   });
 
-  els.go.addEventListener("click", () => runSearch(els.q.value));
-  els.random.addEventListener("click", runRandom);
+  els.searchBtn.addEventListener("click", doSearch);
+  els.randomBtn.addEventListener("click", doRandom);
 
+  els.watchlistBtn.addEventListener("click", openWatchlist);
+  els.wlClose.addEventListener("click", closeWatchlist);
+  els.wlClear.addEventListener("click", () => {
+    saveWatchlist([]);
+    renderWatchlistModal();
+  });
+
+  // click outside suggestions closes it
   document.addEventListener("click", (e) => {
-    if (!els.suggest.contains(e.target) && e.target !== els.q) els.suggest.classList.add("hidden");
+    if (!els.suggest.contains(e.target) && e.target !== els.q) {
+      els.suggest.classList.add("hidden");
+    }
+  });
+
+  // click outside modal content closes modal
+  els.wlModal.addEventListener("click", (e) => {
+    if (e.target === els.wlModal) closeWatchlist();
   });
 }
 
-// Boot
 initUI();
 renderTarget(null);
 clearResults();
