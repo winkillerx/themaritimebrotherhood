@@ -205,25 +205,39 @@ function renderSimilar(items) {
   const list = (items || []).filter(Boolean);
 
   if (!list.length) {
-    clearSimilar();
+    els.similar.innerHTML = `<div class="muted">No similar titles found (try another movie).</div>`;
     return;
   }
 
-  els.results.innerHTML = list.map((m) => {
+  els.similar.innerHTML = list.map((m) => {
     const title = esc(m.title || "Untitled");
-    const year = esc(m.year || "");
+    const year = m.year ? esc(m.year) : "";
     const rating = (m.rating ?? "").toString();
+    const overview = esc(m.overview || "");
+    const poster = m.poster
+      ? `<img class="poster" src="${esc(m.poster)}" alt="${title} poster" loading="lazy" />`
+      : `<div class="poster placeholder"></div>`;
 
     return `
-      <button class="chip" type="button" data-id="${esc(m.id)}" title="${esc(m.overview || "")}">
-        <span class="chipTitle">${title} ${year ? `(${year})` : ""}</span>
-        <span class="chipMeta">⭐ ${esc(rating || "—")}</span>
+      <button class="simCard" type="button" data-id="${esc(m.id)}">
+        <div class="targetGrid">
+          ${poster}
+          <div class="targetInfo">
+            <div class="titleRow">
+              <div class="title">
+                ${title} ${year ? `<span class="muted">(${year})</span>` : ""}
+              </div>
+              <div class="pill">⭐ ${esc(rating || "—")}</div>
+            </div>
+            <div class="overview clamp3">${overview}</div>
+          </div>
+        </div>
       </button>
     `;
   }).join("");
 
-  // Click handler for similar chips
-  els.results.querySelectorAll(".chip").forEach((btn) => {
+  // ✅ click handlers
+  els.similar.querySelectorAll(".simCard").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.getAttribute("data-id");
       if (!id) return;
