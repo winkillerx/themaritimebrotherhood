@@ -1,51 +1,45 @@
 // movies/api/similar.js
-import { tmdb, normalizeMovie } from "./_tmdb.js";
+import { tmdb, normalizeMovie, pickYear } from "./_tmdb.js";
 
 export default async function handler(req, res) {
   try {
-    const id = String(req.query.id || "").trim();
+    const id = (req.query.id || "").trim();
     if (!id) return res.status(400).json({ error: "Missing id" });
 
     const minRating = Number(req.query.minRating || 0);
-    const genre = String(req.query.genre || "any");
-    const yearMin = Number(req.query.yearMin || 2000);
+    const genre = (req.query.genre || "any").toLowerCase();
+
+    // ✅ default 1950
+    const yearMin = Number(req.query.yearMin || 1950);
     const yearMax = Number(req.query.yearMax || 9999);
 
-    // Get target details (for "why" + genre matching)
-    const targetRaw = await tmdb(`/movie/${encodeURIComponent(id)}`, {});
+    const targetRaw = await tmdb(`/movie/${id}`);
     const target = normalizeMovie(targetRaw);
 
-    // Similar list
-    const simRaw = await tmdb(`/movie/${encodeURIComponent(id)}/similar`, { page: 1 });
-    let items = (simRaw.results || []).map(normalizeMovie);
+    const simData = await tmdb(`/movie/${id}/similar`, { page: 1 });
+    let items = (simData.results || []).map(normalizeMovie);
 
-    // Filter year
-    items = items.filter((m) => {
-      const y = m.year || 0;
+    // filter: rating
+    if (Number.isFinite(minRating) && minRating > 0) {
+      items = items.filter(m => (m.rating || 0) >= minRating);
+    }
+
+    // filter: year
+    items = items.filter(m => {
+      const y = m.year ?? pickYear(m);
+      if (!y) return false;
       return y >= yearMin && y <= yearMax;
     });
 
-    // Filter rating
-    items = items.filter((m) => (m.rating ?? 0) >= minRating);
-
-    // Filter genre (if selected)
-    if (genre !== "any" && genre !== "") {
-      const g = Number(genre);
-      items = items.filter((m) => Array.isArray(m.genres) && m.genres.includes(g));
+    // filter: genre
+    if (genre !== "any") {
+      const genreId = Number(genre);
+      if (Number.isFinite(genreId) && genreId > 0) {
+        items = items.filter(m => Array.isArray(m.genres) && m.genres.includes(genreId));
+      }
     }
 
-    // Add a simple "why" explanation
-    items = items.slice(0, 20).map((m) => {
-      const why = [];
-      if (target.genres?.length && m.genres?.length) {
-        const overlap = m.genres.filter((g) => target.genres.includes(g)).length;
-        if (overlap) why.push(`genre overlap: ${overlap}`);
-      }
-      why.push("TMDb similar");
-      return { ...m, why };
-    });
-
-    res.status(200).json({ target, results: items, similar: items });
+    res.status(200).json({ target, similar: items });
   } catch (e) {
     res.status(e.statusCode || 500).json({ error: e.message || "Unknown error" });
   }
