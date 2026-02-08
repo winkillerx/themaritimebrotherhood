@@ -42,13 +42,10 @@ export function posterUrl(movie, size = "w500") {
 }
 
 export function normalizeMovie(movie) {
-  // If this came from /movie/:id, it has `genres: [{id,name}]`
-  const genreNames =
-    Array.isArray(movie.genres) ? movie.genres.map(g => g?.name).filter(Boolean) : null;
-
-  // If this came from /search/movie or /similar, it has `genre_ids: [id]`
   const genreIds =
-    Array.isArray(movie.genre_ids) ? movie.genre_ids : [];
+    Array.isArray(movie.genre_ids) ? movie.genre_ids :
+    Array.isArray(movie.genres) ? movie.genres.map(g => g?.id).filter(Boolean) :
+    [];
 
   return {
     id: movie.id,
@@ -56,10 +53,7 @@ export function normalizeMovie(movie) {
     year: pickYear(movie),
     rating: typeof movie.vote_average === "number" ? movie.vote_average : null,
     overview: movie.overview || "",
-    poster: posterUrl(movie, "w500"),
-    posterLarge: posterUrl(movie, "w780"),
-    posterOriginal: posterUrl(movie, "original"),
-    // Prefer real names when available; fallback to ids
-    genres: genreNames && genreNames.length ? genreNames : genreIds,
+    poster: posterUrl(movie),
+    genres: genreIds,
   };
 }
