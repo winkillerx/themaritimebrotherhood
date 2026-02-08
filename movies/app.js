@@ -302,3 +302,6 @@ function initUI() {
   });
 }
 initUI();
+renderTarget(null);
+clearResults();
+setMeta("Ready.", false);
