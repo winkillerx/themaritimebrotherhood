@@ -1,46 +1,67 @@
-// movies/api/similar.js
-import { tmdb, normalizeMovie, pickYear } from "./_tmdb.js";
+// api/similar.js
+import { tmdb, normalizeAny } from "./_tmdb.js";
+
+const YEAR_MIN = 1950;
+
+function uniqByIdType(list) {
+  const seen = new Set();
+  const out = [];
+  for (const x of list) {
+    const k = `${x.type}:${x.id}`;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(x);
+  }
+  return out;
+}
+
+function scoreItem(x, targetGenres = []) {
+  const rating = typeof x.rating === "number" ? x.rating : 0;
+  const g = Array.isArray(x.genres) ? x.genres.map(Number) : [];
+  const overlap = targetGenres.length ? g.filter(id => targetGenres.includes(id)).length : 0;
+  return rating + overlap * 0.75;
+}
 
 export default async function handler(req, res) {
   try {
-    const id = (req.query.id || "").trim();
+    const id = String(req.query.id || "").trim();
+    const type = String(req.query.type || "movie").trim().toLowerCase(); // movie | tv
+    const minRating = Number(req.query.minRating || 0) || 0;
+    const genre = String(req.query.genre || "any").trim().toLowerCase(); // "any" or numeric id
+
     if (!id) return res.status(400).json({ error: "Missing id" });
+    if (type !== "movie" && type !== "tv") return res.status(400).json({ error: "Invalid type" });
 
-    const minRating = Number(req.query.minRating || 0);
-    const genre = (req.query.genre || "any").toLowerCase();
+    const target = await tmdb(`/${type}/${id}`);
+    const targetGenres = (target.genres || []).map(g => Number(g.id)).filter(Boolean);
 
-    // ✅ default 1950
-    const yearMin = Number(req.query.yearMin || 1950);
-    const yearMax = Number(req.query.yearMax || 9999);
+    const [rec, sim] = await Promise.all([
+      tmdb(`/${type}/${id}/recommendations`, { page: 1 }).catch(() => ({ results: [] })),
+      tmdb(`/${type}/${id}/similar`, { page: 1 }).catch(() => ({ results: [] })),
+    ]);
 
-    const targetRaw = await tmdb(`/movie/${id}`);
-    const target = normalizeMovie(targetRaw);
+    let items = [...(rec.results || []), ...(sim.results || [])]
+      .map(x => normalizeAny(x, type))
+      .filter(x => (x.year ? x.year >= YEAR_MIN : true))
+      .filter(x => (typeof x.rating === "number" ? x.rating >= minRating : true));
 
-    const simData = await tmdb(`/movie/${id}/similar`, { page: 1 });
-    let items = (simData.results || []).map(normalizeMovie);
-
-    // filter: rating
-    if (Number.isFinite(minRating) && minRating > 0) {
-      items = items.filter(m => (m.rating || 0) >= minRating);
-    }
-
-    // filter: year
-    items = items.filter(m => {
-      const y = m.year ?? pickYear(m);
-      if (!y) return false;
-      return y >= yearMin && y <= yearMax;
-    });
-
-    // filter: genre
-    if (genre !== "any") {
-      const genreId = Number(genre);
-      if (Number.isFinite(genreId) && genreId > 0) {
-        items = items.filter(m => Array.isArray(m.genres) && m.genres.includes(genreId));
+    if (genre !== "any" && genre !== "") {
+      const gId = Number(genre);
+      if (Number.isFinite(gId)) {
+        items = items.filter(x => Array.isArray(x.genres) && x.genres.map(Number).includes(gId));
       }
     }
 
-    res.status(200).json({ target, similar: items });
+    items = uniqByIdType(items);
+    items.sort((a, b) => scoreItem(b, targetGenres) - scoreItem(a, targetGenres));
+    items = items.slice(0, 20);
+
+    return res.status(200).json({
+      target: normalizeAny(target, type),
+      similar: items,
+      results: items
+    });
   } catch (e) {
-    res.status(e.statusCode || 500).json({ error: e.message || "Unknown error" });
+    return res.status(e.statusCode || 500).json({ error: e.message || "Unknown error" });
   }
 }
