@@ -1,9 +1,11 @@
-/* styles.css — FILM_MATRIX / NEONSIMILAR (cyberpunk, responsive, crisp)
+/* styles.css — FILM_MATRIX (cyberpunk, responsive, crisp)
    FIXES INCLUDED:
    ✅ Header text no longer goes behind buttons (min-width:0 + ellipsis + wrap on mobile)
    ✅ “Two different background colors” on iOS Safari (sticky + blur sampling fix)
    ✅ Trailer sizing consistent (aspect-ratio only; no hard heights)
    ✅ Similar cards match target “skin”
+   ✅ Mobile overflow fixes: rating pill + action buttons stay inside borders
+   ✅ Chips + Popular lanes styling
 */
 
 :root{
@@ -12,8 +14,6 @@
   --bg2:#071425;
 
   --card: rgba(10, 14, 28, .62);
-  --card2: rgba(10, 14, 28, .72);
-
   --line: rgba(120, 170, 255, .18);
   --line2: rgba(120, 170, 255, .28);
 
@@ -40,7 +40,6 @@ body{
   color:var(--text);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
-  /* ✅ Unified base gradient */
   background:
     radial-gradient(1200px 600px at 15% 10%, rgba(124,58,237,.22), transparent 55%),
     radial-gradient(900px 520px at 85% 20%, rgba(34,211,238,.18), transparent 55%),
@@ -50,7 +49,6 @@ body{
   overflow-x:hidden;
 }
 
-/* subtle grid + vignette */
 body::before{
   content:"";
   position:fixed;
@@ -90,16 +88,14 @@ body::before{
   border: 1px solid var(--line);
   border-radius: calc(var(--r) + 6px);
 
-  /* ✅ consistent overlay */
   background: rgba(8, 12, 24, .78);
-
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
 
   box-shadow: var(--shadow2);
 }
 
-/* ✅ iOS Safari fix: sticky + blur sampling can look like “two backgrounds” while scrolling */
+/* iOS Safari sticky+blur sampling fix */
 @supports (-webkit-touch-callout: none){
   .top, .topbar{
     -webkit-backdrop-filter: none;
@@ -117,7 +113,11 @@ body::before{
   gap: 12px;
 
   flex: 1 1 auto;
-  min-width: 0; /* ✅ critical */
+  min-width: 0; /* critical */
+}
+
+.brandText{
+  min-width:0;
 }
 
 .logo{
@@ -197,6 +197,10 @@ h2{
   letter-spacing: .04em;
 }
 
+h3{
+  margin: 0;
+}
+
 .sectionTitle{
   display:flex;
   align-items:baseline;
@@ -242,6 +246,12 @@ h2{
   box-shadow: 0 0 0 1px rgba(0,0,0,.18);
 }
 
+.btn.sm{
+  padding: 10px 12px;
+  border-radius: 16px;
+  font-size: 14px;
+}
+
 .btn:hover{
   border-color: rgba(34,211,238,.5);
   box-shadow: 0 0 0 1px rgba(34,211,238,.16), 0 14px 40px rgba(0,0,0,.35);
@@ -268,10 +278,6 @@ h2{
 
 @media (max-width: 720px){
   .filters{ grid-template-columns: 1fr; }
-}
-
-.filter{
-  padding: 0;
 }
 
 .lblRow{
@@ -340,17 +346,25 @@ input[type="range"]{
   box-shadow: 0 14px 40px rgba(0,0,0,.45);
 }
 
+.poster.placeholder{
+  background: rgba(255,255,255,.06);
+  border: 1px dashed rgba(120,170,255,.20);
+  box-shadow: none;
+}
+
 .targetInfo .titleRow{
   display:flex;
   align-items:flex-start;
   justify-content:space-between;
   gap: 10px;
+  flex-wrap: wrap; /* important */
 }
 
 .title{
   font-weight: 900;
   letter-spacing: .02em;
   font-size: 28px;
+  min-width: 0;
 }
 
 .pill{
@@ -359,6 +373,8 @@ input[type="range"]{
   padding: 10px 12px;
   border-radius: 999px;
   white-space: nowrap;
+  max-width: 100%;
+  margin-left: auto;
 }
 
 .overview{
@@ -368,7 +384,6 @@ input[type="range"]{
   font-size: 18px;
 }
 
-/* clamp helpers */
 .clamp3{
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -376,14 +391,13 @@ input[type="range"]{
   overflow: hidden;
 }
 
-/* Similar list container */
 .chips{
   display:flex;
   flex-direction:column;
   gap: 14px;
 }
 
-/* Similar card button */
+/* Similar card container */
 .simCard{
   width: 100%;
   text-align: left;
@@ -392,8 +406,8 @@ input[type="range"]{
   background: rgba(6,10,18,.58);
   box-shadow: 0 0 0 1px rgba(0,0,0,.18);
   padding: 14px;
-  cursor:pointer;
   transition: transform .06s ease, border-color .18s ease, box-shadow .18s ease;
+  overflow: hidden; /* mobile border safety */
 }
 
 .simCard:hover{
@@ -401,7 +415,18 @@ input[type="range"]{
   box-shadow: 0 0 0 1px rgba(34,211,238,.12), 0 18px 55px rgba(0,0,0,.4);
 }
 
-.simCard:active{ transform: translateY(1px); }
+.simActions{
+  display:flex;
+  gap:10px;
+  margin-top:12px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.simActions .btn{
+  flex: 1 1 140px;
+  max-width: 100%;
+}
 
 /* Mobile tweaks */
 @media (max-width: 520px){
@@ -409,6 +434,14 @@ input[type="range"]{
   .title{ font-size: 24px; }
   .targetGrid{ grid-template-columns: 110px 1fr; }
   .poster{ width: 110px; height: 165px; }
+}
+
+@media (max-width: 420px){
+  .simActions .btn,
+  .actions .btn{
+    flex: 1 1 100%;
+    width: 100%;
+  }
 }
 
 /* -----------------------------
@@ -423,7 +456,6 @@ input[type="range"]{
   box-shadow: var(--shadow);
 }
 
-/* ✅ consistent sizing everywhere */
 .trailer iframe,
 .miniTrailer iframe{
   width: 100%;
@@ -433,7 +465,7 @@ input[type="range"]{
 }
 
 /* -----------------------------
-   Actions row (target + similar)
+   Actions row (target)
 ------------------------------*/
 .actions{
   display:flex;
@@ -442,16 +474,95 @@ input[type="range"]{
   flex-wrap: wrap;
 }
 
-.actions .btn{ flex: 1 1 160px; }
+.actions .btn{ flex: 1 1 160px; max-width: 100%; }
 
-.simActions{
-  display:flex;
-  gap:10px;
-  margin-top:12px;
-  flex-wrap: wrap;
+/* -----------------------------
+   Match chips (search results list)
+------------------------------*/
+.chip{
+  width:100%;
+  text-align:left;
+  border-radius: 18px;
+  border: 1px solid rgba(120,170,255,.18);
+  background: rgba(6,10,18,.55);
+  padding: 12px 14px;
+  cursor:pointer;
+  transition: border-color .18s ease, box-shadow .18s ease, transform .06s ease;
 }
 
-.simActions .btn{ flex: 1 1 140px; }
+.chip:hover{
+  border-color: rgba(34,211,238,.55);
+  box-shadow: 0 0 0 1px rgba(34,211,238,.12), 0 18px 55px rgba(0,0,0,.35);
+}
+
+.chip:active{ transform: translateY(1px); }
+
+.chipTitle{
+  display:block;
+  font-weight: 800;
+  letter-spacing: .01em;
+  margin-bottom: 6px;
+}
+
+.chipMeta{
+  display:block;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* -----------------------------
+   Popular lanes (horizontal)
+------------------------------*/
+.laneTitle{
+  margin: 18px 0 10px;
+  font-size: 20px;
+  letter-spacing: .04em;
+}
+
+.lane{
+  display:flex;
+  gap:14px;
+  overflow-x:auto;
+  padding-bottom:10px;
+  scroll-snap-type:x mandatory;
+}
+
+.lane::-webkit-scrollbar{ height:8px; }
+.lane::-webkit-scrollbar-thumb{
+  background: rgba(120,170,255,.25);
+  border-radius: 20px;
+}
+
+.laneCard{
+  min-width: 160px;
+  scroll-snap-align: start;
+  border: 1px solid rgba(120,170,255,.18);
+  border-radius: 16px;
+  background: rgba(6,10,18,.60);
+  padding: 10px;
+  cursor:pointer;
+  transition: .2s;
+}
+
+.laneCard:hover{
+  border-color: rgba(34,211,238,.6);
+  transform: translateY(-3px);
+}
+
+.laneCard img{
+  width:100%;
+  height:220px;
+  object-fit:cover;
+  border-radius:12px;
+  margin-bottom:8px;
+  border:1px solid rgba(120,170,255,.18);
+}
+
+.laneTitleText{
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+}
 
 /* -----------------------------
    Footer
@@ -517,70 +628,3 @@ input[type="range"]{
 }
 
 .watchMeta{ color: var(--muted); margin-top: 6px; }
-/* =========================================
-   MOBILE OVERFLOW FIXES (ratings + buttons)
-   Paste at END of styles.css
-========================================= */
-
-/* Ensure cards never let inner content spill outside rounded border */
-.card,
-.targetBox,
-.simCard {
-  overflow: hidden;
-}
-
-/* Make the title row wrap nicely so the rating pill never pushes out */
-.titleRow {
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-/* Let the title take full width on small screens if needed */
-.titleRow .title {
-  min-width: 0;
-  flex: 1 1 220px;
-  word-break: break-word;
-}
-
-/* Keep the rating pill inside the card */
-.titleRow .pill {
-  flex: 0 0 auto;
-  max-width: 100%;
-  margin-left: auto;
-}
-
-/* Buttons inside cards: stop them from overflowing */
-.simActions,
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  width: 100%;
-}
-
-/* Force buttons to stay inside the card width */
-.simActions .btn,
-.actions .btn,
-.simActions button,
-.actions button {
-  max-width: 100%;
-  flex: 1 1 140px;
-}
-
-/* On smaller phones: make the action buttons stack full width */
-@media (max-width: 420px) {
-  .simActions .btn,
-  .actions .btn,
-  .simActions button,
-  .actions button {
-    flex: 1 1 100%;
-    width: 100%;
-  }
-}
-
-/* If any card is using the same target grid, keep it responsive */
-@media (max-width: 520px) {
-  .targetGrid {
-    grid-template-columns: 110px 1fr;
-  }
-}
