@@ -1,42 +1,26 @@
-/* movies/app.js — FILM_MATRIX / NEONSIMILAR (static frontend)
+/* movies/app.js — NEONSIMILAR (static frontend)
    Endpoints:
    - /api/suggest?q=...
    - /api/search?q=...
-   - /api/resolve?id=...
-   - /api/similar?id=...&minRating=...&genre=...&yearMin=...
-   - /api/random?minRating=...&genre=...&yearMin=...
-   - /api/tmdb?path=movie/{id}/videos     (proxy)
+   - /api/resolve?id=...&type=movie|tv
+   - /api/similar?id=...&type=movie|tv&minRating=...&genre=...
+   - /api/random?minRating=...&genre=...&media=any|movie|tv
+   - /api/videos?id=...&type=movie|tv   (YouTube key)
 */
 
 const YEAR_MIN = 1950;
 
-// Keep local list (fast + no extra API calls)
 const GENRES = [
   ["any", "Any"],
-  [28, "Action"],
-  [12, "Adventure"],
-  [16, "Animation"],
-  [35, "Comedy"],
-  [80, "Crime"],
-  [99, "Documentary"],
-  [18, "Drama"],
-  [10751, "Family"],
-  [14, "Fantasy"],
-  [36, "History"],
-  [27, "Horror"],
-  [10402, "Music"],
-  [9648, "Mystery"],
-  [10749, "Romance"],
-  [878, "Sci-Fi"],
-  [10770, "TV Movie"],
-  [53, "Thriller"],
-  [10752, "War"],
-  [37, "Western"],
+  [28, "Action"], [12, "Adventure"], [16, "Animation"], [35, "Comedy"], [80, "Crime"],
+  [99, "Documentary"], [18, "Drama"], [10751, "Family"], [14, "Fantasy"], [36, "History"],
+  [27, "Horror"], [10402, "Music"], [9648, "Mystery"], [10749, "Romance"], [878, "Sci-Fi"],
+  [10770, "TV Movie"], [53, "Thriller"], [10752, "War"], [37, "Western"],
+  [10759, "Action & Adventure"], [10762, "Kids"], [10763, "News"], [10764, "Reality"],
+  [10765, "Sci-Fi & Fantasy"], [10766, "Soap"], [10767, "Talk"], [10768, "War & Politics"],
 ];
 
-const genreNameById = new Map(
-  GENRES.filter(([k]) => k !== "any").map(([id, name]) => [Number(id), name])
-);
+const genreNameById = new Map(GENRES.filter(([k]) => k !== "any").map(([id, name]) => [Number(id), name]));
 
 const els = {
   q: document.getElementById("q"),
@@ -59,22 +43,28 @@ const els = {
   copyLink: document.getElementById("copyLink"),
 
   results: document.getElementById("results"),
+  matches: document.getElementById("matches"),
 
   modal: document.getElementById("modal"),
   closeModal: document.getElementById("closeModal"),
   watchlist: document.getElementById("watchlist"),
 };
 
-const API_BASE = ""; // api lives at /api
+const API_BASE = "";
 
 function esc(s = "") {
   return String(s).replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   }[c]));
+}
+
+function fmtRating(r) {
+  if (typeof r !== "number" || !Number.isFinite(r)) return "—";
+  return r.toFixed(1);
+}
+
+function fmtYear(y) {
+  return y ? `(${esc(y)})` : "";
 }
 
 async function apiGet(path, params = {}) {
@@ -83,12 +73,9 @@ async function apiGet(path, params = {}) {
     if (v === undefined || v === null || v === "") continue;
     url.searchParams.set(k, String(v));
   }
-
-  const res = await fetch(url.toString(), {
-    headers: { Accept: "application/json" },
-  });
-
+  const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
   const text = await res.text();
+
   let json;
   try { json = text ? JSON.parse(text) : {}; }
   catch { json = { error: text || "Invalid JSON" }; }
@@ -112,264 +99,180 @@ function setMeta(msg, isError = false) {
 
 function getFilters() {
   const minRating = Number(els.minRating?.value || 0) || 0;
-  const genre = String(els.genre?.value || "any").toLowerCase();
+  const genre = String(els.genre?.value || "any").trim().toLowerCase();
   return { minRating, genre };
 }
 
-function clearSimilar() {
-  if (!els.results) return;
-  els.results.innerHTML = `<div class="muted">No similar titles found (try another movie).</div>`;
+function clearLists() {
+  if (els.results) els.results.innerHTML = `<div class="muted">No similar titles found (try another movie).</div>`;
+  if (els.matches) {
+    els.matches.innerHTML = "";
+    els.matches.classList.add("hidden");
+  }
 }
 
-function clearTargetTrailer() {
+function renderTrailerEmbed(key) {
   if (!els.trailer) return;
-  els.trailer.classList.add("hidden");
-  els.trailer.innerHTML = "";
-}
-
-/* -------------------------
-   Trailer fetching (cached)
--------------------------- */
-
-const trailerKeyCache = new Map(); // tmdbId -> youtubeKey | null
-const trailerInflight = new Map(); // tmdbId -> Promise(youtubeKey|null)
-
-async function fetchYouTubeTrailerKey(tmdbId) {
-  const id = String(tmdbId);
-
-  if (trailerKeyCache.has(id)) return trailerKeyCache.get(id);
-
-  if (trailerInflight.has(id)) return trailerInflight.get(id);
-
-  const p = (async () => {
-    try {
-      // /api/tmdb expects ?path=... (your serverless proxy)
-      const data = await apiGet("/api/tmdb", { path: `movie/${id}/videos` });
-      const vids = data?.results || [];
-
-      // Prefer official Trailer/Teaser first
-      const yt =
-        vids.find(v => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser")) ||
-        vids.find(v => v.site === "YouTube");
-
-      const key = yt?.key ? String(yt.key) : null;
-      trailerKeyCache.set(id, key);
-      return key;
-    } catch {
-      trailerKeyCache.set(id, null);
-      return null;
-    } finally {
-      trailerInflight.delete(id);
-    }
-  })();
-
-  trailerInflight.set(id, p);
-  return p;
-}
-
-function buildYouTubeIframe(key) {
+  if (!key) {
+    els.trailer.classList.add("hidden");
+    els.trailer.innerHTML = "";
+    return;
+  }
   const src = `https://www.youtube.com/embed/${encodeURIComponent(key)}`;
-  return `
-    <iframe
-      loading="lazy"
-      src="${src}"
-      title="Trailer"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-      allowfullscreen>
-    </iframe>
-  `;
-}
-
-async function showTargetTrailer(tmdbId) {
-  if (!els.trailer) return;
-  clearTargetTrailer();
-
-  const key = await fetchYouTubeTrailerKey(tmdbId);
-  if (!key) return; // no trailer available, just stay hidden
-
-  els.trailer.innerHTML = buildYouTubeIframe(key);
+  els.trailer.innerHTML = `<iframe loading="lazy" src="${src}" title="Trailer" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
   els.trailer.classList.remove("hidden");
 }
 
-/* -------------------------
-   Render Target
--------------------------- */
+async function fetchTrailerKey(id, type) {
+  const data = await apiGet("/api/videos", { id, type });
+  return data?.key || "";
+}
 
 function renderTarget(m) {
-  clearTargetTrailer();
-
   if (!els.target) return;
+  renderTrailerEmbed("");
 
   if (!m) {
     els.target.innerHTML = `<div class="muted">No selection yet.</div>`;
     els.targetActions?.classList.add("hidden");
+    setMeta("Ready.", false);
     return;
   }
 
-  const poster = m.poster
-    ? `<img class="poster" src="${esc(m.poster)}" alt="${esc(m.title)} poster" />`
-    : `<div class="poster placeholder"></div>`;
-
-  const genres = Array.isArray(m.genres)
-    ? m.genres
-        .map((g) => genreNameById.get(Number(g)) || "")
-        .filter(Boolean)
-        .join(", ")
-    : "";
-
-  const rating = (m.rating ?? "").toString();
+  const poster = m.poster ? `<img class="poster" src="${esc(m.poster)}" alt="${esc(m.title)} poster" />` : "";
+  const genres = Array.isArray(m.genres) ? m.genres.map((g) => genreNameById.get(Number(g)) || "").filter(Boolean).join(", ") : "";
 
   els.target.innerHTML = `
     <div class="targetGrid">
       ${poster}
       <div class="targetInfo">
         <div class="titleRow">
-          <div class="title">${esc(m.title)} <span class="muted">(${esc(m.year || "")})</span></div>
-          <div class="pill">⭐ ${esc(rating || "—")}</div>
+          <div class="title">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
+          <div class="pill">⭐ ${esc(fmtRating(m.rating))}</div>
         </div>
         <div class="muted">${esc(genres)}</div>
         <div class="overview">${esc(m.overview || "")}</div>
+        <div class="muted" style="margin-top:10px">Type: ${esc(m.type || "movie").toUpperCase()}</div>
       </div>
     </div>
   `;
 
   els.targetActions?.classList.remove("hidden");
 
-  if (els.openImdb) {
-    els.openImdb.onclick = () => {
-      window.open(`https://www.themoviedb.org/movie/${encodeURIComponent(m.id)}`, "_blank");
-    };
-  }
+  els.openImdb && (els.openImdb.onclick = () => {
+    const t = (m.type || "movie").toLowerCase();
+    window.open(`https://www.themoviedb.org/${t}/${encodeURIComponent(m.id)}`, "_blank");
+  });
 
-  if (els.copyLink) {
-    els.copyLink.onclick = async () => {
-      try {
-        const u = new URL(location.href);
-        u.searchParams.set("id", String(m.id));
-        await navigator.clipboard.writeText(u.toString());
-        alert("Link copied ✅");
-      } catch {
-        alert("Copy failed (browser blocked clipboard).");
-      }
-    };
-  }
+  els.copyLink && (els.copyLink.onclick = async () => {
+    try {
+      const u = new URL(location.href);
+      u.searchParams.set("id", String(m.id));
+      u.searchParams.set("type", String(m.type || "movie"));
+      await navigator.clipboard.writeText(u.toString());
+      alert("Link copied ✅");
+    } catch {
+      alert("Copy failed (browser blocked clipboard).");
+    }
+  });
 
-  if (els.addWatch) els.addWatch.onclick = () => addToWatchlist(m);
+  els.addWatch && (els.addWatch.onclick = () => addToWatchlist(m));
 
-  setMeta(`Ready. Selected: ${m.title}`, false);
+  (async () => {
+    try {
+      const key = m.trailerKey || await fetchTrailerKey(m.id, m.type || "movie");
+      renderTrailerEmbed(key);
+    } catch {
+      renderTrailerEmbed("");
+    }
+  })();
 
-  // ✅ show target trailer (non-blocking)
-  showTargetTrailer(m.id);
+  setMeta(`Selected: ${m.title}`, false);
 }
 
-/* -------------------------
-   Render Similar (cards)
-   - Open button loads as target
-   - Trailer button toggles inline trailer
--------------------------- */
-
 function renderSimilar(items) {
+  const list = (items || []).filter(Boolean);
   if (!els.results) return;
 
-  const list = (items || []).filter(Boolean);
   if (!list.length) {
-    clearSimilar();
+    els.results.innerHTML = `<div class="muted">No similar titles found (try another movie).</div>`;
     return;
   }
 
   els.results.innerHTML = list.map((m) => {
-    const title = esc(m.title || "Untitled");
-    const year = m.year ? esc(m.year) : "";
-    const rating = (m.rating ?? "").toString();
-    const overview = esc(m.overview || "");
-
     const poster = m.poster
-      ? `<img class="poster" src="${esc(m.poster)}" alt="${title} poster" loading="lazy" />`
+      ? `<img class="poster" src="${esc(m.poster)}" loading="lazy" alt="${esc(m.title)} poster" />`
       : `<div class="poster placeholder"></div>`;
 
+    const genres = Array.isArray(m.genres)
+      ? m.genres.map((g) => genreNameById.get(Number(g)) || "").filter(Boolean).slice(0, 4).join(", ")
+      : "";
+
     return `
-      <div class="simCard" data-id="${esc(m.id)}">
+      <div class="simCard" data-id="${esc(m.id)}" data-type="${esc(m.type || "movie")}">
         <div class="targetGrid">
           ${poster}
           <div class="targetInfo">
             <div class="titleRow">
-              <div class="title">${title} ${year ? `<span class="muted">(${year})</span>` : ""}</div>
-              <div class="pill">⭐ ${esc(rating || "—")}</div>
+              <div class="title">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
+              <div class="pill">⭐ ${esc(fmtRating(m.rating))}</div>
             </div>
-            <div class="overview clamp3">${overview}</div>
+            <div class="muted">${esc(genres)}</div>
+            <div class="overview clamp3">${esc(m.overview || "")}</div>
 
             <div class="simActions">
-              <button class="btn simOpen" type="button">Open</button>
-              <button class="btn simTrailer" type="button">Trailer</button>
+              <button class="btn sm openBtn" type="button">Open</button>
+              <button class="btn sm trailerBtn" type="button">Trailer</button>
+              <button class="btn sm tmdbBtn" type="button">TMDb</button>
             </div>
+
+            <div class="miniTrailer hidden"></div>
           </div>
         </div>
-
-        <div class="miniTrailer hidden"></div>
       </div>
     `;
   }).join("");
 
-  // Wire buttons
   els.results.querySelectorAll(".simCard").forEach((card) => {
     const id = card.getAttribute("data-id");
-    const openBtn = card.querySelector(".simOpen");
-    const trailerBtn = card.querySelector(".simTrailer");
+    const type = card.getAttribute("data-type") || "movie";
+
+    const openBtn = card.querySelector(".openBtn");
+    const trailerBtn = card.querySelector(".trailerBtn");
+    const tmdbBtn = card.querySelector(".tmdbBtn");
     const mini = card.querySelector(".miniTrailer");
 
-    openBtn?.addEventListener("click", async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (id) await loadById(id);
-    });
+    openBtn?.addEventListener("click", () => loadById(id, type));
+    tmdbBtn?.addEventListener("click", () => window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(id)}`, "_blank"));
 
-    trailerBtn?.addEventListener("click", async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (!id || !mini) return;
+    trailerBtn?.addEventListener("click", async () => {
+      try {
+        trailerBtn.disabled = true;
+        trailerBtn.textContent = "Loading…";
+        const key = await fetchTrailerKey(id, type);
+        if (!key) return alert("No trailer found.");
 
-      // Toggle
-      const isOpen = !mini.classList.contains("hidden");
-      if (isOpen) {
-        mini.classList.add("hidden");
-        mini.innerHTML = "";
-        return;
-      }
-
-      // Close other open mini trailers (keeps mobile snappy)
-      els.results.querySelectorAll(".miniTrailer").forEach((x) => {
-        if (x !== mini) {
-          x.classList.add("hidden");
-          x.innerHTML = "";
+        if (mini.classList.contains("hidden")) {
+          mini.innerHTML = `<iframe loading="lazy" src="https://www.youtube.com/embed/${encodeURIComponent(key)}" title="Trailer" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+          mini.classList.remove("hidden");
+          trailerBtn.textContent = "Hide trailer";
+        } else {
+          mini.classList.add("hidden");
+          mini.innerHTML = "";
+          trailerBtn.textContent = "Trailer";
         }
-      });
-
-      mini.classList.remove("hidden");
-      mini.innerHTML = `<div class="muted">Loading trailer…</div>`;
-
-      const key = await fetchYouTubeTrailerKey(id);
-      if (!key) {
-        mini.innerHTML = `<div class="muted">No trailer found for this title.</div>`;
-        return;
+      } catch (e) {
+        alert(`Trailer failed: ${e.message}`);
+      } finally {
+        trailerBtn.disabled = false;
+        if (trailerBtn.textContent === "Loading…") trailerBtn.textContent = "Trailer";
       }
-
-      mini.innerHTML = buildYouTubeIframe(key);
-    });
-
-    // Optional: tap card to open
-    card.addEventListener("click", async () => {
-      if (id) await loadById(id);
     });
   });
 }
 
-/* -------------------------
-   Suggestions
--------------------------- */
-
 function renderSuggestions(items) {
-  const list = (items || []).slice(0, 8);
-
+  const list = (items || []).slice(0, 10);
   if (!els.suggest) return;
 
   if (!list.length) {
@@ -380,17 +283,45 @@ function renderSuggestions(items) {
 
   els.suggest.classList.remove("hidden");
   els.suggest.innerHTML = list.map((m) => `
-    <button class="suggestItem" type="button" data-id="${esc(m.id)}">
-      <span>${esc(m.title)}</span>
-      <span class="muted">${esc(m.year || "")}</span>
+    <button class="suggestItem" type="button" data-id="${esc(m.id)}" data-type="${esc(m.type || "movie")}">
+      <span>${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></span>
+      <span class="muted">${esc((m.type || "movie").toUpperCase())}</span>
     </button>
   `).join("");
 
   els.suggest.querySelectorAll(".suggestItem").forEach((b) => {
     b.addEventListener("click", async () => {
       const id = b.getAttribute("data-id");
+      const type = b.getAttribute("data-type") || "movie";
       els.suggest.classList.add("hidden");
-      if (id) await loadById(id);
+      if (id) await loadById(id, type);
+    });
+  });
+}
+
+function renderMatches(items) {
+  if (!els.matches) return;
+  const list = (items || []).slice(0, 10);
+
+  if (!list.length) {
+    els.matches.innerHTML = "";
+    els.matches.classList.add("hidden");
+    return;
+  }
+
+  els.matches.classList.remove("hidden");
+  els.matches.innerHTML = list.map(m => `
+    <button class="chip" type="button" data-id="${esc(m.id)}" data-type="${esc(m.type || "movie")}">
+      <span class="chipTitle">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></span>
+      <span class="chipMeta">${esc((m.type || "movie").toUpperCase())} • ⭐ ${esc(fmtRating(m.rating))}</span>
+    </button>
+  `).join("");
+
+  els.matches.querySelectorAll(".chip").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-id");
+      const type = btn.getAttribute("data-type") || "movie";
+      if (id) loadById(id, type);
     });
   });
 }
@@ -412,19 +343,15 @@ function onSuggestInput() {
     } catch {
       renderSuggestions([]);
     }
-  }, 180);
+  }, 160);
 }
 
-/* -------------------------
-   Load flow
--------------------------- */
-
-async function loadById(id) {
-  clearSimilar();
+async function loadById(id, type = "movie") {
+  clearLists();
   setMeta("Loading…", false);
 
   try {
-    const r = await apiGet("/api/resolve", { id });
+    const r = await apiGet("/api/resolve", { id, type });
     const target = r.target || r;
     if (!target?.id) throw new Error("Resolve did not return a target id.");
 
@@ -433,15 +360,16 @@ async function loadById(id) {
     const f = getFilters();
     const sim = await apiGet("/api/similar", {
       id: target.id,
+      type: target.type || type,
       minRating: f.minRating,
       genre: f.genre,
-      yearMin: YEAR_MIN,
+      yearMin: YEAR_MIN
     });
 
     renderSimilar(sim.similar || sim.results || []);
   } catch (e) {
     renderTarget(null);
-    clearSimilar();
+    clearLists();
     setMeta(`Failed. (API ${e.status || "?"} – ${e.message})`, true);
   }
 }
@@ -450,29 +378,31 @@ async function doSearch() {
   const q = (els.q?.value || "").trim();
   if (!q) return;
 
-  clearSimilar();
+  clearLists();
   setMeta("Searching…", false);
 
   try {
     const data = await apiGet("/api/search", { q });
-    const first = data?.target || (data?.items && data.items[0]) || (data?.results && data.results[0]) || null;
+    const items = data.items || data.results || [];
+    renderMatches(items);
 
+    const first = data.target || items[0] || null;
     if (!first?.id) {
       renderTarget(null);
       setMeta("No match found.", true);
       return;
     }
 
-    await loadById(first.id);
+    await loadById(first.id, first.type || "movie");
   } catch (e) {
     renderTarget(null);
-    clearSimilar();
-    setMeta(`Failed. (API ${e.status || "?"} – ${e.message})`, true);
+    clearLists();
+    setMeta(`Search failed. (API ${e.status || "?"} – ${e.message})`, true);
   }
 }
 
 async function doRandom() {
-  clearSimilar();
+  clearLists();
   setMeta("Picking random…", false);
 
   try {
@@ -481,6 +411,7 @@ async function doRandom() {
       minRating: f.minRating,
       genre: f.genre,
       yearMin: YEAR_MIN,
+      media: "any"
     });
 
     const target = data.target || null;
@@ -490,19 +421,15 @@ async function doRandom() {
       return;
     }
 
-    await loadById(target.id);
+    await loadById(target.id, target.type || "movie");
   } catch (e) {
     renderTarget(null);
-    clearSimilar();
+    clearLists();
     setMeta(`Random failed. (API ${e.status || "?"} – ${e.message})`, true);
   }
 }
 
-/* -------------------------
-   Watchlist
--------------------------- */
-
-const WL_KEY = "neonsimilar_watchlist_v1";
+const WL_KEY = "neonsimilar_watchlist_v2";
 
 function loadWatchlist() {
   try { return JSON.parse(localStorage.getItem(WL_KEY) || "[]"); }
@@ -516,45 +443,48 @@ function saveWatchlist(items) {
 function addToWatchlist(m) {
   if (!m) return;
   const list = loadWatchlist();
-  if (list.some((x) => String(x.id) === String(m.id))) return;
-  list.unshift({ id: m.id, title: m.title, year: m.year, rating: m.rating, poster: m.poster });
+  if (list.some((x) => String(x.id) === String(m.id) && String(x.type) === String(m.type))) return;
+  list.unshift({ id: m.id, type: m.type || "movie", title: m.title, year: m.year, rating: m.rating, poster: m.poster });
   saveWatchlist(list);
   alert("Added to Watchlist ✅");
 }
 
 function openWatchlist() {
-  if (!els.modal || !els.watchlist) return;
-
   const list = loadWatchlist();
   els.watchlist.innerHTML = list.length
     ? list.map((m) => `
         <div class="watchItem">
           ${m.poster ? `<img class="watchPoster" src="${esc(m.poster)}" alt="" />` : ""}
           <div>
-            <div><strong>${esc(m.title || "")}</strong> <span class="muted">${esc(m.year || "")}</span></div>
-            <div class="watchMeta">⭐ ${esc((m.rating ?? "—").toString())}</div>
+            <div><strong>${esc(m.title || "")}</strong> <span class="muted">${fmtYear(m.year)}</span> <span class="muted">(${esc((m.type||"movie").toUpperCase())})</span></div>
+            <div class="watchMeta">⭐ ${esc(fmtRating(m.rating))}</div>
+            <div style="margin-top:8px">
+              <button class="btn sm" data-id="${esc(m.id)}" data-type="${esc(m.type || "movie")}">Open</button>
+            </div>
           </div>
         </div>
       `).join("")
     : `<div class="muted">No watchlist items yet.</div>`;
 
+  els.watchlist.querySelectorAll("button[data-id]").forEach(b => {
+    b.addEventListener("click", () => {
+      const id = b.getAttribute("data-id");
+      const type = b.getAttribute("data-type") || "movie";
+      closeWatchlist();
+      loadById(id, type);
+    });
+  });
+
   els.modal.classList.remove("hidden");
 }
 
 function closeWatchlist() {
-  els.modal?.classList.add("hidden");
+  els.modal.classList.add("hidden");
 }
 
-/* -------------------------
-   Init
--------------------------- */
-
 function initUI() {
-  // Populate genre dropdown
   if (els.genre) {
-    els.genre.innerHTML = GENRES.map(([val, name]) =>
-      `<option value="${esc(val)}">${esc(name)}</option>`
-    ).join("");
+    els.genre.innerHTML = GENRES.map(([val, name]) => `<option value="${esc(val)}">${esc(name)}</option>`).join("");
   }
 
   if (els.minRating && els.minRatingVal) {
@@ -574,27 +504,25 @@ function initUI() {
   els.searchBtn?.addEventListener("click", doSearch);
   els.randomBtn?.addEventListener("click", doRandom);
 
-  // hide suggestions when tapping elsewhere
   document.addEventListener("click", (e) => {
     if (!els.suggest?.contains(e.target) && e.target !== els.q) {
       els.suggest?.classList.add("hidden");
     }
   });
 
-  // watchlist modal
   els.watchlistBtn?.addEventListener("click", openWatchlist);
   els.closeModal?.addEventListener("click", closeWatchlist);
   els.modal?.addEventListener("click", (e) => {
     if (e.target === els.modal) closeWatchlist();
   });
 
-  // If user comes in with ?id=123 load it
   const url = new URL(location.href);
   const id = url.searchParams.get("id");
-  if (id) loadById(id);
+  const type = url.searchParams.get("type") || "movie";
+  if (id) loadById(id, type);
 }
 
 initUI();
 renderTarget(null);
-clearSimilar();
+clearLists();
 setMeta("Ready.", false);
