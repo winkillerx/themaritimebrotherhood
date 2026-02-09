@@ -1,10 +1,12 @@
 /* app.js — NEONSIMILAR (static frontend)
-   Endpoints:
+   Works with Vercel Serverless Functions:
    - /api/suggest?q=...
    - /api/search?q=...
    - /api/resolve?id=...
-   - /api/similar?id=...&minRating=...&genre=...   (1950+ enforced server-side)
-   - /api/random?minRating=...&genre=...           (1950+ enforced server-side)
+   - /api/similar?id=...&minRating=...&genre=...    (server enforces 1950+ if you coded it that way)
+   - /api/random?minRating=...&genre=...
+   Optional:
+   - /api/tmdb?path=/movie/<id>/videos   (only if you implemented this helper route)
 */
 
 const YEAR_MIN = 1950;
@@ -32,7 +34,9 @@ const GENRES = [
   [37, "Western"],
 ];
 
-const genreNameById = new Map(GENRES.filter(([k]) => k !== "any").map(([id, name]) => [Number(id), name]));
+const genreNameById = new Map(
+  GENRES.filter(([k]) => k !== "any").map(([id, name]) => [Number(id), name])
+);
 
 const els = {
   q: document.getElementById("q"),
@@ -51,17 +55,19 @@ const els = {
 
   targetActions: document.getElementById("targetActions"),
   addWatch: document.getElementById("addWatch"),
-  openImdb: document.getElementById("openImdb"),
+  openImdb: document.getElementById("openImdb"), // button text may say IMDB; we open TMDb
   copyLink: document.getElementById("copyLink"),
 
+  // IMPORTANT: your index.html uses id="results" for Similar container
   results: document.getElementById("results"),
 
+  // Watchlist modal
   modal: document.getElementById("modal"),
   closeModal: document.getElementById("closeModal"),
   watchlist: document.getElementById("watchlist"),
 };
 
-const API_BASE = "";
+const API_BASE = ""; // keep empty (API is /api)
 
 function esc(s = "") {
   return String(s).replace(/[&<>"']/g, (c) => ({
@@ -128,10 +134,9 @@ function renderTarget(m) {
   }
 
   const poster = m.poster
-    ? `<img class="poster" src="${esc(m.poster)}" alt="${esc(m.title)} poster" />`
-    : "";
+    ? `<img class="poster" src="${esc(m.poster)}" alt="${esc(m.title)} poster" loading="lazy" />`
+    : `<div class="poster placeholder"></div>`;
 
-  // m.genres is expected to be TMDb genre IDs (numbers)
   const genres = Array.isArray(m.genres)
     ? m.genres
         .map((g) => genreNameById.get(Number(g)) || "")
@@ -181,9 +186,8 @@ function renderTarget(m) {
   setMeta(`Ready. Selected: ${m.title}`, false);
 }
 
+/** Optional trailer helper (only works if you created /api/tmdb) */
 async function renderTrailerIfPossible(tmdbId) {
-  // OPTIONAL (safe): If you later wire /api/tmdb correctly, you can auto-load trailer here.
-  // For now we keep this function, but we won't block UI if it fails.
   try {
     const data = await apiGet("/api/tmdb", { path: `/movie/${tmdbId}/videos` });
     const vids = data?.results || [];
@@ -194,19 +198,23 @@ async function renderTrailerIfPossible(tmdbId) {
     if (!yt?.key) return;
 
     const src = `https://www.youtube.com/embed/${encodeURIComponent(yt.key)}`;
-    els.trailer.innerHTML = `<iframe loading="lazy" src="${src}" title="Trailer" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+    els.trailer.innerHTML =
+      `<iframe loading="lazy" src="${src}" title="Trailer" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
     els.trailer.classList.remove("hidden");
   } catch {
-    // ignore silently
+    // silently ignore if route doesn't exist
   }
 }
 
+/**
+ * Similar results rendered as "Target-style" cards.
+ * NOTE: index.html uses id="results" (not "similar") — that was your crash.
+ */
 function renderSimilar(items) {
   const list = (items || []).filter(Boolean);
 
   if (!list.length) {
-    els.similar.innerHTML =
-      '<div class="muted">No similar titles found (try another movie).</div>';
+    clearSimilar();
     return;
   }
 
@@ -219,27 +227,28 @@ function renderSimilar(items) {
     const overview = esc(m.overview || "");
 
     const poster = m.poster
-      ? '<img class="poster" src="' + esc(m.poster) + '" loading="lazy" />'
-      : '<div class="poster placeholder"></div>';
+      ? `<img class="poster" src="${esc(m.poster)}" alt="${title} poster" loading="lazy" />`
+      : `<div class="poster placeholder"></div>`;
 
-    html +=
-      '<button class="simCard" type="button" data-id="' + esc(m.id) + '">' +
-        '<div class="targetGrid">' +
-          poster +
-          '<div class="targetInfo">' +
-            '<div class="titleRow">' +
-              '<div class="title">' + title + ' <span class="muted">' + year + '</span></div>' +
-              '<div class="pill">⭐ ' + esc(rating || "—") + '</div>' +
-            '</div>' +
-            '<div class="overview clamp3">' + overview + '</div>' +
-          '</div>' +
-        '</div>' +
-      '</button>';
+    html += `
+      <button class="simCard" type="button" data-id="${esc(m.id)}">
+        <div class="targetGrid">
+          ${poster}
+          <div class="targetInfo">
+            <div class="titleRow">
+              <div class="title">${title} <span class="muted">${year}</span></div>
+              <div class="pill">⭐ ${esc(rating || "—")}</div>
+            </div>
+            <div class="overview clamp3">${overview}</div>
+          </div>
+        </div>
+      </button>
+    `;
   }
 
-  els.similar.innerHTML = html;
+  els.results.innerHTML = html;
 
-  els.similar.querySelectorAll(".simCard").forEach((btn) => {
+  els.results.querySelectorAll(".simCard").forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = btn.getAttribute("data-id");
       if (id) loadById(id);
@@ -286,7 +295,7 @@ function onSuggestInput() {
   suggestTimer = setTimeout(async () => {
     try {
       const data = await apiGet("/api/suggest", { q });
-      renderSuggestions(data.results || []);
+      renderSuggestions(data.results || data.items || []);
     } catch {
       renderSuggestions([]);
     }
@@ -298,25 +307,28 @@ async function loadById(id) {
   setMeta("Loading…", false);
 
   try {
-    // Resolve gives you the canonical movie + genre ids etc.
+    // /api/resolve may return either {target: {...}} or just {...}
     const r = await apiGet("/api/resolve", { id });
     const target = r.target || r;
     if (!target?.id) throw new Error("Resolve did not return a target id.");
 
     renderTarget(target);
 
-    // Attempt trailer (optional)
+    // optional trailer (won’t break if /api/tmdb missing)
     renderTrailerIfPossible(target.id);
 
     const f = getFilters();
+
+    // /api/similar may return {similar:[...]} or {results:[...]}
+    // If your API supports yearMin, keep it. If it ignores, harmless.
     const sim = await apiGet("/api/similar", {
       id: target.id,
       minRating: f.minRating,
       genre: f.genre,
-      yearMin: YEAR_MIN, // enforced
+      yearMin: YEAR_MIN,
     });
 
-    renderSimilar(sim.similar || sim.results || []);
+    renderSimilar(sim.similar || sim.results || sim.items || []);
   } catch (e) {
     renderTarget(null);
     clearSimilar();
@@ -332,9 +344,16 @@ async function doSearch() {
   setMeta("Searching…", false);
 
   try {
-    // Search endpoint returns items + a target (first match)
+    // /api/search may return:
+    // - { target: {...}, items:[...] }
+    // - { items:[...] }
+    // - { results:[...] }
     const data = await apiGet("/api/search", { q });
-    const first = data?.target || (data?.items && data.items[0]) || null;
+    const first =
+      data?.target ||
+      (Array.isArray(data?.items) && data.items[0]) ||
+      (Array.isArray(data?.results) && data.results[0]) ||
+      null;
 
     if (!first?.id) {
       renderTarget(null);
@@ -362,7 +381,7 @@ async function doRandom() {
       yearMin: YEAR_MIN,
     });
 
-    const target = data.target || null;
+    const target = data?.target || data;
     if (!target?.id) {
       renderTarget(null);
       setMeta("Random failed (no target).", true);
@@ -400,17 +419,29 @@ function addToWatchlist(m) {
 
 function openWatchlist() {
   const list = loadWatchlist();
+
   els.watchlist.innerHTML = list.length
     ? list.map((m) => `
-        <div class="watchItem">
-          ${m.poster ? `<img class="watchPoster" src="${esc(m.poster)}" alt="" />` : ""}
+        <button class="watchItem" type="button" data-id="${esc(m.id)}">
+          ${m.poster ? `<img class="watchPoster" src="${esc(m.poster)}" alt="" loading="lazy" />` : ""}
           <div>
             <div><strong>${esc(m.title || "")}</strong> <span class="muted">${esc(m.year || "")}</span></div>
             <div class="watchMeta">⭐ ${esc((m.rating ?? "—").toString())}</div>
           </div>
-        </div>
+        </button>
       `).join("")
     : `<div class="muted">No watchlist items yet.</div>`;
+
+  // click an item to load it
+  els.watchlist.querySelectorAll(".watchItem").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-id");
+      if (id) {
+        closeWatchlist();
+        loadById(id);
+      }
+    });
+  });
 
   els.modal.classList.remove("hidden");
 }
@@ -425,12 +456,14 @@ function initUI() {
     els.genre.innerHTML = GENRES.map(([val, name]) => `<option value="${esc(val)}">${esc(name)}</option>`).join("");
   }
 
+  // Min rating display
   if (els.minRating && els.minRatingVal) {
     const sync = () => (els.minRatingVal.textContent = `${Number(els.minRating.value || 0)}/10`);
     els.minRating.addEventListener("input", sync);
     sync();
   }
 
+  // Suggest input
   els.q?.addEventListener("input", onSuggestInput);
   els.q?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
@@ -439,29 +472,31 @@ function initUI() {
     }
   });
 
+  // Buttons
   els.searchBtn?.addEventListener("click", doSearch);
   els.randomBtn?.addEventListener("click", doRandom);
 
-  // hide suggestions when tapping elsewhere
+  // Hide suggestions when tapping elsewhere
   document.addEventListener("click", (e) => {
     if (!els.suggest?.contains(e.target) && e.target !== els.q) {
       els.suggest?.classList.add("hidden");
     }
   });
 
-  // watchlist modal
+  // Watchlist modal
   els.watchlistBtn?.addEventListener("click", openWatchlist);
   els.closeModal?.addEventListener("click", closeWatchlist);
   els.modal?.addEventListener("click", (e) => {
     if (e.target === els.modal) closeWatchlist();
   });
 
-  // If user comes in with ?id=123 load it
+  // Load share link ?id=...
   const url = new URL(location.href);
   const id = url.searchParams.get("id");
   if (id) loadById(id);
 }
 
+// boot
 initUI();
 renderTarget(null);
 clearSimilar();
