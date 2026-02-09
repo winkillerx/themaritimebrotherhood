@@ -14,7 +14,6 @@ export async function tmdb(path, params = {}) {
   const url = new URL(`https://api.themoviedb.org/3${path}`);
   url.searchParams.set("api_key", key);
   url.searchParams.set("language", "en-US");
-
   for (const [k, v] of Object.entries(params)) {
     if (v === undefined || v === null || v === "") continue;
     url.searchParams.set(k, String(v));
@@ -30,30 +29,27 @@ export async function tmdb(path, params = {}) {
   return res.json();
 }
 
-export function pickYear(movie) {
-  const d = movie.release_date || movie.first_air_date || "";
-  const y = d ? Number(d.slice(0, 4)) : null;
+export function pickYear(item) {
+  const d = item.release_date || item.first_air_date || "";
+  const y = d ? Number(String(d).slice(0, 4)) : null;
   return Number.isFinite(y) ? y : null;
 }
 
-// size can be: w500, w780, original, etc.
-export function posterUrl(movie, size = "w500") {
-  return movie.poster_path ? `https://image.tmdb.org/t/p/${size}${movie.poster_path}` : "";
+export function posterUrl(item) {
+  return item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : "";
 }
 
-export function normalizeMovie(movie) {
-  const genreIds =
-    Array.isArray(movie.genre_ids) ? movie.genre_ids :
-    Array.isArray(movie.genres) ? movie.genres.map(g => g?.id).filter(Boolean) :
-    [];
-
+export function normalizeAny(item, forcedType = "") {
+  const mediaType = forcedType || item.media_type || (item.first_air_date ? "tv" : "movie");
+  const isTv = mediaType === "tv";
   return {
-    id: movie.id,
-    title: movie.title || movie.name || "Untitled",
-    year: pickYear(movie),
-    rating: typeof movie.vote_average === "number" ? movie.vote_average : null,
-    overview: movie.overview || "",
-    poster: posterUrl(movie),
-    genres: genreIds,
+    id: item.id,
+    type: isTv ? "tv" : "movie",
+    title: (isTv ? (item.name || item.original_name) : (item.title || item.original_title)) || "Untitled",
+    year: pickYear(item),
+    rating: typeof item.vote_average === "number" ? item.vote_average : null,
+    overview: item.overview || "",
+    poster: posterUrl(item),
+    genres: item.genre_ids || item.genres?.map(g => g.id) || [],
   };
 }
