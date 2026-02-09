@@ -1,15 +1,16 @@
-/* app.js — NEONSIMILAR (static frontend)
+/* movies/app.js — FILM_MATRIX / NEONSIMILAR (static frontend)
    Endpoints:
    - /api/suggest?q=...
    - /api/search?q=...
    - /api/resolve?id=...
    - /api/similar?id=...&minRating=...&genre=...&yearMin=...
    - /api/random?minRating=...&genre=...&yearMin=...
-   - /api/tmdb?path=movie/{id}/videos   (for trailers)
+   - /api/tmdb?path=movie/{id}/videos     (proxy)
 */
 
 const YEAR_MIN = 1950;
 
+// Keep local list (fast + no extra API calls)
 const GENRES = [
   ["any", "Any"],
   [28, "Action"],
@@ -57,17 +58,14 @@ const els = {
   openImdb: document.getElementById("openImdb"),
   copyLink: document.getElementById("copyLink"),
 
-  // ✅ IMPORTANT: Similar container is #results in your HTML
-  results: document.getElementById("results") || document.getElementById("similar"),
+  results: document.getElementById("results"),
 
   modal: document.getElementById("modal"),
   closeModal: document.getElementById("closeModal"),
   watchlist: document.getElementById("watchlist"),
 };
 
-const API_BASE = "";
-
-/* ---------------- utils ---------------- */
+const API_BASE = ""; // api lives at /api
 
 function esc(s = "") {
   return String(s).replace(/[&<>"']/g, (c) => ({
@@ -86,9 +84,11 @@ async function apiGet(path, params = {}) {
     url.searchParams.set(k, String(v));
   }
 
-  const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
-  const text = await res.text();
+  const res = await fetch(url.toString(), {
+    headers: { Accept: "application/json" },
+  });
 
+  const text = await res.text();
   let json;
   try { json = text ? JSON.parse(text) : {}; }
   catch { json = { error: text || "Invalid JSON" }; }
@@ -116,75 +116,92 @@ function getFilters() {
   return { minRating, genre };
 }
 
-/* ---------------- trailers ---------------- */
-
-// Cache TMDb video lookups so we don’t hammer the API
-const trailerCache = new Map(); // id -> { key, site } | null
-
-function pickYouTubeTrailer(videos = []) {
-  const yt = videos.filter(v => v.site === "YouTube" && v.key);
-  if (!yt.length) return null;
-
-  const preferred =
-    yt.find(v => v.type === "Trailer" && /official/i.test(v.name || "")) ||
-    yt.find(v => v.type === "Trailer") ||
-    yt.find(v => v.type === "Teaser") ||
-    yt[0];
-
-  return preferred ? { key: preferred.key, site: preferred.site } : null;
-}
-
-async function getTrailerForMovie(tmdbId) {
-  const key = String(tmdbId);
-  if (trailerCache.has(key)) return trailerCache.get(key);
-
-  try {
-    const data = await apiGet("/api/tmdb", { path: `movie/${key}/videos` });
-    const picked = pickYouTubeTrailer(data?.results || []);
-    trailerCache.set(key, picked || null);
-    return picked || null;
-  } catch {
-    trailerCache.set(key, null);
-    return null;
-  }
-}
-
-async function renderTrailerInto(containerEl, tmdbId) {
-  if (!containerEl) return;
-
-  containerEl.innerHTML = "";
-  containerEl.classList.add("hidden");
-
-  const t = await getTrailerForMovie(tmdbId);
-  if (!t?.key) return;
-
-  const src = `https://www.youtube.com/embed/${encodeURIComponent(t.key)}`;
-  containerEl.innerHTML =
-    `<iframe
-      loading="lazy"
-      src="${src}"
-      title="Trailer"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-      allowfullscreen></iframe>`;
-
-  containerEl.classList.remove("hidden");
-}
-
-/* ---------------- rendering ---------------- */
-
 function clearSimilar() {
   if (!els.results) return;
   els.results.innerHTML = `<div class="muted">No similar titles found (try another movie).</div>`;
 }
 
+function clearTargetTrailer() {
+  if (!els.trailer) return;
+  els.trailer.classList.add("hidden");
+  els.trailer.innerHTML = "";
+}
+
+/* -------------------------
+   Trailer fetching (cached)
+-------------------------- */
+
+const trailerKeyCache = new Map(); // tmdbId -> youtubeKey | null
+const trailerInflight = new Map(); // tmdbId -> Promise(youtubeKey|null)
+
+async function fetchYouTubeTrailerKey(tmdbId) {
+  const id = String(tmdbId);
+
+  if (trailerKeyCache.has(id)) return trailerKeyCache.get(id);
+
+  if (trailerInflight.has(id)) return trailerInflight.get(id);
+
+  const p = (async () => {
+    try {
+      // /api/tmdb expects ?path=... (your serverless proxy)
+      const data = await apiGet("/api/tmdb", { path: `movie/${id}/videos` });
+      const vids = data?.results || [];
+
+      // Prefer official Trailer/Teaser first
+      const yt =
+        vids.find(v => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser")) ||
+        vids.find(v => v.site === "YouTube");
+
+      const key = yt?.key ? String(yt.key) : null;
+      trailerKeyCache.set(id, key);
+      return key;
+    } catch {
+      trailerKeyCache.set(id, null);
+      return null;
+    } finally {
+      trailerInflight.delete(id);
+    }
+  })();
+
+  trailerInflight.set(id, p);
+  return p;
+}
+
+function buildYouTubeIframe(key) {
+  const src = `https://www.youtube.com/embed/${encodeURIComponent(key)}`;
+  return `
+    <iframe
+      loading="lazy"
+      src="${src}"
+      title="Trailer"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen>
+    </iframe>
+  `;
+}
+
+async function showTargetTrailer(tmdbId) {
+  if (!els.trailer) return;
+  clearTargetTrailer();
+
+  const key = await fetchYouTubeTrailerKey(tmdbId);
+  if (!key) return; // no trailer available, just stay hidden
+
+  els.trailer.innerHTML = buildYouTubeIframe(key);
+  els.trailer.classList.remove("hidden");
+}
+
+/* -------------------------
+   Render Target
+-------------------------- */
+
 function renderTarget(m) {
-  if (els.trailer) {
-    els.trailer.classList.add("hidden");
-    els.trailer.innerHTML = "";
-  }
+  clearTargetTrailer();
+
+  if (!els.target) return;
 
   if (!m) {
-    if (els.target) els.target.innerHTML = `<div class="muted">No selection yet.</div>`;
+    els.target.innerHTML = `<div class="muted">No selection yet.</div>`;
     els.targetActions?.classList.add("hidden");
     return;
   }
@@ -194,29 +211,29 @@ function renderTarget(m) {
     : `<div class="poster placeholder"></div>`;
 
   const genres = Array.isArray(m.genres)
-    ? m.genres.map((g) => genreNameById.get(Number(g)) || "").filter(Boolean).join(", ")
+    ? m.genres
+        .map((g) => genreNameById.get(Number(g)) || "")
+        .filter(Boolean)
+        .join(", ")
     : "";
 
   const rating = (m.rating ?? "").toString();
-  const year = m.year ? `(${esc(m.year)})` : "";
 
-  if (els.target) {
-    els.target.innerHTML = `
-      <div class="targetGrid">
-        ${poster}
-        <div class="targetInfo">
-          <div class="titleRow">
-            <div class="title">${esc(m.title)} <span class="muted">${year}</span></div>
-            <div class="pill">⭐ ${esc(rating || "—")}</div>
-          </div>
-          <div class="muted">${esc(genres)}</div>
-          <div class="overview">${esc(m.overview || "")}</div>
+  els.target.innerHTML = `
+    <div class="targetGrid">
+      ${poster}
+      <div class="targetInfo">
+        <div class="titleRow">
+          <div class="title">${esc(m.title)} <span class="muted">(${esc(m.year || "")})</span></div>
+          <div class="pill">⭐ ${esc(rating || "—")}</div>
         </div>
+        <div class="muted">${esc(genres)}</div>
+        <div class="overview">${esc(m.overview || "")}</div>
       </div>
-    `;
-  }
+    </div>
+  `;
 
-  if (els.targetActions) els.targetActions.classList.remove("hidden");
+  els.targetActions?.classList.remove("hidden");
 
   if (els.openImdb) {
     els.openImdb.onclick = () => {
@@ -240,86 +257,115 @@ function renderTarget(m) {
   if (els.addWatch) els.addWatch.onclick = () => addToWatchlist(m);
 
   setMeta(`Ready. Selected: ${m.title}`, false);
+
+  // ✅ show target trailer (non-blocking)
+  showTargetTrailer(m.id);
 }
+
+/* -------------------------
+   Render Similar (cards)
+   - Open button loads as target
+   - Trailer button toggles inline trailer
+-------------------------- */
 
 function renderSimilar(items) {
   if (!els.results) return;
 
   const list = (items || []).filter(Boolean);
-
   if (!list.length) {
     clearSimilar();
     return;
   }
 
-  // Similar cards styled like Target + a per-card trailer area
   els.results.innerHTML = list.map((m) => {
     const title = esc(m.title || "Untitled");
-    const year = m.year ? `(${esc(m.year)})` : "";
+    const year = m.year ? esc(m.year) : "";
     const rating = (m.rating ?? "").toString();
     const overview = esc(m.overview || "");
+
     const poster = m.poster
       ? `<img class="poster" src="${esc(m.poster)}" alt="${title} poster" loading="lazy" />`
       : `<div class="poster placeholder"></div>`;
 
     return `
-      <div class="simWrap" data-id="${esc(m.id)}">
-        <div class="simCard">
-          <div class="targetGrid">
-            ${poster}
-            <div class="targetInfo">
-              <div class="titleRow">
-                <div class="title">${title} <span class="muted">${year}</span></div>
-                <div class="pill">⭐ ${esc(rating || "—")}</div>
-              </div>
-              <div class="overview clamp3">${overview}</div>
+      <div class="simCard" data-id="${esc(m.id)}">
+        <div class="targetGrid">
+          ${poster}
+          <div class="targetInfo">
+            <div class="titleRow">
+              <div class="title">${title} ${year ? `<span class="muted">(${year})</span>` : ""}</div>
+              <div class="pill">⭐ ${esc(rating || "—")}</div>
+            </div>
+            <div class="overview clamp3">${overview}</div>
 
-              <div class="simActions">
-                <button class="btn simPick" type="button">Open</button>
-                <button class="btn simTrailerBtn" type="button">Trailer</button>
-              </div>
-
-              <div class="trailer simTrailer hidden"></div>
+            <div class="simActions">
+              <button class="btn simOpen" type="button">Open</button>
+              <button class="btn simTrailer" type="button">Trailer</button>
             </div>
           </div>
         </div>
+
+        <div class="miniTrailer hidden"></div>
       </div>
     `;
   }).join("");
 
-  // Wire actions
-  els.results.querySelectorAll(".simWrap").forEach((wrap) => {
-    const id = wrap.getAttribute("data-id");
-    const pickBtn = wrap.querySelector(".simPick");
-    const trailerBtn = wrap.querySelector(".simTrailerBtn");
-    const trailerBox = wrap.querySelector(".simTrailer");
+  // Wire buttons
+  els.results.querySelectorAll(".simCard").forEach((card) => {
+    const id = card.getAttribute("data-id");
+    const openBtn = card.querySelector(".simOpen");
+    const trailerBtn = card.querySelector(".simTrailer");
+    const mini = card.querySelector(".miniTrailer");
 
-    if (pickBtn) {
-      pickBtn.addEventListener("click", () => {
-        if (id) loadById(id);
-      });
-    }
+    openBtn?.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (id) await loadById(id);
+    });
 
-    if (trailerBtn) {
-      trailerBtn.addEventListener("click", async () => {
-        if (!id || !trailerBox) return;
+    trailerBtn?.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!id || !mini) return;
 
-        // Toggle off
-        if (!trailerBox.classList.contains("hidden")) {
-          trailerBox.classList.add("hidden");
-          trailerBox.innerHTML = "";
-          return;
+      // Toggle
+      const isOpen = !mini.classList.contains("hidden");
+      if (isOpen) {
+        mini.classList.add("hidden");
+        mini.innerHTML = "";
+        return;
+      }
+
+      // Close other open mini trailers (keeps mobile snappy)
+      els.results.querySelectorAll(".miniTrailer").forEach((x) => {
+        if (x !== mini) {
+          x.classList.add("hidden");
+          x.innerHTML = "";
         }
-
-        trailerBtn.textContent = "Loading…";
-        await renderTrailerInto(trailerBox, id);
-        trailerBtn.textContent = trailerBox.classList.contains("hidden") ? "No Trailer" : "Hide Trailer";
       });
-    }
+
+      mini.classList.remove("hidden");
+      mini.innerHTML = `<div class="muted">Loading trailer…</div>`;
+
+      const key = await fetchYouTubeTrailerKey(id);
+      if (!key) {
+        mini.innerHTML = `<div class="muted">No trailer found for this title.</div>`;
+        return;
+      }
+
+      mini.innerHTML = buildYouTubeIframe(key);
+    });
+
+    // Optional: tap card to open
+    card.addEventListener("click", async () => {
+      if (id) await loadById(id);
+    });
   });
 }
 
-/* ---------------- suggestions ---------------- */
+/* -------------------------
+   Suggestions
+-------------------------- */
 
 function renderSuggestions(items) {
   const list = (items || []).slice(0, 8);
@@ -369,7 +415,9 @@ function onSuggestInput() {
   }, 180);
 }
 
-/* ---------------- core flows ---------------- */
+/* -------------------------
+   Load flow
+-------------------------- */
 
 async function loadById(id) {
   clearSimilar();
@@ -378,16 +426,9 @@ async function loadById(id) {
   try {
     const r = await apiGet("/api/resolve", { id });
     const target = r.target || r;
-
     if (!target?.id) throw new Error("Resolve did not return a target id.");
 
     renderTarget(target);
-
-    // ✅ Target trailer (auto)
-    if (els.trailer) {
-      // show the trailer block under target card (already in your HTML)
-      await renderTrailerInto(els.trailer, target.id);
-    }
 
     const f = getFilters();
     const sim = await apiGet("/api/similar", {
@@ -457,7 +498,9 @@ async function doRandom() {
   }
 }
 
-/* ---------------- watchlist ---------------- */
+/* -------------------------
+   Watchlist
+-------------------------- */
 
 const WL_KEY = "neonsimilar_watchlist_v1";
 
@@ -480,7 +523,7 @@ function addToWatchlist(m) {
 }
 
 function openWatchlist() {
-  if (!els.watchlist || !els.modal) return;
+  if (!els.modal || !els.watchlist) return;
 
   const list = loadWatchlist();
   els.watchlist.innerHTML = list.length
@@ -502,25 +545,25 @@ function closeWatchlist() {
   els.modal?.classList.add("hidden");
 }
 
-/* ---------------- init ---------------- */
+/* -------------------------
+   Init
+-------------------------- */
 
 function initUI() {
-  // Genre dropdown
+  // Populate genre dropdown
   if (els.genre) {
-    els.genre.innerHTML = GENRES.map(([val, name]) => `<option value="${esc(val)}">${esc(name)}</option>`).join("");
+    els.genre.innerHTML = GENRES.map(([val, name]) =>
+      `<option value="${esc(val)}">${esc(name)}</option>`
+    ).join("");
   }
 
-  // Rating display
   if (els.minRating && els.minRatingVal) {
     const sync = () => (els.minRatingVal.textContent = `${Number(els.minRating.value || 0)}/10`);
     els.minRating.addEventListener("input", sync);
     sync();
   }
 
-  // Suggest
   els.q?.addEventListener("input", onSuggestInput);
-
-  // Enter key
   els.q?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -538,14 +581,14 @@ function initUI() {
     }
   });
 
-  // Watchlist modal
+  // watchlist modal
   els.watchlistBtn?.addEventListener("click", openWatchlist);
   els.closeModal?.addEventListener("click", closeWatchlist);
   els.modal?.addEventListener("click", (e) => {
     if (e.target === els.modal) closeWatchlist();
   });
 
-  // Load deep link
+  // If user comes in with ?id=123 load it
   const url = new URL(location.href);
   const id = url.searchParams.get("id");
   if (id) loadById(id);
