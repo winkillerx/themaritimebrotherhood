@@ -59,7 +59,7 @@ const els = {
   copyLink: document.getElementById("copyLink"),
 
   // IMPORTANT: your index.html uses id="results" for Similar container
-  results: document.getElementById("results"),
+results: document.getElementById("results") || document.getElementById("similar"),
 
   // Watchlist modal
   modal: document.getElementById("modal"),
