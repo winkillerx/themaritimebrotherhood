@@ -1,222 +1,246 @@
-/* styles.css — NEONSIMILAR (cyberpunk glass, responsive) */
+/* styles.css — NEONSIMILAR (cyberpunk, responsive, crisp)
+   Fixes:
+   - Header text overflowing behind buttons (min-width:0 + ellipsis)
+   - “Two different background colors” (unified base gradient + consistent glass overlays)
+*/
 
-/* ---------- Theme Vars ---------- */
+/* -----------------------------
+   Theme / reset
+------------------------------*/
 :root{
-  --bg0:#050712;
-  --bg1:#071022;
-  --card: rgba(10, 18, 38, .72);
-  --card2: rgba(12, 20, 44, .58);
-  --stroke: rgba(120, 170, 255, .18);
-  --stroke2: rgba(140, 70, 255, .14);
-  --text:#e9f0ff;
-  --muted: rgba(233,240,255,.62);
-  --muted2: rgba(233,240,255,.42);
+  --bg0:#05060c;
+  --bg1:#070a14;
+  --bg2:#071425;
 
-  --accent:#2fe6ff;
-  --accent2:#8a5bff;
-  --accent3:#ff2fd6;
-  --warn:#ff4d6d;
+  --card: rgba(10, 14, 28, .62);
+  --card2: rgba(10, 14, 28, .72);
 
-  --shadow: 0 18px 60px rgba(0,0,0,.55);
-  --shadow2: 0 10px 22px rgba(0,0,0,.35);
-  --radius: 22px;
+  --line: rgba(120, 170, 255, .18);
+  --line2: rgba(120, 170, 255, .28);
 
-  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  --text:#e7ecff;
+  --muted: rgba(231,236,255,.68);
+
+  --accent:#22d3ee;     /* cyan */
+  --accent2:#7c3aed;    /* purple */
+  --hot:#ff2bd6;        /* magenta */
+
+  --r: 22px;
+  --pad: 18px;
+
+  --shadow: 0 16px 50px rgba(0,0,0,.45);
+  --shadow2: 0 0 0 1px rgba(120,170,255,.14), 0 16px 60px rgba(0,0,0,.45);
 }
 
-/* ---------- Base ---------- */
-*{ box-sizing:border-box; }
-html,body{ height:100%; }
+*{box-sizing:border-box}
+html,body{height:100%}
 body{
   margin:0;
   color:var(--text);
-  font-family:var(--mono);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   background:
-    radial-gradient(1200px 700px at 15% 10%, rgba(47,230,255,.18), transparent 65%),
-    radial-gradient(900px 600px at 85% 20%, rgba(138,91,255,.20), transparent 60%),
-    radial-gradient(1100px 700px at 50% 95%, rgba(255,47,214,.14), transparent 60%),
-    linear-gradient(180deg, var(--bg0), var(--bg1));
+    radial-gradient(1200px 600px at 15% 10%, rgba(124,58,237,.22), transparent 55%),
+    radial-gradient(900px 520px at 85% 20%, rgba(34,211,238,.18), transparent 55%),
+    radial-gradient(1200px 700px at 50% 100%, rgba(255,43,214,.10), transparent 60%),
+    linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 45%, var(--bg2) 100%);
   overflow-x:hidden;
 }
 
-/* Subtle animated noise / scanline feel (cheap + looks great) */
-body:before{
+/* subtle grid + vignette for crisp “cyberpunk” feel */
+body::before{
   content:"";
-  position:fixed; inset:0;
+  position:fixed;
+  inset:0;
   pointer-events:none;
   background:
-    repeating-linear-gradient(
-      to bottom,
-      rgba(255,255,255,.025) 0px,
-      rgba(255,255,255,.025) 1px,
-      transparent 2px,
-      transparent 6px
-    );
+    linear-gradient(to right, rgba(255,255,255,.035) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(to bottom, rgba(255,255,255,.03) 1px, transparent 1px) 0 0 / 48px 48px,
+    radial-gradient(circle at 50% 40%, transparent 35%, rgba(0,0,0,.55) 78%);
   mix-blend-mode:overlay;
   opacity:.22;
 }
 
-/* ---------- Layout ---------- */
+/* -----------------------------
+   Layout
+------------------------------*/
 .wrap{
   max-width: 980px;
   margin: 0 auto;
-  padding: 22px 14px 60px;
+  padding: 18px 14px 40px;
 }
 
-@media (min-width: 900px){
-  .wrap{ padding: 34px 18px 70px; }
-}
+/* Works for BOTH your old header (.topbar) and new one (.top) */
+.top, .topbar{
+  position: sticky;
+  top: 0;
+  z-index: 50;
 
-/* ---------- Top Bar ---------- */
-.top{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:14px;
-  padding: 14px 16px;
-  border-radius: var(--radius);
-  background: linear-gradient(135deg, rgba(10,18,38,.70), rgba(10,18,38,.45));
-  border: 1px solid var(--stroke);
+  gap: 14px;
+
+  padding: 14px 14px;
+  margin: 10px 0 16px;
+
+  border: 1px solid var(--line);
+  border-radius: calc(var(--r) + 6px);
+
+  background: rgba(8, 12, 24, .62); /* unified overlay */
+  backdrop-filter: blur(14px);
   box-shadow: var(--shadow2);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  position: sticky;
-  top: 10px;
-  z-index: 10;
 }
 
+/* -----------------------------
+   Header brand + FIX overflow behind buttons
+------------------------------*/
 .brand{
   display:flex;
-  gap:12px;
   align-items:center;
-  min-width:0;
+  gap: 12px;
+
+  flex: 1 1 auto;
+  min-width: 0;               /* ✅ CRITICAL: allows flex item to shrink */
 }
 
 .logo{
-  width:46px; height:46px;
-  display:grid; place-items:center;
-  border-radius: 16px;
+  width: 58px;
+  height: 58px;
+  display:grid;
+  place-items:center;
+  border-radius: 18px;
+
+  border: 1px solid rgba(34,211,238,.35);
   background:
-    radial-gradient(18px 18px at 30% 30%, rgba(47,230,255,.45), transparent 60%),
-    radial-gradient(20px 20px at 75% 70%, rgba(138,91,255,.42), transparent 65%),
-    rgba(8,14,30,.7);
-  border: 1px solid rgba(47,230,255,.22);
-  box-shadow: 0 0 30px rgba(47,230,255,.10);
-  font-weight:900;
-  letter-spacing:.5px;
+    radial-gradient(circle at 30% 30%, rgba(34,211,238,.22), transparent 55%),
+    radial-gradient(circle at 70% 80%, rgba(124,58,237,.22), transparent 60%),
+    rgba(6,10,18,.8);
+  box-shadow: 0 0 0 1px rgba(34,211,238,.12), 0 12px 30px rgba(0,0,0,.45);
 }
 
 .name{
-  font-weight:900;
-  letter-spacing: 1.2px;
-  font-size: 16px;
-  line-height: 1.1;
-}
-.sub{
-  color: var(--muted);
-  font-size: 12px;
-  letter-spacing:.3px;
-  margin-top: 2px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-size: 20px;
+
   white-space: nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  max-width: 44vw;
+  overflow: hidden;
+  text-overflow: ellipsis;     /* ✅ prevents pushing/overlapping */
+  max-width: 100%;
+}
+
+.sub{
+  margin-top: 4px;
+  color: var(--muted);
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;     /* ✅ prevents going behind buttons */
+  max-width: 100%;
 }
 
 .topBtns{
   display:flex;
-  gap:10px;
+  gap: 10px;
+  flex: 0 0 auto;              /* ✅ never shrink into brand */
 }
 
-/* ---------- Cards ---------- */
+/* If viewport is narrow, stack buttons under brand instead of overlap */
+@media (max-width: 520px){
+  .top, .topbar{
+    flex-wrap: wrap;
+    justify-content:flex-start;
+  }
+  .topBtns{
+    width: 100%;
+  }
+  .topBtns .btn{
+    flex: 1 1 auto;
+  }
+}
+
+/* -----------------------------
+   Cards
+------------------------------*/
 .card{
-  margin-top: 16px;
-  padding: 16px;
-  border-radius: var(--radius);
-  background: linear-gradient(180deg, var(--card), var(--card2));
-  border: 1px solid var(--stroke);
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  position: relative;
-  overflow:hidden;
+  border: 1px solid var(--line);
+  border-radius: calc(var(--r) + 4px);
+  background: var(--card);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow2);
+  padding: var(--pad);
+  margin: 0 0 16px;
 }
-
-.card:before{
-  content:"";
-  position:absolute; inset:-2px;
-  background:
-    radial-gradient(650px 220px at 10% 0%, rgba(47,230,255,.12), transparent 60%),
-    radial-gradient(700px 260px at 90% 0%, rgba(138,91,255,.12), transparent 60%);
-  pointer-events:none;
-}
-
-.card > *{ position:relative; }
 
 h2{
-  margin:0 0 10px;
-  font-size: 22px;
-  letter-spacing: .8px;
+  margin: 0 0 10px;
+  font-size: 34px;
+  letter-spacing: .04em;
 }
-p{ margin:0 0 12px; }
 
 .sectionTitle{
   display:flex;
   align-items:baseline;
   justify-content:space-between;
-  gap:10px;
-  margin-bottom: 10px;
-}
-.accent{ color: var(--accent); text-shadow: 0 0 18px rgba(47,230,255,.25); }
-
-.muted{ color: var(--muted); }
-.warn{ color: var(--warn); }
-
-/* ---------- Inputs ---------- */
-.lbl{
-  display:block;
-  color: var(--muted);
-  margin: 10px 0 8px;
-  font-size: 13px;
-  letter-spacing:.3px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
-.input{
+.muted{color: var(--muted)}
+.accent{color: var(--accent)}
+
+/* -----------------------------
+   Inputs / buttons
+------------------------------*/
+.lbl{display:block; margin: 10px 0 8px; color: var(--muted)}
+.input, .select{
   width:100%;
-  border-radius: 16px;
   padding: 14px 14px;
-  background: rgba(5,9,22,.55);
-  border: 1px solid rgba(120,170,255,.18);
-  color: var(--text);
-  outline:none;
-  box-shadow: 0 0 0 rgba(0,0,0,0);
-  transition: border .15s ease, box-shadow .15s ease;
-}
-
-.input:focus{
-  border-color: rgba(47,230,255,.35);
-  box-shadow: 0 0 0 3px rgba(47,230,255,.12);
-}
-
-.select{
-  width:100%;
   border-radius: 16px;
-  padding: 12px 12px;
-  background: rgba(5,9,22,.55);
-  border: 1px solid rgba(120,170,255,.18);
+  border: 1px solid var(--line);
+  background: rgba(3,6,14,.65);
   color: var(--text);
-  outline:none;
+  outline: none;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
 }
+.input:focus, .select:focus{
+  border-color: rgba(34,211,238,.55);
+  box-shadow: 0 0 0 3px rgba(34,211,238,.12);
+}
+
+.btn{
+  border: 1px solid var(--line2);
+  background: rgba(6, 10, 18, .55);
+  color: var(--text);
+  border-radius: 18px;
+  padding: 12px 14px;
+  cursor:pointer;
+  transition: transform .06s ease, box-shadow .18s ease, border-color .18s ease;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.18);
+}
+.btn:hover{
+  border-color: rgba(34,211,238,.5);
+  box-shadow: 0 0 0 1px rgba(34,211,238,.16), 0 14px 40px rgba(0,0,0,.35);
+}
+.btn:active{transform: translateY(1px)}
+.btn.primary{
+  border-color: rgba(34,211,238,.55);
+  background:
+    radial-gradient(circle at 10% 10%, rgba(34,211,238,.28), transparent 55%),
+    radial-gradient(circle at 90% 90%, rgba(124,58,237,.25), transparent 60%),
+    rgba(10, 16, 34, .65);
+}
+.btn.full{width:100%; margin-top: 10px}
 
 .filters{
   display:grid;
-  grid-template-columns: 1fr;
-  gap:12px;
-  margin-top: 12px;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 10px;
 }
-@media (min-width: 720px){
-  .filters{ grid-template-columns: 1fr 1fr; }
+@media (max-width: 720px){
+  .filters{grid-template-columns: 1fr;}
 }
 
 .lblRow{
@@ -225,281 +249,223 @@ p{ margin:0 0 12px; }
   align-items:center;
 }
 
+/* Range */
 input[type="range"]{
   width:100%;
-  margin-top: 10px;
+  accent-color: var(--accent);
 }
 
-/* ---------- Buttons ---------- */
-.btn{
-  border: 1px solid rgba(120,170,255,.20);
-  background: rgba(5,9,22,.55);
-  color: var(--text);
-  border-radius: 16px;
-  padding: 12px 14px;
-  cursor:pointer;
-  transition: transform .08s ease, border .15s ease, box-shadow .15s ease;
-  box-shadow: 0 10px 18px rgba(0,0,0,.25);
-  font-family: var(--mono);
-}
-
-.btn:hover{
-  border-color: rgba(47,230,255,.28);
-  box-shadow: 0 0 0 3px rgba(47,230,255,.10), 0 10px 18px rgba(0,0,0,.25);
-}
-
-.btn:active{ transform: translateY(1px); }
-
-.btn.primary{
-  background:
-    radial-gradient(220px 80px at 30% 20%, rgba(47,230,255,.25), transparent 60%),
-    radial-gradient(240px 90px at 70% 80%, rgba(138,91,255,.22), transparent 60%),
-    rgba(5,9,22,.65);
-  border-color: rgba(47,230,255,.28);
-}
-
-.btn.full{ width:100%; margin-top: 10px; }
-
-/* ---------- Suggestions ---------- */
+/* -----------------------------
+   Suggestions dropdown
+------------------------------*/
 .suggest{
   margin-top: 8px;
-  border-radius: 18px;
-  border: 1px solid rgba(120,170,255,.18);
-  background: rgba(5,9,22,.70);
-  box-shadow: var(--shadow2);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(6,10,18,.78);
+  box-shadow: var(--shadow);
   overflow:hidden;
 }
-
-.hidden{ display:none !important; }
-
+.hidden{display:none !important}
 .suggestItem{
   width:100%;
   display:flex;
   justify-content:space-between;
-  gap:12px;
-  padding: 12px 12px;
-  cursor:pointer;
-  border:0;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid rgba(120,170,255,.12);
   background: transparent;
   color: var(--text);
-  font-family: var(--mono);
-  border-bottom: 1px solid rgba(120,170,255,.10);
+  cursor:pointer;
 }
 .suggestItem:hover{
-  background: rgba(47,230,255,.07);
+  background: rgba(34,211,238,.08);
 }
-.suggestItem .muted{ color: var(--muted2); }
+.suggestItem:last-child{border-bottom:0}
 
-/* ---------- Target + Similar Card Layout ---------- */
+/* -----------------------------
+   Target / Similar cards
+------------------------------*/
 .targetBox{
-  border-radius: 22px;
-  border: 1px solid rgba(120,170,255,.14);
-  background: rgba(5,9,22,.45);
+  border-radius: 18px;
   padding: 14px;
+  border: 1px solid rgba(120,170,255,.16);
+  background: rgba(6,10,18,.55);
 }
 
 .targetGrid{
   display:grid;
-  grid-template-columns: 96px 1fr;
+  grid-template-columns: 130px 1fr;
   gap: 14px;
   align-items:start;
 }
 
-@media (min-width: 560px){
-  .targetGrid{ grid-template-columns: 120px 1fr; }
-}
-
 .poster{
-  width: 96px;
+  width: 130px;
+  height: 190px;
   border-radius: 18px;
-  display:block;
-  border: 1px solid rgba(120,170,255,.14);
-  box-shadow: 0 16px 40px rgba(0,0,0,.45);
-}
-@media (min-width: 560px){
-  .poster{ width:120px; }
+  object-fit: cover;
+  border: 1px solid rgba(120,170,255,.22);
+  box-shadow: 0 14px 40px rgba(0,0,0,.45);
 }
 
-.poster.placeholder,
-.posterPlaceholder{
-  width: 96px;
-  height: 144px;
-  border-radius: 18px;
-  background: rgba(120,170,255,.08);
-  border: 1px dashed rgba(120,170,255,.16);
-}
-
-.targetInfo{ min-width:0; }
-
-.titleRow{
+.targetInfo .titleRow{
   display:flex;
-  justify-content:space-between;
   align-items:flex-start;
-  gap:10px;
+  justify-content:space-between;
+  gap: 10px;
 }
-
 .title{
-  font-size: 20px;
   font-weight: 900;
-  letter-spacing:.4px;
-  line-height: 1.15;
-  word-break: break-word;
+  letter-spacing: .02em;
+  font-size: 28px;
 }
-
 .pill{
-  white-space:nowrap;
+  border: 1px solid rgba(34,211,238,.35);
+  background: rgba(34,211,238,.08);
+  padding: 10px 12px;
   border-radius: 999px;
-  padding: 8px 10px;
-  border: 1px solid rgba(47,230,255,.22);
-  background: rgba(5,9,22,.55);
-  color: var(--text);
-  box-shadow: 0 0 24px rgba(47,230,255,.10);
+  white-space: nowrap;
 }
 
 .overview{
   margin-top: 10px;
-  color: var(--muted);
-  line-height: 1.45;
-  font-family: var(--mono);
+  color: rgba(231,236,255,.78);
+  line-height: 1.55;
+  font-size: 18px;
 }
 
-/* Clamp for Similar cards (3 lines) */
+/* clamp helpers */
 .clamp3{
-  display:-webkit-box;
+  display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
-  overflow:hidden;
+  overflow: hidden;
 }
 
-/* ---------- Trailer ---------- */
-.trailer{
-  margin-top: 12px;
-  border-radius: 22px;
-  border: 1px solid rgba(120,170,255,.14);
-  overflow:hidden;
-  background: rgba(0,0,0,.35);
-  box-shadow: var(--shadow2);
-}
-.trailer iframe{
-  width:100%;
-  aspect-ratio: 16 / 9;
-  border:0;
-  display:block;
-}
-
-/* ---------- Actions ---------- */
-.actions{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  margin-top: 12px;
-}
-
-/* ---------- Similar Results Container ---------- */
+/* Similar list container */
 .chips{
-  display:grid;
-  grid-template-columns: 1fr;
+  display:flex;
+  flex-direction:column;
   gap: 14px;
 }
 
-/* On desktop show 2 columns */
-@media (min-width: 900px){
-  .chips{ grid-template-columns: 1fr 1fr; }
-}
-
-/* The Similar cards are buttons: .simCard */
+/* Similar card button */
 .simCard{
-  width:100%;
-  text-align:left;
-  border-radius: 22px;
-  border: 1px solid rgba(120,170,255,.14);
-  background: rgba(5,9,22,.45);
+  width: 100%;
+  text-align: left;
+  border-radius: 18px;
+  border: 1px solid rgba(120,170,255,.18);
+  background: rgba(6,10,18,.58);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.18);
   padding: 14px;
   cursor:pointer;
-  transition: transform .08s ease, border .15s ease, box-shadow .15s ease;
-  color: var(--text);
-  font-family: var(--mono);
-  box-shadow: 0 14px 40px rgba(0,0,0,.35);
+  transition: transform .06s ease, border-color .18s ease, box-shadow .18s ease;
 }
-
 .simCard:hover{
-  border-color: rgba(47,230,255,.28);
-  box-shadow: 0 0 0 3px rgba(47,230,255,.10), 0 14px 40px rgba(0,0,0,.35);
+  border-color: rgba(34,211,238,.55);
+  box-shadow: 0 0 0 1px rgba(34,211,238,.12), 0 18px 55px rgba(0,0,0,.4);
+}
+.simCard:active{transform: translateY(1px)}
+
+/* Mobile: stack poster above text */
+@media (max-width: 520px){
+  h2{font-size: 30px}
+  .title{font-size: 24px}
+  .targetGrid{
+    grid-template-columns: 110px 1fr;
+  }
+  .poster{
+    width: 110px;
+    height: 165px;
+  }
 }
 
-.simCard:active{ transform: translateY(1px); }
-
-/* Make similar cards use the same grid + typography as Target */
-.simCard .title{
-  color: var(--accent);
-  text-shadow: 0 0 18px rgba(47,230,255,.16);
+/* -----------------------------
+   Trailer
+------------------------------*/
+.trailer{
+  margin-top: 14px;
+  border-radius: 18px;
+  overflow:hidden;
+  border: 1px solid rgba(120,170,255,.18);
+  box-shadow: var(--shadow);
 }
-.simCard .overview{
-  color: rgba(47,230,255,.55);
+.trailer iframe{
+  width:100%;
+  height: 320px;
+  border: 0;
+}
+@media (max-width: 520px){
+  .trailer iframe{height: 220px;}
 }
 
-/* ---------- Footer ---------- */
+/* -----------------------------
+   Actions row
+------------------------------*/
+.actions{
+  display:flex;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.actions .btn{flex: 1 1 160px}
+
+/* -----------------------------
+   Footer
+------------------------------*/
 .foot{
-  margin-top: 16px;
+  padding: 14px 4px 0;
   text-align:center;
-  color: var(--muted2);
-  font-size: 12px;
-  letter-spacing:.25px;
 }
 
-/* ---------- Modal / Watchlist ---------- */
+/* -----------------------------
+   Modal (Watchlist)
+------------------------------*/
 .modal{
-  position:fixed; inset:0;
-  background: rgba(0,0,0,.6);
+  position:fixed;
+  inset:0;
+  background: rgba(0,0,0,.55);
   display:grid;
   place-items:center;
   padding: 16px;
-  z-index: 50;
+  z-index: 100;
 }
-
 .modalCard{
-  width: min(860px, 96vw);
+  width:min(760px, 100%);
   border-radius: 22px;
-  border: 1px solid rgba(120,170,255,.18);
-  background: linear-gradient(180deg, rgba(10,18,38,.82), rgba(10,18,38,.55));
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  padding: 14px;
+  border: 1px solid var(--line);
+  background: rgba(6,10,18,.82);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow2);
+  padding: 16px;
 }
-
 .modalTop{
   display:flex;
-  justify-content:space-between;
   align-items:center;
-  gap:10px;
+  justify-content:space-between;
+  gap: 12px;
   margin-bottom: 10px;
 }
-
 .watchlist{
-  display:grid;
-  grid-template-columns: 1fr;
+  display:flex;
+  flex-direction:column;
   gap: 12px;
-  max-height: 70vh;
-  overflow:auto;
-  padding-right: 4px;
 }
-
 .watchItem{
   display:flex;
-  gap:12px;
-  border-radius: 18px;
-  border: 1px solid rgba(120,170,255,.14);
-  background: rgba(5,9,22,.45);
+  gap: 12px;
   padding: 12px;
+  border: 1px solid rgba(120,170,255,.14);
+  border-radius: 18px;
+  background: rgba(10,14,28,.55);
 }
 .watchPoster{
   width: 54px;
-  border-radius: 14px;
-  border: 1px solid rgba(120,170,255,.14);
-  display:block;
+  height: 78px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid rgba(120,170,255,.18);
 }
-.watchMeta{ color: var(--muted); margin-top: 6px; }
-
-/* Smooth scroll for iOS feel */
-.watchlist{ -webkit-overflow-scrolling: touch; }
+.watchMeta{color: var(--muted); margin-top: 6px}
