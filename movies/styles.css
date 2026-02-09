@@ -517,3 +517,70 @@ input[type="range"]{
 }
 
 .watchMeta{ color: var(--muted); margin-top: 6px; }
+/* =========================================
+   MOBILE OVERFLOW FIXES (ratings + buttons)
+   Paste at END of styles.css
+========================================= */
+
+/* Ensure cards never let inner content spill outside rounded border */
+.card,
+.targetBox,
+.simCard {
+  overflow: hidden;
+}
+
+/* Make the title row wrap nicely so the rating pill never pushes out */
+.titleRow {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Let the title take full width on small screens if needed */
+.titleRow .title {
+  min-width: 0;
+  flex: 1 1 220px;
+  word-break: break-word;
+}
+
+/* Keep the rating pill inside the card */
+.titleRow .pill {
+  flex: 0 0 auto;
+  max-width: 100%;
+  margin-left: auto;
+}
+
+/* Buttons inside cards: stop them from overflowing */
+.simActions,
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+}
+
+/* Force buttons to stay inside the card width */
+.simActions .btn,
+.actions .btn,
+.simActions button,
+.actions button {
+  max-width: 100%;
+  flex: 1 1 140px;
+}
+
+/* On smaller phones: make the action buttons stack full width */
+@media (max-width: 420px) {
+  .simActions .btn,
+  .actions .btn,
+  .simActions button,
+  .actions button {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+}
+
+/* If any card is using the same target grid, keep it responsive */
+@media (max-width: 520px) {
+  .targetGrid {
+    grid-template-columns: 110px 1fr;
+  }
+}
