@@ -1,12 +1,10 @@
-/* styles.css — NEONSIMILAR (cyberpunk, responsive, crisp)
-   Fixes:
-   - Header text overflowing behind buttons (min-width:0 + ellipsis)
-   - “Two different background colors” (unified base gradient + consistent glass overlays)
+/* styles.css — FILM_MATRIX / NEONSIMILAR (cyberpunk, responsive, crisp)
+   FIXES INCLUDED:
+   ✅ Header text no longer goes behind buttons (min-width:0 + ellipsis + wrap on mobile)
+   ✅ “Two different background colors” on iOS Safari (sticky + backdrop-filter sampling fix)
+   ✅ Trailer sizing is consistent (aspect-ratio only; no hard heights)
 */
 
-/* -----------------------------
-   Theme / reset
-------------------------------*/
 :root{
   --bg0:#05060c;
   --bg1:#070a14;
@@ -34,19 +32,23 @@
 
 *{box-sizing:border-box}
 html,body{height:100%}
+
 body{
   margin:0;
   color:var(--text);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* ✅ Unified base background (no “two tone” banding from CSS itself) */
   background:
     radial-gradient(1200px 600px at 15% 10%, rgba(124,58,237,.22), transparent 55%),
     radial-gradient(900px 520px at 85% 20%, rgba(34,211,238,.18), transparent 55%),
     radial-gradient(1200px 700px at 50% 100%, rgba(255,43,214,.10), transparent 60%),
     linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 45%, var(--bg2) 100%);
+
   overflow-x:hidden;
 }
 
-/* subtle grid + vignette for crisp “cyberpunk” feel */
+/* subtle grid + vignette */
 body::before{
   content:"";
   position:fixed;
@@ -86,13 +88,29 @@ body::before{
   border: 1px solid var(--line);
   border-radius: calc(var(--r) + 6px);
 
-  background: rgba(8, 12, 24, .62); /* unified overlay */
+  /* ✅ Important: consistent overlay color + iOS friendly */
+  background: rgba(8, 12, 24, .78);
+
+  -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
+
   box-shadow: var(--shadow2);
 }
 
+/* ✅ iOS Safari “two-tone banding” fix:
+   sticky + backdrop-filter can sample background differently while scrolling.
+   We disable blur only on iOS Safari to prevent the artifact.
+*/
+@supports (-webkit-touch-callout: none){
+  .top, .topbar{
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: rgba(8, 12, 24, .92);
+  }
+}
+
 /* -----------------------------
-   Header brand + FIX overflow behind buttons
+   Header brand + overflow fix
 ------------------------------*/
 .brand{
   display:flex;
@@ -100,7 +118,7 @@ body::before{
   gap: 12px;
 
   flex: 1 1 auto;
-  min-width: 0;               /* ✅ CRITICAL: allows flex item to shrink */
+  min-width: 0; /* ✅ critical: allows ellipsis to work in flex */
 }
 
 .logo{
@@ -126,7 +144,7 @@ body::before{
 
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;     /* ✅ prevents pushing/overlapping */
+  text-overflow: ellipsis;
   max-width: 100%;
 }
 
@@ -136,17 +154,17 @@ body::before{
 
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;     /* ✅ prevents going behind buttons */
+  text-overflow: ellipsis;
   max-width: 100%;
 }
 
 .topBtns{
   display:flex;
   gap: 10px;
-  flex: 0 0 auto;              /* ✅ never shrink into brand */
+  flex: 0 0 auto; /* ✅ prevents shrinking into brand */
 }
 
-/* If viewport is narrow, stack buttons under brand instead of overlap */
+/* Narrow: stack buttons under brand */
 @media (max-width: 520px){
   .top, .topbar{
     flex-wrap: wrap;
@@ -168,6 +186,7 @@ body::before{
   border-radius: calc(var(--r) + 4px);
   background: var(--card);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   box-shadow: var(--shadow2);
   padding: var(--pad);
   margin: 0 0 16px;
@@ -189,6 +208,7 @@ h2{
 
 .muted{color: var(--muted)}
 .accent{color: var(--accent)}
+.hidden{display:none !important}
 
 /* -----------------------------
    Inputs / buttons
@@ -249,7 +269,6 @@ h2{
   align-items:center;
 }
 
-/* Range */
 input[type="range"]{
   width:100%;
   accent-color: var(--accent);
@@ -266,7 +285,6 @@ input[type="range"]{
   box-shadow: var(--shadow);
   overflow:hidden;
 }
-.hidden{display:none !important}
 .suggestItem{
   width:100%;
   display:flex;
@@ -279,13 +297,11 @@ input[type="range"]{
   color: var(--text);
   cursor:pointer;
 }
-.suggestItem:hover{
-  background: rgba(34,211,238,.08);
-}
+.suggestItem:hover{background: rgba(34,211,238,.08)}
 .suggestItem:last-child{border-bottom:0}
 
 /* -----------------------------
-   Target / Similar cards
+   Target / Similar
 ------------------------------*/
 .targetBox{
   border-radius: 18px;
@@ -316,11 +332,13 @@ input[type="range"]{
   justify-content:space-between;
   gap: 10px;
 }
+
 .title{
   font-weight: 900;
   letter-spacing: .02em;
   font-size: 28px;
 }
+
 .pill{
   border: 1px solid rgba(34,211,238,.35);
   background: rgba(34,211,238,.08);
@@ -369,36 +387,32 @@ input[type="range"]{
 }
 .simCard:active{transform: translateY(1px)}
 
-/* Mobile: stack poster above text */
+/* Mobile tweaks */
 @media (max-width: 520px){
   h2{font-size: 30px}
   .title{font-size: 24px}
-  .targetGrid{
-    grid-template-columns: 110px 1fr;
-  }
-  .poster{
-    width: 110px;
-    height: 165px;
-  }
+  .targetGrid{grid-template-columns: 110px 1fr;}
+  .poster{width: 110px; height: 165px;}
 }
 
 /* -----------------------------
-   Trailer
+   Trailer (✅ fixed: aspect-ratio only)
 ------------------------------*/
-.trailer{
+.trailer,
+.miniTrailer{
   margin-top: 14px;
   border-radius: 18px;
   overflow:hidden;
   border: 1px solid rgba(120,170,255,.18);
   box-shadow: var(--shadow);
 }
-.trailer iframe{
-  width:100%;
-  height: 320px;
+
+.trailer iframe,
+.miniTrailer iframe{
+  width: 100%;
+  aspect-ratio: 16 / 9;
   border: 0;
-}
-@media (max-width: 520px){
-  .trailer iframe{height: 220px;}
+  display: block;
 }
 
 /* -----------------------------
@@ -411,6 +425,12 @@ input[type="range"]{
   flex-wrap: wrap;
 }
 .actions .btn{flex: 1 1 160px}
+
+.simActions{
+  display:flex;
+  gap:10px;
+  margin-top:12px;
+}
 
 /* -----------------------------
    Footer
@@ -438,6 +458,7 @@ input[type="range"]{
   border: 1px solid var(--line);
   background: rgba(6,10,18,.82);
   backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   box-shadow: var(--shadow2);
   padding: 16px;
 }
@@ -452,25 +473,6 @@ input[type="range"]{
   display:flex;
   flex-direction:column;
   gap: 12px;
-}
-.simActions{
-  display:flex;
-  gap:10px;
-  margin-top:12px;
-}
-.miniTrailer{
-  margin-top:12px;
-  border-radius:18px;
-  overflow:hidden;
-  border:1px solid rgba(110,210,255,.18);
-  box-shadow: 0 0 0 1px rgba(0,0,0,.2), 0 18px 60px rgba(0,0,0,.35);
-}
-.miniTrailer iframe,
-#trailer iframe{
-  width:100%;
-  aspect-ratio: 16 / 9;
-  border:0;
-  display:block;
 }
 .watchItem{
   display:flex;
