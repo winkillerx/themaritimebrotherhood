@@ -1,12 +1,11 @@
 /* app.js — NEONSIMILAR (static frontend)
-   Works with Vercel Serverless Functions:
+   Endpoints:
    - /api/suggest?q=...
    - /api/search?q=...
    - /api/resolve?id=...
-   - /api/similar?id=...&minRating=...&genre=...    (server enforces 1950+ if you coded it that way)
-   - /api/random?minRating=...&genre=...
-   Optional:
-   - /api/tmdb?path=/movie/<id>/videos   (only if you implemented this helper route)
+   - /api/similar?id=...&minRating=...&genre=...&yearMin=1950
+   - /api/random?minRating=...&genre=...&yearMin=1950
+   - /api/videos?id=...   (NEW: trailer lookup)
 */
 
 const YEAR_MIN = 1950;
@@ -55,19 +54,25 @@ const els = {
 
   targetActions: document.getElementById("targetActions"),
   addWatch: document.getElementById("addWatch"),
-  openImdb: document.getElementById("openImdb"), // button text may say IMDB; we open TMDb
+  openImdb: document.getElementById("openImdb"),
   copyLink: document.getElementById("copyLink"),
 
-  // IMPORTANT: your index.html uses id="results" for Similar container
-results: document.getElementById("results") || document.getElementById("similar"),
+  // IMPORTANT: Similar results container is #results in your HTML
+  results: document.getElementById("results"),
 
   // Watchlist modal
   modal: document.getElementById("modal"),
   closeModal: document.getElementById("closeModal"),
   watchlist: document.getElementById("watchlist"),
+
+  // Trailer modal (optional but supported)
+  trailerModal: document.getElementById("trailerModal"),
+  closeTrailer: document.getElementById("closeTrailer"),
+  trailerTitle: document.getElementById("trailerTitle"),
+  trailerFrame: document.getElementById("trailerFrame"),
 };
 
-const API_BASE = ""; // keep empty (API is /api)
+const API_BASE = ""; // API lives at /api
 
 function esc(s = "") {
   return String(s).replace(/[&<>"']/g, (c) => ({
@@ -122,6 +127,7 @@ function clearSimilar() {
 }
 
 function renderTarget(m) {
+  // clear trailer area first (target trailer, not modal)
   if (els.trailer) {
     els.trailer.classList.add("hidden");
     els.trailer.innerHTML = "";
@@ -134,9 +140,10 @@ function renderTarget(m) {
   }
 
   const poster = m.poster
-    ? `<img class="poster" src="${esc(m.poster)}" alt="${esc(m.title)} poster" loading="lazy" />`
+    ? `<img class="poster" src="${esc(m.poster)}" alt="${esc(m.title)} poster" />`
     : `<div class="poster placeholder"></div>`;
 
+  // genres are TMDb IDs
   const genres = Array.isArray(m.genres)
     ? m.genres
         .map((g) => genreNameById.get(Number(g)) || "")
@@ -145,13 +152,14 @@ function renderTarget(m) {
     : "";
 
   const rating = (m.rating ?? "").toString();
+  const year = m.year ? `(${esc(m.year)})` : "";
 
   els.target.innerHTML = `
     <div class="targetGrid">
       ${poster}
       <div class="targetInfo">
         <div class="titleRow">
-          <div class="title">${esc(m.title)} <span class="muted">(${esc(m.year || "")})</span></div>
+          <div class="title">${esc(m.title)} <span class="muted">${year}</span></div>
           <div class="pill">⭐ ${esc(rating || "—")}</div>
         </div>
         <div class="muted">${esc(genres)}</div>
@@ -160,66 +168,109 @@ function renderTarget(m) {
     </div>
   `;
 
-  if (els.targetActions) els.targetActions.classList.remove("hidden");
+  els.targetActions?.classList.remove("hidden");
 
-  if (els.openImdb) {
-    els.openImdb.onclick = () => {
-      window.open(`https://www.themoviedb.org/movie/${encodeURIComponent(m.id)}`, "_blank");
-    };
-  }
+  // TMDb button
+  els.openImdb && (els.openImdb.onclick = () => {
+    window.open(`https://www.themoviedb.org/movie/${encodeURIComponent(m.id)}`, "_blank");
+  });
 
-  if (els.copyLink) {
-    els.copyLink.onclick = async () => {
-      try {
-        const u = new URL(location.href);
-        u.searchParams.set("id", String(m.id));
-        await navigator.clipboard.writeText(u.toString());
-        alert("Link copied ✅");
-      } catch {
-        alert("Copy failed (browser blocked clipboard).");
-      }
-    };
-  }
+  // Copy link button
+  els.copyLink && (els.copyLink.onclick = async () => {
+    try {
+      const u = new URL(location.href);
+      u.searchParams.set("id", String(m.id));
+      await navigator.clipboard.writeText(u.toString());
+      alert("Link copied ✅");
+    } catch {
+      alert("Copy failed (browser blocked clipboard).");
+    }
+  });
 
-  if (els.addWatch) els.addWatch.onclick = () => addToWatchlist(m);
+  // Watchlist
+  els.addWatch && (els.addWatch.onclick = () => addToWatchlist(m));
 
   setMeta(`Ready. Selected: ${m.title}`, false);
 }
 
-/** Optional trailer helper (only works if you created /api/tmdb) */
-async function renderTrailerIfPossible(tmdbId) {
+/* ---------------- Trailer Support ---------------- */
+
+async function getTrailerKey(id) {
+  const data = await apiGet("/api/videos", { id });
+  return data?.key || null;
+}
+
+function setTargetTrailer(key) {
+  if (!els.trailer) return;
+
+  if (!key) {
+    els.trailer.classList.add("hidden");
+    els.trailer.innerHTML = "";
+    return;
+  }
+
+  const src = `https://www.youtube.com/embed/${encodeURIComponent(key)}?rel=0`;
+  els.trailer.innerHTML = `
+    <iframe
+      loading="lazy"
+      src="${src}"
+      title="Trailer"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen
+    ></iframe>
+  `;
+  els.trailer.classList.remove("hidden");
+}
+
+async function openTrailerModal(movie) {
+  if (!els.trailerModal || !els.trailerFrame) return; // modal not installed => safely do nothing
+
+  els.trailerTitle && (els.trailerTitle.textContent = movie?.title ? `${movie.title} — Trailer` : "Trailer");
+  els.trailerFrame.innerHTML = `<div class="muted">Loading trailer…</div>`;
+  els.trailerModal.classList.remove("hidden");
+
   try {
-    const data = await apiGet("/api/tmdb", { path: `/movie/${tmdbId}/videos` });
-    const vids = data?.results || [];
-    const yt =
-      vids.find(v => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser")) ||
-      vids.find(v => v.site === "YouTube");
+    const key = await getTrailerKey(movie.id);
+    if (!key) {
+      els.trailerFrame.innerHTML = `<div class="muted">No trailer found.</div>`;
+      return;
+    }
 
-    if (!yt?.key) return;
-
-    const src = `https://www.youtube.com/embed/${encodeURIComponent(yt.key)}`;
-    els.trailer.innerHTML =
-      `<iframe loading="lazy" src="${src}" title="Trailer" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-    els.trailer.classList.remove("hidden");
+    const src = `https://www.youtube.com/embed/${encodeURIComponent(key)}?rel=0`;
+    els.trailerFrame.innerHTML = `
+      <iframe
+        loading="lazy"
+        src="${src}"
+        title="Trailer"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+      ></iframe>
+    `;
   } catch {
-    // silently ignore if route doesn't exist
+    els.trailerFrame.innerHTML = `<div class="muted">Trailer failed to load.</div>`;
   }
 }
 
-/**
- * Similar results rendered as "Target-style" cards.
- * NOTE: index.html uses id="results" (not "similar") — that was your crash.
- */
+function closeTrailerModal() {
+  if (!els.trailerModal || !els.trailerFrame) return;
+  els.trailerModal.classList.add("hidden");
+  els.trailerFrame.innerHTML = "";
+}
+
+/* ---------------- Similar Rendering ---------------- */
+
 function renderSimilar(items) {
   const list = (items || []).filter(Boolean);
+
+  if (!els.results) return;
 
   if (!list.length) {
     clearSimilar();
     return;
   }
 
+  // NOTE: use <div role="button"> so we can put a real <button> inside without nesting buttons
   let html = "";
-
   for (const m of list) {
     const title = esc(m.title || "Untitled");
     const year = m.year ? `(${esc(m.year)})` : "";
@@ -231,7 +282,7 @@ function renderSimilar(items) {
       : `<div class="poster placeholder"></div>`;
 
     html += `
-      <button class="simCard" type="button" data-id="${esc(m.id)}">
+      <div class="simCard" role="button" tabindex="0" data-id="${esc(m.id)}">
         <div class="targetGrid">
           ${poster}
           <div class="targetInfo">
@@ -240,24 +291,55 @@ function renderSimilar(items) {
               <div class="pill">⭐ ${esc(rating || "—")}</div>
             </div>
             <div class="overview clamp3">${overview}</div>
+
+            <div class="simActions">
+              <button class="btn tiny trailerBtn" type="button" data-trailer="${esc(m.id)}">Trailer</button>
+            </div>
           </div>
         </div>
-      </button>
+      </div>
     `;
   }
 
   els.results.innerHTML = html;
 
-  els.results.querySelectorAll(".simCard").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-id");
-      if (id) loadById(id);
+  // Card click -> loadById
+  const onCardActivate = (card) => {
+    const id = card.getAttribute("data-id");
+    if (id) loadById(id);
+  };
+
+  els.results.querySelectorAll(".simCard").forEach((card) => {
+    card.addEventListener("click", () => onCardActivate(card));
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        onCardActivate(card);
+      }
+    });
+  });
+
+  // Trailer button click -> modal trailer (does NOT trigger card click)
+  els.results.querySelectorAll(".trailerBtn").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const id = btn.getAttribute("data-trailer");
+      if (!id) return;
+
+      const movie = list.find((x) => String(x.id) === String(id)) || { id, title: "Trailer" };
+      await openTrailerModal(movie);
     });
   });
 }
 
+/* ---------------- Suggestions ---------------- */
+
 function renderSuggestions(items) {
   const list = (items || []).slice(0, 8);
+
+  if (!els.suggest) return;
 
   if (!list.length) {
     els.suggest.innerHTML = "";
@@ -285,7 +367,7 @@ function renderSuggestions(items) {
 let suggestTimer = null;
 function onSuggestInput() {
   clearTimeout(suggestTimer);
-  const q = (els.q.value || "").trim();
+  const q = (els.q?.value || "").trim();
 
   if (q.length < 2) {
     renderSuggestions([]);
@@ -295,32 +377,37 @@ function onSuggestInput() {
   suggestTimer = setTimeout(async () => {
     try {
       const data = await apiGet("/api/suggest", { q });
-      renderSuggestions(data.results || data.items || []);
+      renderSuggestions(data.results || []);
     } catch {
       renderSuggestions([]);
     }
   }, 180);
 }
 
+/* ---------------- Load/Actions ---------------- */
+
 async function loadById(id) {
   clearSimilar();
   setMeta("Loading…", false);
 
   try {
-    // /api/resolve may return either {target: {...}} or just {...}
+    // Resolve gives canonical movie details
     const r = await apiGet("/api/resolve", { id });
     const target = r.target || r;
     if (!target?.id) throw new Error("Resolve did not return a target id.");
 
     renderTarget(target);
 
-    // optional trailer (won’t break if /api/tmdb missing)
-    renderTrailerIfPossible(target.id);
+    // Target trailer (non-blocking)
+    try {
+      const key = await getTrailerKey(target.id);
+      setTargetTrailer(key);
+    } catch {
+      setTargetTrailer(null);
+    }
 
+    // Similar
     const f = getFilters();
-
-    // /api/similar may return {similar:[...]} or {results:[...]}
-    // If your API supports yearMin, keep it. If it ignores, harmless.
     const sim = await apiGet("/api/similar", {
       id: target.id,
       minRating: f.minRating,
@@ -328,7 +415,7 @@ async function loadById(id) {
       yearMin: YEAR_MIN,
     });
 
-    renderSimilar(sim.similar || sim.results || sim.items || []);
+    renderSimilar(sim.similar || sim.results || []);
   } catch (e) {
     renderTarget(null);
     clearSimilar();
@@ -337,23 +424,15 @@ async function loadById(id) {
 }
 
 async function doSearch() {
-  const q = (els.q.value || "").trim();
+  const q = (els.q?.value || "").trim();
   if (!q) return;
 
   clearSimilar();
   setMeta("Searching…", false);
 
   try {
-    // /api/search may return:
-    // - { target: {...}, items:[...] }
-    // - { items:[...] }
-    // - { results:[...] }
     const data = await apiGet("/api/search", { q });
-    const first =
-      data?.target ||
-      (Array.isArray(data?.items) && data.items[0]) ||
-      (Array.isArray(data?.results) && data.results[0]) ||
-      null;
+    const first = data?.target || (data?.items && data.items[0]) || (data?.results && data.results[0]) || null;
 
     if (!first?.id) {
       renderTarget(null);
@@ -381,7 +460,7 @@ async function doRandom() {
       yearMin: YEAR_MIN,
     });
 
-    const target = data?.target || data;
+    const target = data?.target || null;
     if (!target?.id) {
       renderTarget(null);
       setMeta("Random failed (no target).", true);
@@ -396,7 +475,8 @@ async function doRandom() {
   }
 }
 
-/* Watchlist */
+/* ---------------- Watchlist ---------------- */
+
 const WL_KEY = "neonsimilar_watchlist_v1";
 
 function loadWatchlist() {
@@ -418,37 +498,29 @@ function addToWatchlist(m) {
 }
 
 function openWatchlist() {
-  const list = loadWatchlist();
+  if (!els.watchlist || !els.modal) return;
 
+  const list = loadWatchlist();
   els.watchlist.innerHTML = list.length
     ? list.map((m) => `
-        <button class="watchItem" type="button" data-id="${esc(m.id)}">
-          ${m.poster ? `<img class="watchPoster" src="${esc(m.poster)}" alt="" loading="lazy" />` : ""}
+        <div class="watchItem">
+          ${m.poster ? `<img class="watchPoster" src="${esc(m.poster)}" alt="" />` : ""}
           <div>
             <div><strong>${esc(m.title || "")}</strong> <span class="muted">${esc(m.year || "")}</span></div>
             <div class="watchMeta">⭐ ${esc((m.rating ?? "—").toString())}</div>
           </div>
-        </button>
+        </div>
       `).join("")
     : `<div class="muted">No watchlist items yet.</div>`;
-
-  // click an item to load it
-  els.watchlist.querySelectorAll(".watchItem").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-id");
-      if (id) {
-        closeWatchlist();
-        loadById(id);
-      }
-    });
-  });
 
   els.modal.classList.remove("hidden");
 }
 
 function closeWatchlist() {
-  els.modal.classList.add("hidden");
+  els.modal?.classList.add("hidden");
 }
+
+/* ---------------- UI Init ---------------- */
 
 function initUI() {
   // Populate genre dropdown
@@ -456,14 +528,14 @@ function initUI() {
     els.genre.innerHTML = GENRES.map(([val, name]) => `<option value="${esc(val)}">${esc(name)}</option>`).join("");
   }
 
-  // Min rating display
+  // Rating slider label
   if (els.minRating && els.minRatingVal) {
     const sync = () => (els.minRatingVal.textContent = `${Number(els.minRating.value || 0)}/10`);
     els.minRating.addEventListener("input", sync);
     sync();
   }
 
-  // Suggest input
+  // Search box events
   els.q?.addEventListener("input", onSuggestInput);
   els.q?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
@@ -472,7 +544,6 @@ function initUI() {
     }
   });
 
-  // Buttons
   els.searchBtn?.addEventListener("click", doSearch);
   els.randomBtn?.addEventListener("click", doRandom);
 
@@ -490,13 +561,19 @@ function initUI() {
     if (e.target === els.modal) closeWatchlist();
   });
 
-  // Load share link ?id=...
+  // Trailer modal (optional)
+  els.closeTrailer?.addEventListener("click", closeTrailerModal);
+  els.trailerModal?.addEventListener("click", (e) => {
+    if (e.target === els.trailerModal) closeTrailerModal();
+  });
+
+  // If user comes in with ?id=123, load it
   const url = new URL(location.href);
   const id = url.searchParams.get("id");
   if (id) loadById(id);
 }
 
-// boot
+// Boot
 initUI();
 renderTarget(null);
 clearSimilar();
