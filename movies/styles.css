@@ -1,8 +1,9 @@
 /* styles.css — FILM_MATRIX / NEONSIMILAR (cyberpunk, responsive, crisp)
    FIXES INCLUDED:
    ✅ Header text no longer goes behind buttons (min-width:0 + ellipsis + wrap on mobile)
-   ✅ “Two different background colors” on iOS Safari (sticky + backdrop-filter sampling fix)
-   ✅ Trailer sizing is consistent (aspect-ratio only; no hard heights)
+   ✅ “Two different background colors” on iOS Safari (sticky + blur sampling fix)
+   ✅ Trailer sizing consistent (aspect-ratio only; no hard heights)
+   ✅ Similar cards match target “skin”
 */
 
 :root{
@@ -22,6 +23,7 @@
   --accent:#22d3ee;     /* cyan */
   --accent2:#7c3aed;    /* purple */
   --hot:#ff2bd6;        /* magenta */
+  --warn:#ff4d6d;
 
   --r: 22px;
   --pad: 18px;
@@ -30,15 +32,15 @@
   --shadow2: 0 0 0 1px rgba(120,170,255,.14), 0 16px 60px rgba(0,0,0,.45);
 }
 
-*{box-sizing:border-box}
-html,body{height:100%}
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
 
 body{
   margin:0;
   color:var(--text);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
-  /* ✅ Unified base background (no “two tone” banding from CSS itself) */
+  /* ✅ Unified base gradient */
   background:
     radial-gradient(1200px 600px at 15% 10%, rgba(124,58,237,.22), transparent 55%),
     radial-gradient(900px 520px at 85% 20%, rgba(34,211,238,.18), transparent 55%),
@@ -71,7 +73,7 @@ body::before{
   padding: 18px 14px 40px;
 }
 
-/* Works for BOTH your old header (.topbar) and new one (.top) */
+/* header (supports .top OR .topbar) */
 .top, .topbar{
   position: sticky;
   top: 0;
@@ -88,7 +90,7 @@ body::before{
   border: 1px solid var(--line);
   border-radius: calc(var(--r) + 6px);
 
-  /* ✅ Important: consistent overlay color + iOS friendly */
+  /* ✅ consistent overlay */
   background: rgba(8, 12, 24, .78);
 
   -webkit-backdrop-filter: blur(14px);
@@ -97,10 +99,7 @@ body::before{
   box-shadow: var(--shadow2);
 }
 
-/* ✅ iOS Safari “two-tone banding” fix:
-   sticky + backdrop-filter can sample background differently while scrolling.
-   We disable blur only on iOS Safari to prevent the artifact.
-*/
+/* ✅ iOS Safari fix: sticky + blur sampling can look like “two backgrounds” while scrolling */
 @supports (-webkit-touch-callout: none){
   .top, .topbar{
     -webkit-backdrop-filter: none;
@@ -118,7 +117,7 @@ body::before{
   gap: 12px;
 
   flex: 1 1 auto;
-  min-width: 0; /* ✅ critical: allows ellipsis to work in flex */
+  min-width: 0; /* ✅ critical */
 }
 
 .logo{
@@ -161,10 +160,10 @@ body::before{
 .topBtns{
   display:flex;
   gap: 10px;
-  flex: 0 0 auto; /* ✅ prevents shrinking into brand */
+  flex: 0 0 auto;
 }
 
-/* Narrow: stack buttons under brand */
+/* narrow: stack buttons under brand */
 @media (max-width: 520px){
   .top, .topbar{
     flex-wrap: wrap;
@@ -179,14 +178,14 @@ body::before{
 }
 
 /* -----------------------------
-   Cards
+   Cards / typography
 ------------------------------*/
 .card{
   border: 1px solid var(--line);
   border-radius: calc(var(--r) + 4px);
   background: var(--card);
-  backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   box-shadow: var(--shadow2);
   padding: var(--pad);
   margin: 0 0 16px;
@@ -206,14 +205,16 @@ h2{
   margin-bottom: 12px;
 }
 
-.muted{color: var(--muted)}
-.accent{color: var(--accent)}
-.hidden{display:none !important}
+.muted{ color: var(--muted); }
+.accent{ color: var(--accent); }
+.warn{ color: var(--warn); }
+.hidden{ display:none !important; }
 
 /* -----------------------------
    Inputs / buttons
 ------------------------------*/
-.lbl{display:block; margin: 10px 0 8px; color: var(--muted)}
+.lbl{ display:block; margin: 10px 0 8px; color: var(--muted); }
+
 .input, .select{
   width:100%;
   padding: 14px 14px;
@@ -224,6 +225,7 @@ h2{
   outline: none;
   box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
 }
+
 .input:focus, .select:focus{
   border-color: rgba(34,211,238,.55);
   box-shadow: 0 0 0 3px rgba(34,211,238,.12);
@@ -239,11 +241,14 @@ h2{
   transition: transform .06s ease, box-shadow .18s ease, border-color .18s ease;
   box-shadow: 0 0 0 1px rgba(0,0,0,.18);
 }
+
 .btn:hover{
   border-color: rgba(34,211,238,.5);
   box-shadow: 0 0 0 1px rgba(34,211,238,.16), 0 14px 40px rgba(0,0,0,.35);
 }
-.btn:active{transform: translateY(1px)}
+
+.btn:active{ transform: translateY(1px); }
+
 .btn.primary{
   border-color: rgba(34,211,238,.55);
   background:
@@ -251,7 +256,8 @@ h2{
     radial-gradient(circle at 90% 90%, rgba(124,58,237,.25), transparent 60%),
     rgba(10, 16, 34, .65);
 }
-.btn.full{width:100%; margin-top: 10px}
+
+.btn.full{ width:100%; margin-top: 10px; }
 
 .filters{
   display:grid;
@@ -259,14 +265,20 @@ h2{
   gap: 14px;
   margin-top: 10px;
 }
+
 @media (max-width: 720px){
-  .filters{grid-template-columns: 1fr;}
+  .filters{ grid-template-columns: 1fr; }
+}
+
+.filter{
+  padding: 0;
 }
 
 .lblRow{
   display:flex;
   justify-content:space-between;
   align-items:center;
+  gap: 10px;
 }
 
 input[type="range"]{
@@ -285,6 +297,7 @@ input[type="range"]{
   box-shadow: var(--shadow);
   overflow:hidden;
 }
+
 .suggestItem{
   width:100%;
   display:flex;
@@ -297,11 +310,12 @@ input[type="range"]{
   color: var(--text);
   cursor:pointer;
 }
-.suggestItem:hover{background: rgba(34,211,238,.08)}
-.suggestItem:last-child{border-bottom:0}
+
+.suggestItem:hover{ background: rgba(34,211,238,.08); }
+.suggestItem:last-child{ border-bottom:0; }
 
 /* -----------------------------
-   Target / Similar
+   Target / Similar cards
 ------------------------------*/
 .targetBox{
   border-radius: 18px;
@@ -381,22 +395,24 @@ input[type="range"]{
   cursor:pointer;
   transition: transform .06s ease, border-color .18s ease, box-shadow .18s ease;
 }
+
 .simCard:hover{
   border-color: rgba(34,211,238,.55);
   box-shadow: 0 0 0 1px rgba(34,211,238,.12), 0 18px 55px rgba(0,0,0,.4);
 }
-.simCard:active{transform: translateY(1px)}
+
+.simCard:active{ transform: translateY(1px); }
 
 /* Mobile tweaks */
 @media (max-width: 520px){
-  h2{font-size: 30px}
-  .title{font-size: 24px}
-  .targetGrid{grid-template-columns: 110px 1fr;}
-  .poster{width: 110px; height: 165px;}
+  h2{ font-size: 30px; }
+  .title{ font-size: 24px; }
+  .targetGrid{ grid-template-columns: 110px 1fr; }
+  .poster{ width: 110px; height: 165px; }
 }
 
 /* -----------------------------
-   Trailer (✅ fixed: aspect-ratio only)
+   Trailer (target + mini trailers)
 ------------------------------*/
 .trailer,
 .miniTrailer{
@@ -407,6 +423,7 @@ input[type="range"]{
   box-shadow: var(--shadow);
 }
 
+/* ✅ consistent sizing everywhere */
 .trailer iframe,
 .miniTrailer iframe{
   width: 100%;
@@ -416,7 +433,7 @@ input[type="range"]{
 }
 
 /* -----------------------------
-   Actions row
+   Actions row (target + similar)
 ------------------------------*/
 .actions{
   display:flex;
@@ -424,13 +441,17 @@ input[type="range"]{
   margin-top: 12px;
   flex-wrap: wrap;
 }
-.actions .btn{flex: 1 1 160px}
+
+.actions .btn{ flex: 1 1 160px; }
 
 .simActions{
   display:flex;
   gap:10px;
   margin-top:12px;
+  flex-wrap: wrap;
 }
+
+.simActions .btn{ flex: 1 1 140px; }
 
 /* -----------------------------
    Footer
@@ -452,16 +473,18 @@ input[type="range"]{
   padding: 16px;
   z-index: 100;
 }
+
 .modalCard{
   width:min(760px, 100%);
   border-radius: 22px;
   border: 1px solid var(--line);
   background: rgba(6,10,18,.82);
-  backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
   box-shadow: var(--shadow2);
   padding: 16px;
 }
+
 .modalTop{
   display:flex;
   align-items:center;
@@ -469,11 +492,13 @@ input[type="range"]{
   gap: 12px;
   margin-bottom: 10px;
 }
+
 .watchlist{
   display:flex;
   flex-direction:column;
   gap: 12px;
 }
+
 .watchItem{
   display:flex;
   gap: 12px;
@@ -482,6 +507,7 @@ input[type="range"]{
   border-radius: 18px;
   background: rgba(10,14,28,.55);
 }
+
 .watchPoster{
   width: 54px;
   height: 78px;
@@ -489,4 +515,5 @@ input[type="range"]{
   object-fit: cover;
   border: 1px solid rgba(120,170,255,.18);
 }
-.watchMeta{color: var(--muted); margin-top: 6px}
+
+.watchMeta{ color: var(--muted); margin-top: 6px; }
