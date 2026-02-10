@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Basic SEO -->
+  <title>FILM MATRIX — Find Similar Movies & TV Shows</title>
+  <meta name="description" content="Type a movie or TV show you love and Film Matrix instantly recommends similar titles (1950+). No accounts. No clutter." />
+  <meta name="robots" content="index,follow" />
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://filmmatrix.net/" />
+
+  <!-- Favicon -->
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+  <!-- Open Graph (Facebook/LinkedIn/Discord) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="FILM MATRIX" />
+  <meta property="og:title" content="FILM MATRIX — Find Similar Movies & TV Shows" />
+  <meta property="og:description" content="Type a movie or TV show you love and Film Matrix instantly recommends similar titles (1950+)." />
+  <meta property="og:url" content="https://filmmatrix.net/" />
+  <meta property="og:image" content="https://filmmatrix.net/og.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="FILM MATRIX — Find Similar Movies & TV Shows" />
+  <meta name="twitter:description" content="Type a movie or TV show you love and Film Matrix instantly recommends similar titles (1950+)." />
+  <meta name="twitter:image" content="https://filmmatrix.net/og.jpg" />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <div class="logo">[FM]</div>
+        <div class="brandText">
+          <div class="name">FILM MATRIX</div>
+          <div class="sub">similar finder • why-it-matches</div>
+        </div>
+      </div>
+
+      <!-- ✅ Header controls (icons) -->
+      <div class="topBtns">
+        <button id="watchlistBtn" class="btn icon" type="button" title="Watchlist" aria-label="Watchlist">👁️</button>
+        <button id="random" class="btn icon" type="button" title="Random" aria-label="Random">🎲</button>
+        <button id="tvOnly" class="btn icon" type="button" title="TV only" aria-label="TV only">📺</button>
+        <button id="movieOnly" class="btn icon" type="button" title="Movies only" aria-label="Movies only">🎬</button>
+        <button id="genreBtn" class="btn icon" type="button" title="Browse by genre" aria-label="Browse by genre">🏷️</button>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>Search</h2>
+      <p class="muted">
+        Search a title (1950+). Tap a suggestion. Similar results are sorted by closest match, and you’ll see <span class="accent">why</span>.
+      </p>
+
+      <label class="lbl">Movie / TV</label>
+      <input id="q" class="input" placeholder="Blade, Heat, Alien..." autocomplete="off" />
+      <div id="suggest" class="suggest hidden"></div>
+
+      <!-- Search matches list (full title + year) -->
+      <div id="matches" class="chips hidden"></div>
+
+      <button id="go" class="btn full" type="button">Search</button>
+
+      <div class="filters">
+        <div class="filter">
+          <div class="lblRow">
+            <label class="lbl">Min rating</label>
+            <span id="minRatingVal" class="muted">0/10</span>
+          </div>
+          <input id="minRating" type="range" min="0" max="10" step="0.5" value="0" />
+        </div>
+
+        <div class="filter">
+          <label class="lbl">Genre</label>
+          <select id="genre" class="select">
+            <option value="any">Any</option>
+          </select>
+          <div class="muted" style="margin-top:8px">
+            Tip: pick a genre then hit <span class="accent">🏷️</span> to browse.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="sectionTitle">
+        <h2>Target</h2>
+        <div id="meta" class="muted">Ready.</div>
+      </div>
+
+      <div id="target" class="targetBox">
+        <div class="muted">No selection yet.</div>
+      </div>
+
+      <!-- Target trailer (YouTube embed) -->
+      <div id="trailer" class="trailer hidden"></div>
+
+      <div id="targetActions" class="actions hidden">
+        <button id="addWatch" class="btn" type="button">Add to Watchlist</button>
+        <button id="copyLink" class="btn" type="button">Copy Share Link</button>
+        <button id="openImdb" class="btn" type="button">TMDb</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="sectionTitle">
+        <h2>Similar</h2>
+        <div class="muted">Up to 20 results • each has its own Trailer button.</div>
+      </div>
+
+      <div id="results" class="chips">
+        <div class="muted">No similar titles found (try another title).</div>
+      </div>
+    </section>
+
+    <!-- Popular lanes (Movies + TV) -->
+    <section class="card">
+      <div class="sectionTitle">
+        <h2>Popular Now</h2>
+        <div class="muted">Live from TMDb • movies + TV</div>
+      </div>
+
+      <h3 class="laneTitle">Popular Movies</h3>
+      <div id="popularMovies" class="lane">
+        <div class="muted">Loading…</div>
+      </div>
+
+      <h3 class="laneTitle">Popular TV Shows</h3>
+      <div id="popularTv" class="lane">
+        <div class="muted">Loading…</div>
+      </div>
+    </section>
+
+    <footer class="foot muted">
+      /movies • cyberpunk monospace • TMDb via local proxy • responsive layout
+    </footer>
+  </div>
+
+  <!-- Watchlist Modal -->
+  <div id="modal" class="modal hidden">
+    <div class="modalCard">
+      <div class="modalTop">
+        <h3>Watchlist</h3>
+        <button id="closeModal" class="btn" type="button">Close</button>
+      </div>
+      <div id="watchlist" class="watchlist"></div>
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
