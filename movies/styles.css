@@ -628,3 +628,85 @@ input[type="range"]{
 }
 
 .watchMeta{ color: var(--muted); margin-top: 6px; }
+/* =========================================
+   POPULAR NOW — compact cards (mobile friendly)
+   Paste at END of styles.css
+========================================= */
+
+/* Lane containers */
+.laneTitle{
+  margin: 18px 0 10px;
+  font-size: 18px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.lane{
+  width: 100%;
+}
+
+/* Grid */
+.popGrid{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)); /* ✅ 3 across on phones */
+  gap: 12px;
+}
+
+/* Card */
+.popCard{
+  border: 1px solid rgba(120,170,255,.18);
+  background: rgba(6,10,18,.58);
+  border-radius: 16px;
+  padding: 10px;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.18);
+  transition: transform .06s ease, border-color .18s ease, box-shadow .18s ease;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  /* ✅ critical: prevents the “giant” button sizing on iOS */
+  width: 100%;
+  max-width: 100%;
+}
+
+.popCard:hover{
+  border-color: rgba(34,211,238,.55);
+  box-shadow: 0 0 0 1px rgba(34,211,238,.12), 0 18px 55px rgba(0,0,0,.4);
+}
+.popCard:active{ transform: translateY(1px); }
+
+/* Poster */
+.popPoster{
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 3;     /* ✅ consistent poster ratio */
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid rgba(120,170,255,.18);
+  display: block;
+}
+
+/* Title */
+.popTitle{
+  font-size: 12px;
+  line-height: 1.25;
+  color: var(--text);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;   /* ✅ clamp title so it never grows huge */
+  -webkit-box-orient: vertical;
+}
+
+/* Responsive tuning */
+@media (min-width: 560px){
+  .popGrid{ grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .popTitle{ font-size: 13px; }
+}
+@media (min-width: 860px){
+  .popGrid{ grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .popTitle{ font-size: 13px; }
+}
