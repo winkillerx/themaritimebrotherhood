@@ -1,25 +1,28 @@
 /* app.js — FILM_MATRIX (static frontend)
-   Endpoints:
+   Endpoints expected:
    - /api/suggest?q=...
-   - /api/search?q=...                (returns items array; includes movie + tv)
+   - /api/search?q=...
    - /api/resolve?id=...&type=movie|tv
-   - /api/similar?id=...&type=movie|tv&minRating=...&genre=...&limit=20
-   - /api/random?minRating=...&genre=...&media=any|movie|tv
-   - /api/videos?id=...&type=movie|tv  (returns { key })
-   - /api/popular                      (returns { movies:[], tv:[] })  [optional but supported]
+   - /api/similar?id=...&type=movie|tv&minRating=...&genre=...&yearMin=...
+   - /api/random?minRating=...&genre=...&yearMin=...&media=any|movie|tv
+   - /api/videos?id=...&type=movie|tv   => { key: "YouTubeKey" }
+   - Popular:
+     - /api/popular                 => { movies:[...], tv:[...] }
+       OR:
+     - /api/popular-movies          => { results:[...] }
+     - /api/popular-tv              => { results:[...] }
 */
 
 const YEAR_MIN = 1950;
 
 const GENRES = [
   ["any", "Any"],
-  // movie genres
+  // Movies
   [28, "Action"], [12, "Adventure"], [16, "Animation"], [35, "Comedy"], [80, "Crime"],
   [99, "Documentary"], [18, "Drama"], [10751, "Family"], [14, "Fantasy"], [36, "History"],
   [27, "Horror"], [10402, "Music"], [9648, "Mystery"], [10749, "Romance"], [878, "Sci-Fi"],
   [10770, "TV Movie"], [53, "Thriller"], [10752, "War"], [37, "Western"],
-
-  // TV genres (TMDb uses some of these IDs for TV discovery)
+  // TV genres (TMDb TV)
   [10759, "Action & Adventure"], [10762, "Kids"], [10763, "News"], [10764, "Reality"],
   [10765, "Sci-Fi & Fantasy"], [10766, "Soap"], [10767, "Talk"], [10768, "War & Politics"],
 ];
@@ -31,7 +34,6 @@ const genreNameById = new Map(
 const els = {
   q: document.getElementById("q"),
   suggest: document.getElementById("suggest"),
-  matches: document.getElementById("matches"),
   searchBtn: document.getElementById("go"),
   randomBtn: document.getElementById("random"),
   watchlistBtn: document.getElementById("watchlistBtn"),
@@ -50,17 +52,22 @@ const els = {
   copyLink: document.getElementById("copyLink"),
 
   results: document.getElementById("results"),
+  matches: document.getElementById("matches"),
 
   modal: document.getElementById("modal"),
   closeModal: document.getElementById("closeModal"),
   watchlist: document.getElementById("watchlist"),
 
+  // Popular Now section (your index should include these ids)
   popularMovies: document.getElementById("popularMovies"),
-  popularTV: document.getElementById("popularTV"),
+  popularTv: document.getElementById("popularTv"),
 };
 
 const API_BASE = "";
 
+/* -----------------------------
+   Helpers
+------------------------------*/
 function esc(s = "") {
   return String(s).replace(/[&<>"']/g, (c) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -82,6 +89,7 @@ async function apiGet(path, params = {}) {
     if (v === undefined || v === null || v === "") continue;
     url.searchParams.set(k, String(v));
   }
+
   const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
   const text = await res.text();
 
@@ -120,6 +128,9 @@ function clearLists() {
   }
 }
 
+/* -----------------------------
+   Trailer helpers
+------------------------------*/
 function renderTrailerEmbed(key) {
   if (!els.trailer) return;
   if (!key) {
@@ -129,9 +140,7 @@ function renderTrailerEmbed(key) {
   }
   const src = `https://www.youtube.com/embed/${encodeURIComponent(key)}`;
   els.trailer.innerHTML =
-    `<iframe loading="lazy" src="${src}" title="Trailer"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-      allowfullscreen></iframe>`;
+    `<iframe loading="lazy" src="${src}" title="Trailer" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
   els.trailer.classList.remove("hidden");
 }
 
@@ -141,12 +150,11 @@ async function fetchTrailerKey(id, type) {
 }
 
 /* -----------------------------
-   Target render
+   Render Target
 ------------------------------*/
 function renderTarget(m) {
   if (!els.target) return;
-
-  renderTrailerEmbed(""); // reset target trailer
+  renderTrailerEmbed("");
 
   if (!m) {
     els.target.innerHTML = `<div class="muted">No selection yet.</div>`;
@@ -155,10 +163,7 @@ function renderTarget(m) {
     return;
   }
 
-  const poster = m.poster
-    ? `<img class="poster" src="${esc(m.poster)}" alt="${esc(m.title)} poster" />`
-    : `<div class="poster placeholder"></div>`;
-
+  const poster = m.poster ? `<img class="poster" src="${esc(m.poster)}" alt="${esc(m.title)} poster" />` : "";
   const genres = Array.isArray(m.genres)
     ? m.genres.map((g) => genreNameById.get(Number(g)) || "").filter(Boolean).join(", ")
     : "";
@@ -203,7 +208,7 @@ function renderTarget(m) {
 
   if (els.addWatch) els.addWatch.onclick = () => addToWatchlist(m);
 
-  // load target trailer
+  // Load target trailer automatically
   (async () => {
     try {
       const key = m.trailerKey || await fetchTrailerKey(m.id, m.type || "movie");
@@ -217,10 +222,10 @@ function renderTarget(m) {
 }
 
 /* -----------------------------
-   Similar render (each gets Open + Trailer + TMDb)
+   Render Similar (20 results + trailer button)
 ------------------------------*/
 function renderSimilar(items) {
-  const list = (items || []).filter(Boolean);
+  const list = (items || []).filter(Boolean).slice(0, 20);
   if (!els.results) return;
 
   if (!list.length) {
@@ -237,8 +242,10 @@ function renderSimilar(items) {
       ? m.genres.map((g) => genreNameById.get(Number(g)) || "").filter(Boolean).slice(0, 4).join(", ")
       : "";
 
+    const type = (m.type || "movie").toLowerCase();
+
     return `
-      <div class="simCard" data-id="${esc(m.id)}" data-type="${esc(m.type || "movie")}">
+      <div class="simCard" data-id="${esc(m.id)}" data-type="${esc(type)}">
         <div class="targetGrid">
           ${poster}
           <div class="targetInfo">
@@ -271,20 +278,15 @@ function renderSimilar(items) {
     const tmdbBtn = card.querySelector(".tmdbBtn");
     const mini = card.querySelector(".miniTrailer");
 
-    openBtn?.addEventListener("click", () => {
-      if (id) loadById(id, type);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
-
-    tmdbBtn?.addEventListener("click", () => {
-      window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(id)}`, "_blank");
-    });
+    openBtn?.addEventListener("click", () => loadById(id, type));
+    tmdbBtn?.addEventListener("click", () => window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(id)}`, "_blank"));
 
     trailerBtn?.addEventListener("click", async () => {
       try {
         trailerBtn.disabled = true;
+        const showing = !mini.classList.contains("hidden");
 
-        if (!mini.classList.contains("hidden")) {
+        if (showing) {
           mini.classList.add("hidden");
           mini.innerHTML = "";
           trailerBtn.textContent = "Trailer";
@@ -293,24 +295,20 @@ function renderSimilar(items) {
 
         trailerBtn.textContent = "Loading…";
         const key = await fetchTrailerKey(id, type);
+
         if (!key) {
-          trailerBtn.textContent = "Trailer";
           alert("No trailer found.");
+          trailerBtn.textContent = "Trailer";
           return;
         }
 
         mini.innerHTML =
-          `<iframe loading="lazy"
-            src="https://www.youtube.com/embed/${encodeURIComponent(key)}"
-            title="Trailer"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowfullscreen></iframe>`;
-
+          `<iframe loading="lazy" src="https://www.youtube.com/embed/${encodeURIComponent(key)}" title="Trailer" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
         mini.classList.remove("hidden");
         trailerBtn.textContent = "Hide trailer";
       } catch (e) {
-        trailerBtn.textContent = "Trailer";
         alert(`Trailer failed: ${e.message}`);
+        trailerBtn.textContent = "Trailer";
       } finally {
         trailerBtn.disabled = false;
       }
@@ -319,7 +317,7 @@ function renderSimilar(items) {
 }
 
 /* -----------------------------
-   Suggestions + matches (show full title + year)
+   Suggestions (show title + year + type)
 ------------------------------*/
 function renderSuggestions(items) {
   const list = (items || []).slice(0, 10);
@@ -349,10 +347,13 @@ function renderSuggestions(items) {
   });
 }
 
+/* -----------------------------
+   Search matches (optional chip list)
+------------------------------*/
 function renderMatches(items) {
   if (!els.matches) return;
+  const list = (items || []).slice(0, 10);
 
-  const list = (items || []).slice(0, 12);
   if (!list.length) {
     els.matches.innerHTML = "";
     els.matches.classList.add("hidden");
@@ -377,7 +378,7 @@ function renderMatches(items) {
 }
 
 /* -----------------------------
-   Suggest input debounce
+   Suggest input handler
 ------------------------------*/
 let suggestTimer = null;
 function onSuggestInput() {
@@ -400,7 +401,7 @@ function onSuggestInput() {
 }
 
 /* -----------------------------
-   Core load
+   Core: Load by id
 ------------------------------*/
 async function loadById(id, type = "movie") {
   clearLists();
@@ -419,8 +420,7 @@ async function loadById(id, type = "movie") {
       type: target.type || type,
       minRating: f.minRating,
       genre: f.genre,
-      yearMin: YEAR_MIN,
-      limit: 20
+      yearMin: YEAR_MIN
     });
 
     renderSimilar(sim.similar || sim.results || []);
@@ -431,6 +431,9 @@ async function loadById(id, type = "movie") {
   }
 }
 
+/* -----------------------------
+   Search
+------------------------------*/
 async function doSearch() {
   const q = (els.q?.value || "").trim();
   if (!q) return;
@@ -439,10 +442,10 @@ async function doSearch() {
   setMeta("Searching…", false);
 
   try {
-    // Search should return multiple hits (Blade + Blade II + Blade Trinity etc)
     const data = await apiGet("/api/search", { q });
     const items = data.items || data.results || [];
 
+    // Show full matches list so "Blade 2 / Blade 3" etc are visible
     renderMatches(items);
 
     const first = data.target || items[0] || null;
@@ -460,6 +463,9 @@ async function doSearch() {
   }
 }
 
+/* -----------------------------
+   Random
+------------------------------*/
 async function doRandom() {
   clearLists();
   setMeta("Picking random…", false);
@@ -491,7 +497,7 @@ async function doRandom() {
 /* -----------------------------
    Watchlist
 ------------------------------*/
-const WL_KEY = "film_matrix_watchlist_v2";
+const WL_KEY = "filmmatrix_watchlist_v2";
 
 function loadWatchlist() {
   try { return JSON.parse(localStorage.getItem(WL_KEY) || "[]"); }
@@ -513,6 +519,8 @@ function addToWatchlist(m) {
 
 function openWatchlist() {
   const list = loadWatchlist();
+  if (!els.watchlist) return;
+
   els.watchlist.innerHTML = list.length
     ? list.map((m) => `
         <div class="watchItem">
@@ -520,8 +528,8 @@ function openWatchlist() {
           <div>
             <div>
               <strong>${esc(m.title || "")}</strong>
-              <span class="muted">${fmtYear(m.year)}</span>
-              <span class="muted">(${esc((m.type||"movie").toUpperCase())})</span>
+              <span class="muted"> ${fmtYear(m.year)}</span>
+              <span class="muted"> (${esc((m.type||"movie").toUpperCase())})</span>
             </div>
             <div class="watchMeta">⭐ ${esc(fmtRating(m.rating))}</div>
             <div style="margin-top:8px">
@@ -541,53 +549,83 @@ function openWatchlist() {
     });
   });
 
-  els.modal.classList.remove("hidden");
+  els.modal?.classList.remove("hidden");
 }
 
 function closeWatchlist() {
-  els.modal.classList.add("hidden");
+  els.modal?.classList.add("hidden");
 }
 
 /* -----------------------------
-   Popular lanes (optional endpoint)
+   ✅ POPULAR NOW (Movies + TV)
+   - Uses /api/popular if available
+   - Falls back to /api/popular-movies and /api/popular-tv
 ------------------------------*/
-async function loadPopular() {
-  // Works if you have /api/popular. If not, it just quietly does nothing.
-  if (!els.popularMovies || !els.popularTV) return;
+function renderPopularGrid(container, items) {
+  if (!container) return;
 
-  try {
-    const data = await apiGet("/api/popular");
+  const list = (items || []).slice(0, 12);
+  if (!list.length) {
+    container.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
+    return;
+  }
 
-    const movies = data.movies || [];
-    const tv = data.tv || [];
+  container.innerHTML = `
+    <div class="popGrid">
+      ${list.map((m) => {
+        const poster = m.poster
+          ? `<img class="popPoster" src="${esc(m.poster)}" loading="lazy" alt="${esc(m.title)} poster" />`
+          : `<div class="popPoster placeholder"></div>`;
 
-    els.popularMovies.innerHTML = movies.length ? movies.map(m => `
-      <div class="laneCard" data-id="${esc(m.id)}" data-type="${esc(m.type || "movie")}">
-        <img src="${esc(m.poster || "")}" alt="${esc(m.title)} poster" loading="lazy" />
-        <div class="laneTitleText">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
-      </div>
-    `).join("") : `<div class="muted">No data.</div>`;
+        return `
+          <button class="popCard" type="button" data-id="${esc(m.id)}" data-type="${esc(m.type || "movie")}">
+            ${poster}
+            <div class="popTitle">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
+          </button>
+        `;
+      }).join("")}
+    </div>
+  `;
 
-    els.popularTV.innerHTML = tv.length ? tv.map(m => `
-      <div class="laneCard" data-id="${esc(m.id)}" data-type="tv">
-        <img src="${esc(m.poster || "")}" alt="${esc(m.title)} poster" loading="lazy" />
-        <div class="laneTitleText">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
-      </div>
-    `).join("") : `<div class="muted">No data.</div>`;
-
-    document.querySelectorAll(".laneCard").forEach(card => {
-      card.addEventListener("click", () => {
-        const id = card.getAttribute("data-id");
-        const type = card.getAttribute("data-type") || "movie";
-        if (id) loadById(id, type);
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      });
+  container.querySelectorAll(".popCard").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-id");
+      const type = btn.getAttribute("data-type") || "movie";
+      if (id) loadById(id, type);
     });
+  });
+}
 
+async function loadPopularNow() {
+  // If index doesn't have the containers, don't do anything.
+  if (!els.popularMovies && !els.popularTv) return;
+
+  // Start with placeholders (matches your screenshot text)
+  if (els.popularMovies) els.popularMovies.innerHTML = `<div class="muted">Loading…</div>`;
+  if (els.popularTv) els.popularTv.innerHTML = `<div class="muted">Loading…</div>`;
+
+  // 1) Try combined endpoint
+  try {
+    const data = await apiGet("/api/popular", { page: 1 });
+    renderPopularGrid(els.popularMovies, data.movies || []);
+    renderPopularGrid(els.popularTv, data.tv || []);
+    return;
   } catch {
-    // silently ignore if endpoint not present
-    els.popularMovies.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
-    els.popularTV.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
+    // ignore, fallback below
+  }
+
+  // 2) Fallback to split endpoints
+  try {
+    const [m, t] = await Promise.all([
+      apiGet("/api/popular-movies", { page: 1 }),
+      apiGet("/api/popular-tv", { page: 1 }),
+    ]);
+
+    renderPopularGrid(els.popularMovies, m.results || m.items || []);
+    renderPopularGrid(els.popularTv, t.results || t.items || []);
+  } catch (e) {
+    if (els.popularMovies) els.popularMovies.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
+    if (els.popularTv) els.popularTv.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
   }
 }
 
@@ -595,16 +633,19 @@ async function loadPopular() {
    Init
 ------------------------------*/
 function initUI() {
+  // Populate genre dropdown
   if (els.genre) {
     els.genre.innerHTML = GENRES.map(([val, name]) => `<option value="${esc(val)}">${esc(name)}</option>`).join("");
   }
 
+  // Range sync
   if (els.minRating && els.minRatingVal) {
     const sync = () => (els.minRatingVal.textContent = `${Number(els.minRating.value || 0)}/10`);
     els.minRating.addEventListener("input", sync);
     sync();
   }
 
+  // Suggest / Enter to search
   els.q?.addEventListener("input", onSuggestInput);
   els.q?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
@@ -616,28 +657,28 @@ function initUI() {
   els.searchBtn?.addEventListener("click", doSearch);
   els.randomBtn?.addEventListener("click", doRandom);
 
-  // hide suggestions when tapping elsewhere
+  // Hide suggestions when clicking elsewhere
   document.addEventListener("click", (e) => {
     if (!els.suggest?.contains(e.target) && e.target !== els.q) {
       els.suggest?.classList.add("hidden");
     }
   });
 
-  // watchlist modal
+  // Watchlist modal
   els.watchlistBtn?.addEventListener("click", openWatchlist);
   els.closeModal?.addEventListener("click", closeWatchlist);
   els.modal?.addEventListener("click", (e) => {
     if (e.target === els.modal) closeWatchlist();
   });
 
-  // If user comes in with ?id=123&type=movie|tv load it
+  // If user arrives with ?id= & type=
   const url = new URL(location.href);
   const id = url.searchParams.get("id");
   const type = url.searchParams.get("type") || "movie";
   if (id) loadById(id, type);
 
-  // popular lanes
-  loadPopular();
+  // ✅ Populate Popular Now
+  loadPopularNow();
 }
 
 initUI();
