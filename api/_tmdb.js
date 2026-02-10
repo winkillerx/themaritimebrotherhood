@@ -1,55 +1,72 @@
 // api/_tmdb.js
-export function mustGetKey() {
-  const k = process.env.TMDB_KEY;
-  if (!k) {
-    const err = new Error("Missing TMDB_KEY env var in Vercel.");
-    err.statusCode = 500;
-    throw err;
-  }
-  return k;
+// Shared TMDb helper (supports multiple env var names)
+
+const TMDB_BASE = "https://api.themoviedb.org/3";
+const IMG_BASE = "https://image.tmdb.org/t/p/w500";
+
+function getKey() {
+  return (
+    process.env.TMDB_KEY ||
+    process.env.TMDB_API_KEY ||      // ✅ fallback
+    process.env.TMDB_V3_KEY ||       // ✅ fallback
+    process.env.TMDB_TOKEN ||        // (if someone named it this)
+    ""
+  );
 }
 
 export async function tmdb(path, params = {}) {
-  const key = mustGetKey();
-  const url = new URL(`https://api.themoviedb.org/3${path}`);
-  url.searchParams.set("api_key", key);
-  url.searchParams.set("language", "en-US");
+  const key = getKey();
+  if (!key) throw new Error("TMDb API key missing. Set TMDB_KEY (or TMDB_API_KEY) in Vercel env.");
+
+  const url = new URL(`${TMDB_BASE}${path}`);
   for (const [k, v] of Object.entries(params)) {
     if (v === undefined || v === null || v === "") continue;
     url.searchParams.set(k, String(v));
   }
+  url.searchParams.set("api_key", key);
 
-  const res = await fetch(url.toString());
-  if (!res.ok) {
-    const txt = await res.text().catch(() => "");
-    const err = new Error(`TMDb error ${res.status}: ${txt}`);
-    err.statusCode = res.status;
-    throw err;
+  const res = await fetch(url.toString(), {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  const text = await res.text();
+  let json = {};
+  try {
+    json = text ? JSON.parse(text) : {};
+  } catch {
+    json = { error: text || "Invalid JSON from TMDb" };
   }
-  return res.json();
+
+  if (!res.ok) {
+    const msg = json?.status_message || json?.error || `${res.status} ${res.statusText}`;
+    throw new Error(`TMDb error: ${msg}`);
+  }
+
+  return json;
 }
 
-export function pickYear(item) {
-  const d = item.release_date || item.first_air_date || "";
-  const y = d ? Number(String(d).slice(0, 4)) : null;
-  return Number.isFinite(y) ? y : null;
+export function posterUrl(path) {
+  return path ? `${IMG_BASE}${path}` : "";
 }
 
-export function posterUrl(item) {
-  return item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : "";
-}
+// Normalizes either movie or tv item into your frontend shape
+export function normalizeAny(item, typeOverride) {
+  if (!item) return null;
 
-export function normalizeAny(item, forcedType = "") {
-  const mediaType = forcedType || item.media_type || (item.first_air_date ? "tv" : "movie");
-  const isTv = mediaType === "tv";
+  const type = typeOverride || item.media_type || (item.first_air_date ? "tv" : "movie");
+  const title = type === "tv" ? item.name : item.title;
+  const date = type === "tv" ? item.first_air_date : item.release_date;
+
   return {
     id: item.id,
-    type: isTv ? "tv" : "movie",
-    title: (isTv ? (item.name || item.original_name) : (item.title || item.original_title)) || "Untitled",
-    year: pickYear(item),
+    type,
+    title: title || "Untitled",
+    year: date ? String(date).slice(0, 4) : "",
     rating: typeof item.vote_average === "number" ? item.vote_average : null,
+    poster: posterUrl(item.poster_path),
     overview: item.overview || "",
-    poster: posterUrl(item),
-    genres: item.genre_ids || item.genres?.map(g => g.id) || [],
+    genres: Array.isArray(item.genre_ids) ? item.genre_ids : [],
   };
 }
