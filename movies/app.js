@@ -60,7 +60,7 @@ const els = {
 
   // Popular Now section (your index should include these ids)
   popularMovies: document.getElementById("popularMovies"),
-  popularTv: document.getElementById("popularTv"),
+popularTv: document.getElementById("popularTv") || document.getElementById("popularTV"),
 };
 
 const API_BASE = "";
