@@ -6,6 +6,7 @@
    ✅ Similar cards match target “skin”
    ✅ Mobile overflow fixes: rating pill + action buttons stay inside borders
    ✅ Chips + Popular lanes styling
+   ✅ Popular Now uses compact GRID cards (prevents giant iOS cards)
 */
 
 :root{
@@ -116,9 +117,7 @@ body::before{
   min-width: 0; /* critical */
 }
 
-.brandText{
-  min-width:0;
-}
+.brandText{ min-width:0; }
 
 .logo{
   width: 58px;
@@ -189,6 +188,7 @@ body::before{
   box-shadow: var(--shadow2);
   padding: var(--pad);
   margin: 0 0 16px;
+  overflow: hidden; /* helps mobile borders */
 }
 
 h2{
@@ -197,9 +197,7 @@ h2{
   letter-spacing: .04em;
 }
 
-h3{
-  margin: 0;
-}
+h3{ margin: 0; }
 
 .sectionTitle{
   display:flex;
@@ -365,6 +363,7 @@ input[type="range"]{
   letter-spacing: .02em;
   font-size: 28px;
   min-width: 0;
+  word-break: break-word;
 }
 
 .pill{
@@ -511,60 +510,6 @@ input[type="range"]{
 }
 
 /* -----------------------------
-   Popular lanes (horizontal)
-------------------------------*/
-.laneTitle{
-  margin: 18px 0 10px;
-  font-size: 20px;
-  letter-spacing: .04em;
-}
-
-.lane{
-  display:flex;
-  gap:14px;
-  overflow-x:auto;
-  padding-bottom:10px;
-  scroll-snap-type:x mandatory;
-}
-
-.lane::-webkit-scrollbar{ height:8px; }
-.lane::-webkit-scrollbar-thumb{
-  background: rgba(120,170,255,.25);
-  border-radius: 20px;
-}
-
-.laneCard{
-  min-width: 160px;
-  scroll-snap-align: start;
-  border: 1px solid rgba(120,170,255,.18);
-  border-radius: 16px;
-  background: rgba(6,10,18,.60);
-  padding: 10px;
-  cursor:pointer;
-  transition: .2s;
-}
-
-.laneCard:hover{
-  border-color: rgba(34,211,238,.6);
-  transform: translateY(-3px);
-}
-
-.laneCard img{
-  width:100%;
-  height:220px;
-  object-fit:cover;
-  border-radius:12px;
-  margin-bottom:8px;
-  border:1px solid rgba(120,170,255,.18);
-}
-
-.laneTitleText{
-  font-size: 13px;
-  font-weight: 800;
-  line-height: 1.25;
-}
-
-/* -----------------------------
    Footer
 ------------------------------*/
 .foot{
@@ -628,12 +573,12 @@ input[type="range"]{
 }
 
 .watchMeta{ color: var(--muted); margin-top: 6px; }
+
 /* =========================================
-   POPULAR NOW — compact cards (mobile friendly)
-   Paste at END of styles.css
+   ✅ POPULAR NOW — COMPACT GRID (NOT GIANT)
+   Uses the .popGrid/.popCard/.popPoster/.popTitle that app.js renders
 ========================================= */
 
-/* Lane containers */
 .laneTitle{
   margin: 18px 0 10px;
   font-size: 18px;
@@ -642,18 +587,14 @@ input[type="range"]{
   color: var(--text);
 }
 
-.lane{
-  width: 100%;
-}
+.lane{ width: 100%; }
 
-/* Grid */
 .popGrid{
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)); /* ✅ 3 across on phones */
+  grid-template-columns: repeat(3, minmax(0, 1fr)); /* 3 across on phones */
   gap: 12px;
 }
 
-/* Card */
 .popCard{
   border: 1px solid rgba(120,170,255,.18);
   background: rgba(6,10,18,.58);
@@ -668,7 +609,6 @@ input[type="range"]{
   flex-direction: column;
   gap: 8px;
 
-  /* ✅ critical: prevents the “giant” button sizing on iOS */
   width: 100%;
   max-width: 100%;
 }
@@ -679,29 +619,27 @@ input[type="range"]{
 }
 .popCard:active{ transform: translateY(1px); }
 
-/* Poster */
 .popPoster{
   width: 100%;
   height: auto;
-  aspect-ratio: 2 / 3;     /* ✅ consistent poster ratio */
+  aspect-ratio: 2 / 3;
   object-fit: cover;
   border-radius: 12px;
   border: 1px solid rgba(120,170,255,.18);
   display: block;
 }
 
-/* Title */
 .popTitle{
   font-size: 12px;
   line-height: 1.25;
   color: var(--text);
   overflow: hidden;
+
   display: -webkit-box;
-  -webkit-line-clamp: 2;   /* ✅ clamp title so it never grows huge */
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
-/* Responsive tuning */
 @media (min-width: 560px){
   .popGrid{ grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .popTitle{ font-size: 13px; }
