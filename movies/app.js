@@ -1,28 +1,25 @@
 /* app.js — FILM_MATRIX (static frontend)
    Endpoints expected:
-   - /api/suggest?q=... (&media=any|movie|tv optional)
-   - /api/search?q=...  (&media=any|movie|tv optional)
+   - /api/suggest?q=...
+   - /api/search?q=...
    - /api/resolve?id=...&type=movie|tv
    - /api/similar?id=...&type=movie|tv&minRating=...&genre=...&yearMin=...
-   - /api/random?minRating=...&genre=...&yearMin=...&media=any|movie|tv
+   - /api/random?minRating=...&genre=...&yearMin=...&media=movie|tv
    - /api/videos?id=...&type=movie|tv   => { key: "YouTubeKey" }
    - Popular:
-     - /api/popular                 => { movies:[...], tv:[...] }
-       OR:
-     - /api/popular-movies          => { results:[...] }
-     - /api/popular-tv              => { results:[...] }
+     - /api/popular                 => { movies:[...], tv:[...] } (optional)
+     - /api/popular-movies          => { results:[...] } (optional)
+     - /api/popular-tv              => { results:[...] } (optional)
 */
 
 const YEAR_MIN = 1950;
 
 const GENRES = [
   ["any", "Any"],
-  // Movies
   [28, "Action"], [12, "Adventure"], [16, "Animation"], [35, "Comedy"], [80, "Crime"],
   [99, "Documentary"], [18, "Drama"], [10751, "Family"], [14, "Fantasy"], [36, "History"],
   [27, "Horror"], [10402, "Music"], [9648, "Mystery"], [10749, "Romance"], [878, "Sci-Fi"],
   [10770, "TV Movie"], [53, "Thriller"], [10752, "War"], [37, "Western"],
-  // TV genres (TMDb TV)
   [10759, "Action & Adventure"], [10762, "Kids"], [10763, "News"], [10764, "Reality"],
   [10765, "Sci-Fi & Fantasy"], [10766, "Soap"], [10767, "Talk"], [10768, "War & Politics"],
 ];
@@ -35,21 +32,12 @@ const els = {
   q: document.getElementById("q"),
   suggest: document.getElementById("suggest"),
   searchBtn: document.getElementById("go"),
-  randomBtn: document.getElementById("random"),
+
+  // header buttons
   watchlistBtn: document.getElementById("watchlistBtn"),
-
-  // Optional new filter buttons (support multiple id variants)
-  tvBtn:
-    document.getElementById("tvBtn") ||
-    document.getElementById("tvOnlyBtn") ||
-    document.getElementById("tvOnly") ||
-    null,
-
-  moviesBtn:
-    document.getElementById("moviesBtn") ||
-    document.getElementById("movieOnlyBtn") ||
-    document.getElementById("movieOnly") ||
-    null,
+  randomBtn: document.getElementById("random"),
+  tvOnlyBtn: document.getElementById("tvOnlyBtn"),
+  movieOnlyBtn: document.getElementById("movieOnlyBtn"),
 
   minRating: document.getElementById("minRating"),
   minRatingVal: document.getElementById("minRatingVal"),
@@ -71,15 +59,37 @@ const els = {
   closeModal: document.getElementById("closeModal"),
   watchlist: document.getElementById("watchlist"),
 
+  // Popular Now
   popularMovies: document.getElementById("popularMovies"),
   popularTv: document.getElementById("popularTv") || document.getElementById("popularTV"),
 };
 
 const API_BASE = "";
 
-// Media filter mode for search/suggest/random
-// "any" | "movie" | "tv"
-let MEDIA_MODE = "any";
+/* -----------------------------
+   Mode / highlighting
+------------------------------*/
+let activeMode = "none"; // none | random | tv | movie | watchlist
+let mediaFilter = "any"; // any | tv | movie
+
+function setActiveMode(mode) {
+  activeMode = mode;
+
+  // Clear all highlights
+  [els.watchlistBtn, els.randomBtn, els.tvOnlyBtn, els.movieOnlyBtn].forEach((b) => {
+    if (b) b.classList.remove("active");
+  });
+
+  // Highlight only the selected one
+  if (mode === "watchlist" && els.watchlistBtn) els.watchlistBtn.classList.add("active");
+  if (mode === "random" && els.randomBtn) els.randomBtn.classList.add("active");
+  if (mode === "tv" && els.tvOnlyBtn) els.tvOnlyBtn.classList.add("active");
+  if (mode === "movie" && els.movieOnlyBtn) els.movieOnlyBtn.classList.add("active");
+}
+
+function setMediaFilter(next) {
+  mediaFilter = next; // any|movie|tv
+}
 
 /* -----------------------------
    Helpers
@@ -91,25 +101,26 @@ function esc(s = "") {
 }
 
 function fmtRating(r) {
-  if (typeof r !== "number" || !Number.isFinite(r)) return "—";
-  return r.toFixed(1);
+  const n = Number(r);
+  if (!Number.isFinite(n)) return "—";
+  return n.toFixed(1);
 }
 
 function fmtYear(y) {
   return y ? `(${esc(y)})` : "";
 }
 
-// Make any error payload readable (object -> JSON string)
-function normalizeErrorMessage(x) {
-  if (x == null) return "Unknown error";
-  if (typeof x === "string") return x;
-  if (typeof x === "object") {
-    if (typeof x.message === "string") return x.message;
-    if (typeof x.error === "string") return x.error;
-    if (typeof x.error?.message === "string") return x.error.message;
-    try { return JSON.stringify(x); } catch { return "Unknown error"; }
-  }
-  return String(x);
+function safeUpper(x) {
+  return String(x || "").toUpperCase();
+}
+
+function asType(x, fallback = "movie") {
+  const t = String(x || fallback).toLowerCase();
+  return t === "tv" ? "tv" : "movie";
+}
+
+function pick(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 async function apiGet(path, params = {}) {
@@ -127,12 +138,14 @@ async function apiGet(path, params = {}) {
   catch { json = { error: text || "Invalid JSON" }; }
 
   if (!res.ok) {
-    const raw = (json && (json.error ?? json)) || `${res.status} ${res.statusText}`;
-    const msg = normalizeErrorMessage(raw) || `${res.status} ${res.statusText}`;
-    const err = new Error(msg);
+    let msg = json?.error ?? `${res.status} ${res.statusText}`;
+    // ✅ avoid “[object Object]”
+    if (typeof msg === "object") {
+      try { msg = JSON.stringify(msg); } catch { msg = "Server error"; }
+    }
+    const err = new Error(String(msg));
     err.status = res.status;
-    err.body = json;        // ✅ store full body for catch blocks
-    err.raw = raw;          // ✅ store raw too
+    err.body = json;
     throw err;
   }
   return json;
@@ -147,11 +160,7 @@ function setMeta(msg, isError = false) {
 
 function getFilters() {
   const minRating = Number(els.minRating?.value || 0) || 0;
-
-  // ✅ don't send "any" as genre
-  let genre = String(els.genre?.value || "any").trim().toLowerCase();
-  if (genre === "any") genre = "";
-
+  const genre = String(els.genre?.value || "any").trim().toLowerCase();
   return { minRating, genre };
 }
 
@@ -161,28 +170,6 @@ function clearLists() {
     els.matches.innerHTML = "";
     els.matches.classList.add("hidden");
   }
-}
-
-/* -----------------------------
-   Button highlight (primary class control)
-------------------------------*/
-function clearTopHighlights() {
-  [els.watchlistBtn, els.randomBtn, els.tvBtn, els.moviesBtn].forEach((b) => {
-    if (!b) return;
-    b.classList.remove("primary");
-  });
-}
-
-function setActiveButton(btn) {
-  clearTopHighlights();
-  if (btn) btn.classList.add("primary");
-}
-
-// After "Random" finishes, return highlight to current filter (tv/movies) or clear.
-function restoreFilterHighlight() {
-  if (MEDIA_MODE === "tv" && els.tvBtn) return setActiveButton(els.tvBtn);
-  if (MEDIA_MODE === "movie" && els.moviesBtn) return setActiveButton(els.moviesBtn);
-  clearTopHighlights();
 }
 
 /* -----------------------------
@@ -202,7 +189,7 @@ function renderTrailerEmbed(key) {
 }
 
 async function fetchTrailerKey(id, type) {
-  const data = await apiGet("/api/videos", { id, type });
+  const data = await apiGet("/api/videos", { id, type: asType(type) });
   return data?.key || "";
 }
 
@@ -220,13 +207,11 @@ function renderTarget(m) {
     return;
   }
 
+  const type = asType(m.type, "movie");
   const poster = m.poster ? `<img class="poster" src="${esc(m.poster)}" alt="${esc(m.title)} poster" />` : "";
   const genres = Array.isArray(m.genres)
     ? m.genres.map((g) => genreNameById.get(Number(g)) || "").filter(Boolean).join(", ")
     : "";
-
-  const typeLabel = (m.type || "movie");
-  const typeUpper = typeof typeLabel === "string" ? typeLabel.toUpperCase() : "MOVIE";
 
   els.target.innerHTML = `
     <div class="targetGrid">
@@ -238,7 +223,7 @@ function renderTarget(m) {
         </div>
         <div class="muted">${esc(genres)}</div>
         <div class="overview">${esc(m.overview || "")}</div>
-        <div class="muted" style="margin-top:10px">Type: ${esc(typeUpper)}</div>
+        <div class="muted" style="margin-top:10px">Type: ${esc(safeUpper(type))}</div>
       </div>
     </div>
   `;
@@ -247,8 +232,7 @@ function renderTarget(m) {
 
   if (els.openImdb) {
     els.openImdb.onclick = () => {
-      const t = (m.type || "movie").toLowerCase();
-      window.open(`https://www.themoviedb.org/${t}/${encodeURIComponent(m.id)}`, "_blank");
+      window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(m.id)}`, "_blank");
     };
   }
 
@@ -257,7 +241,7 @@ function renderTarget(m) {
       try {
         const u = new URL(location.href);
         u.searchParams.set("id", String(m.id));
-        u.searchParams.set("type", String(m.type || "movie"));
+        u.searchParams.set("type", type);
         await navigator.clipboard.writeText(u.toString());
         alert("Link copied ✅");
       } catch {
@@ -266,11 +250,11 @@ function renderTarget(m) {
     };
   }
 
-  if (els.addWatch) els.addWatch.onclick = () => addToWatchlist(m);
+  if (els.addWatch) els.addWatch.onclick = () => addToWatchlist({ ...m, type });
 
   (async () => {
     try {
-      const key = m.trailerKey || await fetchTrailerKey(m.id, m.type || "movie");
+      const key = m.trailerKey || await fetchTrailerKey(m.id, type);
       renderTrailerEmbed(key);
     } catch {
       renderTrailerEmbed("");
@@ -293,6 +277,7 @@ function renderSimilar(items) {
   }
 
   els.results.innerHTML = list.map((m) => {
+    const type = asType(m.type, "movie");
     const poster = m.poster
       ? `<img class="poster" src="${esc(m.poster)}" loading="lazy" alt="${esc(m.title)} poster" />`
       : `<div class="poster placeholder"></div>`;
@@ -300,8 +285,6 @@ function renderSimilar(items) {
     const genres = Array.isArray(m.genres)
       ? m.genres.map((g) => genreNameById.get(Number(g)) || "").filter(Boolean).slice(0, 4).join(", ")
       : "";
-
-    const type = (m.type || "movie").toLowerCase();
 
     return `
       <div class="simCard" data-id="${esc(m.id)}" data-type="${esc(type)}">
@@ -330,7 +313,7 @@ function renderSimilar(items) {
 
   els.results.querySelectorAll(".simCard").forEach((card) => {
     const id = card.getAttribute("data-id");
-    const type = card.getAttribute("data-type") || "movie";
+    const type = asType(card.getAttribute("data-type") || "movie", "movie");
 
     const openBtn = card.querySelector(".openBtn");
     const trailerBtn = card.querySelector(".trailerBtn");
@@ -389,17 +372,20 @@ function renderSuggestions(items) {
   }
 
   els.suggest.classList.remove("hidden");
-  els.suggest.innerHTML = list.map((m) => `
-    <button class="suggestItem" type="button" data-id="${esc(m.id)}" data-type="${esc(m.type || "movie")}">
-      <span>${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></span>
-      <span class="muted">${esc((m.type || "movie").toUpperCase())}</span>
-    </button>
-  `).join("");
+  els.suggest.innerHTML = list.map((m) => {
+    const type = asType(m.type, "movie");
+    return `
+      <button class="suggestItem" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">
+        <span>${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></span>
+        <span class="muted">${esc(safeUpper(type))}</span>
+      </button>
+    `;
+  }).join("");
 
   els.suggest.querySelectorAll(".suggestItem").forEach((b) => {
     b.addEventListener("click", async () => {
       const id = b.getAttribute("data-id");
-      const type = b.getAttribute("data-type") || "movie";
+      const type = asType(b.getAttribute("data-type") || "movie", "movie");
       els.suggest.classList.add("hidden");
       if (id) await loadById(id, type);
     });
@@ -407,11 +393,17 @@ function renderSuggestions(items) {
 }
 
 /* -----------------------------
-   Matches
+   Search matches list
 ------------------------------*/
 function renderMatches(items) {
   if (!els.matches) return;
-  const list = (items || []).slice(0, 10);
+
+  const filtered = (items || []).filter(Boolean).filter((m) => {
+    if (mediaFilter === "any") return true;
+    return asType(m.type, "movie") === mediaFilter;
+  });
+
+  const list = filtered.slice(0, 10);
 
   if (!list.length) {
     els.matches.innerHTML = "";
@@ -420,17 +412,20 @@ function renderMatches(items) {
   }
 
   els.matches.classList.remove("hidden");
-  els.matches.innerHTML = list.map(m => `
-    <button class="chip" type="button" data-id="${esc(m.id)}" data-type="${esc(m.type || "movie")}">
-      <span class="chipTitle">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></span>
-      <span class="chipMeta">${esc((m.type || "movie").toUpperCase())} • ⭐ ${esc(fmtRating(m.rating))}</span>
-    </button>
-  `).join("");
+  els.matches.innerHTML = list.map((m) => {
+    const type = asType(m.type, "movie");
+    return `
+      <button class="chip" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">
+        <span class="chipTitle">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></span>
+        <span class="chipMeta">${esc(safeUpper(type))} • ⭐ ${esc(fmtRating(m.rating))}</span>
+      </button>
+    `;
+  }).join("");
 
   els.matches.querySelectorAll(".chip").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = btn.getAttribute("data-id");
-      const type = btn.getAttribute("data-type") || "movie";
+      const type = asType(btn.getAttribute("data-type") || "movie", "movie");
       if (id) loadById(id, type);
     });
   });
@@ -451,9 +446,13 @@ function onSuggestInput() {
 
   suggestTimer = setTimeout(async () => {
     try {
-      // optional media filter if your backend supports it
-      const data = await apiGet("/api/suggest", { q, media: MEDIA_MODE });
-      renderSuggestions(data.results || []);
+      const data = await apiGet("/api/suggest", { q });
+      const raw = data.results || data.items || [];
+      const filtered = raw.filter((m) => {
+        if (mediaFilter === "any") return true;
+        return asType(m.type, "movie") === mediaFilter;
+      });
+      renderSuggestions(filtered);
     } catch {
       renderSuggestions([]);
     }
@@ -468,16 +467,18 @@ async function loadById(id, type = "movie") {
   setMeta("Loading…", false);
 
   try {
-    const r = await apiGet("/api/resolve", { id, type });
+    const t = asType(type, "movie");
+    const r = await apiGet("/api/resolve", { id, type: t });
     const target = r.target || r;
     if (!target?.id) throw new Error("Resolve did not return a target id.");
 
-    renderTarget(target);
+    const targetType = asType(target.type || t, t);
+    renderTarget({ ...target, type: targetType });
 
     const f = getFilters();
     const sim = await apiGet("/api/similar", {
       id: target.id,
-      type: target.type || type,
+      type: targetType,
       minRating: f.minRating,
       genre: f.genre,
       yearMin: YEAR_MIN
@@ -487,9 +488,7 @@ async function loadById(id, type = "movie") {
   } catch (e) {
     renderTarget(null);
     clearLists();
-
-    const msg = normalizeErrorMessage(e?.body?.error || e?.raw || e?.body || e?.message);
-    setMeta(`Failed. (API ${e.status || "?"} – ${msg})`, true);
+    setMeta(`Failed. (API ${e.status || "?"} – ${e.message})`, true);
   }
 }
 
@@ -504,67 +503,73 @@ async function doSearch() {
   setMeta("Searching…", false);
 
   try {
-    // optional media filter if your backend supports it
-    const data = await apiGet("/api/search", { q, media: MEDIA_MODE });
+    // We do NOT rely on server filtering; we filter client-side safely.
+    const data = await apiGet("/api/search", { q });
     const items = data.items || data.results || [];
 
     renderMatches(items);
 
-    const first = data.target || items[0] || null;
+    const filtered = items.filter((m) => {
+      if (mediaFilter === "any") return true;
+      return asType(m.type, "movie") === mediaFilter;
+    });
+
+    const first = data.target || filtered[0] || null;
     if (!first?.id) {
       renderTarget(null);
       setMeta("No match found.", true);
       return;
     }
 
-    await loadById(first.id, first.type || "movie");
+    await loadById(first.id, asType(first.type, "movie"));
   } catch (e) {
     renderTarget(null);
     clearLists();
-
-    const msg = normalizeErrorMessage(e?.body?.error || e?.raw || e?.body || e?.message);
-    setMeta(`Search failed. (API ${e.status || "?"} – ${msg})`, true);
+    setMeta(`Search failed. (API ${e.status || "?"} – ${e.message})`, true);
   }
 }
 
 /* -----------------------------
-   Random
+   Random (✅ avoids media=any server 500)
 ------------------------------*/
 async function doRandom() {
   clearLists();
   setMeta("Picking random…", false);
 
-  // ✅ highlight Random only while running
-  setActiveButton(els.randomBtn);
-
   try {
     const f = getFilters();
-    const data = await apiGet("/api/random", {
-      minRating: f.minRating,
-      genre: f.genre,
-      yearMin: YEAR_MIN,
-      media: MEDIA_MODE
-    });
 
-    const target = data.target || null;
-    if (!target?.id) {
-      renderTarget(null);
-      setMeta("Random failed (no target).", true);
-      restoreFilterHighlight();
-      return;
+    // If user selected movie/tv, use it. If "any", pick one safely.
+    const desired = mediaFilter === "any" ? pick(["movie", "tv"]) : mediaFilter;
+
+    const tryOrder = desired === "movie" ? ["movie", "tv"] : ["tv", "movie"];
+    let lastErr = null;
+
+    for (const media of tryOrder) {
+      try {
+        const data = await apiGet("/api/random", {
+          minRating: f.minRating,
+          genre: f.genre,
+          yearMin: YEAR_MIN,
+          media // ✅ never "any"
+        });
+
+        const target = data.target || null;
+        if (!target?.id) throw new Error("Random returned no target.");
+
+        await loadById(target.id, asType(target.type || media, media));
+        setMeta("Random picked ✅", false);
+        return;
+      } catch (err) {
+        lastErr = err;
+      }
     }
 
-    await loadById(target.id, target.type || "movie");
-    restoreFilterHighlight();
+    throw lastErr || new Error("Random failed.");
   } catch (e) {
     renderTarget(null);
     clearLists();
-
-    // ✅ FIX: pull error from body/raw so it never shows [object Object]
-    const msg = normalizeErrorMessage(e?.body?.error || e?.raw || e?.body || e?.message);
-    setMeta(`Random failed. (API ${e.status || "?"} – ${msg})`, true);
-
-    restoreFilterHighlight();
+    setMeta(`Random failed. (API ${e.status || "?"} – ${e.message})`, true);
   }
 }
 
@@ -584,42 +589,44 @@ function saveWatchlist(items) {
 
 function addToWatchlist(m) {
   if (!m) return;
+  const type = asType(m.type, "movie");
   const list = loadWatchlist();
-  if (list.some((x) => String(x.id) === String(m.id) && String(x.type) === String(m.type))) return;
-  list.unshift({ id: m.id, type: m.type || "movie", title: m.title, year: m.year, rating: m.rating, poster: m.poster });
+  if (list.some((x) => String(x.id) === String(m.id) && asType(x.type, "movie") === type)) return;
+  list.unshift({ id: m.id, type, title: m.title, year: m.year, rating: m.rating, poster: m.poster });
   saveWatchlist(list);
   alert("Added to Watchlist ✅");
 }
 
 function openWatchlist() {
-  setActiveButton(els.watchlistBtn);
-
   const list = loadWatchlist();
   if (!els.watchlist) return;
 
   els.watchlist.innerHTML = list.length
-    ? list.map((m) => `
-        <div class="watchItem">
-          ${m.poster ? `<img class="watchPoster" src="${esc(m.poster)}" alt="" />` : ""}
-          <div>
+    ? list.map((m) => {
+        const type = asType(m.type, "movie");
+        return `
+          <div class="watchItem">
+            ${m.poster ? `<img class="watchPoster" src="${esc(m.poster)}" alt="" />` : ""}
             <div>
-              <strong>${esc(m.title || "")}</strong>
-              <span class="muted"> ${fmtYear(m.year)}</span>
-              <span class="muted"> (${esc((m.type||"movie").toUpperCase())})</span>
-            </div>
-            <div class="watchMeta">⭐ ${esc(fmtRating(m.rating))}</div>
-            <div style="margin-top:8px">
-              <button class="btn sm" data-id="${esc(m.id)}" data-type="${esc(m.type || "movie")}">Open</button>
+              <div>
+                <strong>${esc(m.title || "")}</strong>
+                <span class="muted"> ${fmtYear(m.year)}</span>
+                <span class="muted"> (${esc(safeUpper(type))})</span>
+              </div>
+              <div class="watchMeta">⭐ ${esc(fmtRating(m.rating))}</div>
+              <div style="margin-top:8px">
+                <button class="btn sm" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">Open</button>
+              </div>
             </div>
           </div>
-        </div>
-      `).join("")
+        `;
+      }).join("")
     : `<div class="muted">No watchlist items yet.</div>`;
 
   els.watchlist.querySelectorAll("button[data-id]").forEach(b => {
     b.addEventListener("click", () => {
       const id = b.getAttribute("data-id");
-      const type = b.getAttribute("data-type") || "movie";
+      const type = asType(b.getAttribute("data-type") || "movie", "movie");
       closeWatchlist();
       loadById(id, type);
     });
@@ -630,16 +637,15 @@ function openWatchlist() {
 
 function closeWatchlist() {
   els.modal?.classList.add("hidden");
-  restoreFilterHighlight();
 }
 
 /* -----------------------------
-   Popular Now (30 + 30)
+   Popular Now (✅ 30 movies + 30 tv)
 ------------------------------*/
 function renderPopularGrid(container, items) {
   if (!container) return;
 
-  const list = (items || []).slice(0, 30);
+  const list = (items || []).filter(Boolean).slice(0, 30);
   if (!list.length) {
     container.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
     return;
@@ -648,12 +654,13 @@ function renderPopularGrid(container, items) {
   container.innerHTML = `
     <div class="popGrid">
       ${list.map((m) => {
+        const type = asType(m.type || m.media_type, "movie");
         const poster = m.poster
           ? `<img class="popPoster" src="${esc(m.poster)}" loading="lazy" alt="${esc(m.title)} poster" />`
           : `<div class="popPoster placeholder"></div>`;
 
         return `
-          <button class="popCard" type="button" data-id="${esc(m.id)}" data-type="${esc(m.type || "movie")}">
+          <button class="popCard" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">
             ${poster}
             <div class="popTitle">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
           </button>
@@ -665,7 +672,7 @@ function renderPopularGrid(container, items) {
   container.querySelectorAll(".popCard").forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = btn.getAttribute("data-id");
-      const type = btn.getAttribute("data-type") || "movie";
+      const type = asType(btn.getAttribute("data-type") || "movie", "movie");
       if (id) loadById(id, type);
     });
   });
@@ -677,21 +684,52 @@ async function loadPopularNow() {
   if (els.popularMovies) els.popularMovies.innerHTML = `<div class="muted">Loading…</div>`;
   if (els.popularTv) els.popularTv.innerHTML = `<div class="muted">Loading…</div>`;
 
-  try {
-    const data = await apiGet("/api/popular", { page: 1 });
-    renderPopularGrid(els.popularMovies, data.movies || []);
-    renderPopularGrid(els.popularTv, data.tv || []);
-    return;
-  } catch {}
+  // Helper: merge pages until we have >= 30
+  const mergePaged = async (path, typeLabel) => {
+    const out = [];
+    for (let page = 1; page <= 3 && out.length < 30; page++) {
+      const data = await apiGet(path, { page });
+      const arr = data.results || data.items || [];
+      out.push(...arr.map((x) => ({ ...x, type: asType(x.type || x.media_type || typeLabel, typeLabel) })));
+    }
+    return out;
+  };
 
+  // 1) Try combined endpoint (optional)
   try {
-    const [m, t] = await Promise.all([
-      apiGet("/api/popular-movies", { page: 1 }),
-      apiGet("/api/popular-tv", { page: 1 }),
+    const combined = await apiGet("/api/popular", { page: 1 });
+    const movies = Array.isArray(combined.movies) ? combined.movies : [];
+    const tv = Array.isArray(combined.tv) ? combined.tv : [];
+
+    // If combined doesn't give enough, top up via split endpoints
+    let movies30 = movies.map((x) => ({ ...x, type: "movie" }));
+    let tv30 = tv.map((x) => ({ ...x, type: "tv" }));
+
+    if (movies30.length < 30) {
+      const more = await mergePaged("/api/popular-movies", "movie");
+      movies30 = [...movies30, ...more];
+    }
+    if (tv30.length < 30) {
+      const more = await mergePaged("/api/popular-tv", "tv");
+      tv30 = [...tv30, ...more];
+    }
+
+    renderPopularGrid(els.popularMovies, movies30);
+    renderPopularGrid(els.popularTv, tv30);
+    return;
+  } catch {
+    // ignore, fallback below
+  }
+
+  // 2) Split endpoints
+  try {
+    const [movies, tv] = await Promise.all([
+      mergePaged("/api/popular-movies", "movie"),
+      mergePaged("/api/popular-tv", "tv"),
     ]);
 
-    renderPopularGrid(els.popularMovies, m.results || m.items || []);
-    renderPopularGrid(els.popularTv, t.results || t.items || []);
+    renderPopularGrid(els.popularMovies, movies);
+    renderPopularGrid(els.popularTv, tv);
   } catch {
     if (els.popularMovies) els.popularMovies.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
     if (els.popularTv) els.popularTv.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
@@ -702,52 +740,31 @@ async function loadPopularNow() {
    Init
 ------------------------------*/
 function initUI() {
-  // ✅ ensure no button starts highlighted
-  clearTopHighlights();
-
+  // Populate genre dropdown
   if (els.genre) {
     els.genre.innerHTML = GENRES.map(([val, name]) => `<option value="${esc(val)}">${esc(name)}</option>`).join("");
   }
 
+  // Range sync
   if (els.minRating && els.minRatingVal) {
     const sync = () => (els.minRatingVal.textContent = `${Number(els.minRating.value || 0)}/10`);
     els.minRating.addEventListener("input", sync);
     sync();
   }
 
+  // Suggestions / Enter to search
   els.q?.addEventListener("input", onSuggestInput);
   els.q?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
+      setActiveMode("none");
       doSearch();
     }
   });
 
-  els.searchBtn?.addEventListener("click", doSearch);
-
-  els.randomBtn?.addEventListener("click", () => {
-    // Random is an action; highlight only while running
-    doRandom();
-  });
-
-  // ✅ TV/Movie filter buttons (persist highlight)
-  els.tvBtn?.addEventListener("click", () => {
-    MEDIA_MODE = "tv";
-    setActiveButton(els.tvBtn);
-    setMeta("TV mode ✅ (search + random will use TV shows)", false);
-  });
-
-  els.moviesBtn?.addEventListener("click", () => {
-    MEDIA_MODE = "movie";
-    setActiveButton(els.moviesBtn);
-    setMeta("Movie mode ✅ (search + random will use movies)", false);
-  });
-
-  // Watchlist modal
-  els.watchlistBtn?.addEventListener("click", openWatchlist);
-  els.closeModal?.addEventListener("click", closeWatchlist);
-  els.modal?.addEventListener("click", (e) => {
-    if (e.target === els.modal) closeWatchlist();
+  els.searchBtn?.addEventListener("click", () => {
+    setActiveMode("none");
+    doSearch();
   });
 
   // Hide suggestions when clicking elsewhere
@@ -757,13 +774,53 @@ function initUI() {
     }
   });
 
-  // Deep link
+  // Watchlist modal
+  els.watchlistBtn?.addEventListener("click", () => {
+    setActiveMode("watchlist");
+    openWatchlist();
+  });
+  els.closeModal?.addEventListener("click", () => {
+    closeWatchlist();
+    setActiveMode("none");
+  });
+  els.modal?.addEventListener("click", (e) => {
+    if (e.target === els.modal) {
+      closeWatchlist();
+      setActiveMode("none");
+    }
+  });
+
+  // ✅ Mode buttons
+  els.randomBtn?.addEventListener("click", () => {
+    setActiveMode("random");
+    // random respects mediaFilter
+    doRandom();
+  });
+
+  els.tvOnlyBtn?.addEventListener("click", () => {
+    setActiveMode("tv");
+    setMediaFilter("tv");
+    // if there's text in search box, run search immediately
+    if ((els.q?.value || "").trim()) doSearch();
+  });
+
+  els.movieOnlyBtn?.addEventListener("click", () => {
+    setActiveMode("movie");
+    setMediaFilter("movie");
+    if ((els.q?.value || "").trim()) doSearch();
+  });
+
+  // If user arrives with ?id= & type=
   const url = new URL(location.href);
   const id = url.searchParams.get("id");
-  const type = url.searchParams.get("type") || "movie";
+  const type = asType(url.searchParams.get("type") || "movie", "movie");
   if (id) loadById(id, type);
 
+  // ✅ Populate Popular Now
   loadPopularNow();
+
+  // ✅ nothing highlighted by default
+  setActiveMode("none");
 }
 
 initUI();
