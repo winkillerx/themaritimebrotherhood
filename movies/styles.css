@@ -1,12 +1,11 @@
 /* styles.css — FILM_MATRIX (cyberpunk, responsive, crisp)
    FIXES INCLUDED:
    ✅ Header text no longer goes behind buttons (min-width:0 + ellipsis + wrap on mobile)
-   ✅ iOS Safari sticky+blur sampling fix
-   ✅ Trailer sizing consistent (aspect-ratio only)
+   ✅ “Two different background colors” on iOS Safari (sticky + blur sampling fix)
+   ✅ Trailer sizing consistent (aspect-ratio only; no hard heights)
    ✅ Similar cards match target “skin”
    ✅ Mobile overflow fixes: rating pill + action buttons stay inside borders
-   ✅ Popular cards are compact (grid)
-   ✅ Top icon buttons (active state)
+   ✅ Chips + Popular lanes styling
 */
 
 :root{
@@ -72,7 +71,7 @@ body::before{
   padding: 18px 14px 40px;
 }
 
-/* header */
+/* header (supports .top OR .topbar) */
 .top, .topbar{
   position: sticky;
   top: 0;
@@ -114,10 +113,12 @@ body::before{
   gap: 12px;
 
   flex: 1 1 auto;
-  min-width: 0;
+  min-width: 0; /* critical */
 }
 
-.brandText{ min-width:0; }
+.brandText{
+  min-width:0;
+}
 
 .logo{
   width: 58px;
@@ -160,7 +161,26 @@ body::before{
   display:flex;
   gap: 10px;
   flex: 0 0 auto;
-  align-items:center;
+}
+
+/* ✅ icon buttons in header */
+.iconBtn{
+  width: 58px;
+  height: 44px;
+  padding: 0;
+  display:grid;
+  place-items:center;
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* ✅ Active mode highlight (JS toggles .active) */
+.btn.active{
+  border-color: rgba(34,211,238,.55);
+  background:
+    radial-gradient(circle at 10% 10%, rgba(34,211,238,.28), transparent 55%),
+    radial-gradient(circle at 90% 90%, rgba(124,58,237,.25), transparent 60%),
+    rgba(10, 16, 34, .65);
 }
 
 /* narrow: stack buttons under brand */
@@ -169,8 +189,15 @@ body::before{
     flex-wrap: wrap;
     justify-content:flex-start;
   }
-  .topBtns{ width: 100%; }
-  .topBtns .btn{ flex: 1 1 auto; }
+  .topBtns{
+    width: 100%;
+  }
+  .topBtns .btn{
+    flex: 1 1 auto;
+  }
+  .iconBtn{
+    width: auto;
+  }
 }
 
 /* -----------------------------
@@ -187,8 +214,15 @@ body::before{
   margin: 0 0 16px;
 }
 
-h2{ margin: 0 0 10px; font-size: 34px; letter-spacing: .04em; }
-h3{ margin: 0; }
+h2{
+  margin: 0 0 10px;
+  font-size: 34px;
+  letter-spacing: .04em;
+}
+
+h3{
+  margin: 0;
+}
 
 .sectionTitle{
   display:flex;
@@ -235,7 +269,11 @@ h3{ margin: 0; }
   box-shadow: 0 0 0 1px rgba(0,0,0,.18);
 }
 
-.btn.sm{ padding: 10px 12px; border-radius: 16px; font-size: 14px; }
+.btn.sm{
+  padding: 10px 12px;
+  border-radius: 16px;
+  font-size: 14px;
+}
 
 .btn:hover{
   border-color: rgba(34,211,238,.5);
@@ -244,25 +282,7 @@ h3{ margin: 0; }
 
 .btn:active{ transform: translateY(1px); }
 
-.btn.primary{
-  border-color: rgba(34,211,238,.55);
-  background:
-    radial-gradient(circle at 10% 10%, rgba(34,211,238,.28), transparent 55%),
-    radial-gradient(circle at 90% 90%, rgba(124,58,237,.25), transparent 60%),
-    rgba(10, 16, 34, .65);
-}
-
 .btn.full{ width:100%; margin-top: 10px; }
-
-/* icon buttons in header */
-.btn.icon{
-  width: 64px;
-  display:grid;
-  place-items:center;
-  padding: 12px 0;
-  font-size: 20px;
-  line-height: 1;
-}
 
 .filters{
   display:grid;
@@ -271,11 +291,21 @@ h3{ margin: 0; }
   margin-top: 10px;
 }
 
-@media (max-width: 720px){ .filters{ grid-template-columns: 1fr; } }
+@media (max-width: 720px){
+  .filters{ grid-template-columns: 1fr; }
+}
 
-.lblRow{ display:flex; justify-content:space-between; align-items:center; gap: 10px; }
+.lblRow{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap: 10px;
+}
 
-input[type="range"]{ width:100%; accent-color: var(--accent); }
+input[type="range"]{
+  width:100%;
+  accent-color: var(--accent);
+}
 
 /* -----------------------------
    Suggestions dropdown
@@ -342,7 +372,7 @@ input[type="range"]{ width:100%; accent-color: var(--accent); }
   align-items:flex-start;
   justify-content:space-between;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: wrap; /* important */
 }
 
 .title{
@@ -376,8 +406,13 @@ input[type="range"]{ width:100%; accent-color: var(--accent); }
   overflow: hidden;
 }
 
-.chips{ display:flex; flex-direction:column; gap: 14px; }
+.chips{
+  display:flex;
+  flex-direction:column;
+  gap: 14px;
+}
 
+/* Similar card container */
 .simCard{
   width: 100%;
   text-align: left;
@@ -387,7 +422,7 @@ input[type="range"]{ width:100%; accent-color: var(--accent); }
   box-shadow: 0 0 0 1px rgba(0,0,0,.18);
   padding: 14px;
   transition: transform .06s ease, border-color .18s ease, box-shadow .18s ease;
-  overflow: hidden;
+  overflow: hidden; /* mobile border safety */
 }
 
 .simCard:hover{
@@ -403,8 +438,12 @@ input[type="range"]{ width:100%; accent-color: var(--accent); }
   width: 100%;
 }
 
-.simActions .btn{ flex: 1 1 140px; max-width: 100%; }
+.simActions .btn{
+  flex: 1 1 140px;
+  max-width: 100%;
+}
 
+/* Mobile tweaks */
 @media (max-width: 520px){
   h2{ font-size: 30px; }
   .title{ font-size: 24px; }
@@ -414,13 +453,17 @@ input[type="range"]{ width:100%; accent-color: var(--accent); }
 
 @media (max-width: 420px){
   .simActions .btn,
-  .actions .btn{ flex: 1 1 100%; width: 100%; }
+  .actions .btn{
+    flex: 1 1 100%;
+    width: 100%;
+  }
 }
 
 /* -----------------------------
    Trailer (target + mini trailers)
 ------------------------------*/
-.trailer, .miniTrailer{
+.trailer,
+.miniTrailer{
   margin-top: 14px;
   border-radius: 18px;
   overflow:hidden;
@@ -469,83 +512,26 @@ input[type="range"]{ width:100%; accent-color: var(--accent); }
 
 .chip:active{ transform: translateY(1px); }
 
-.chipTitle{ display:block; font-weight: 800; letter-spacing: .01em; margin-bottom: 6px; }
-.chipMeta{ display:block; color: var(--muted); font-size: 13px; }
-
-/* -----------------------------
-   Popular Now — compact grid cards
-------------------------------*/
-.laneTitle{
-  margin: 18px 0 10px;
-  font-size: 18px;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  color: var(--text);
+.chipTitle{
+  display:block;
+  font-weight: 800;
+  letter-spacing: .01em;
+  margin-bottom: 6px;
 }
 
-.lane{ width:100%; }
-
-.popGrid{
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.popCard{
-  border: 1px solid rgba(120,170,255,.18);
-  background: rgba(6,10,18,.58);
-  border-radius: 16px;
-  padding: 10px;
-  cursor: pointer;
-  text-align: left;
-  box-shadow: 0 0 0 1px rgba(0,0,0,.18);
-  transition: transform .06s ease, border-color .18s ease, box-shadow .18s ease;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-  max-width: 100%;
-}
-
-.popCard:hover{
-  border-color: rgba(34,211,238,.55);
-  box-shadow: 0 0 0 1px rgba(34,211,238,.12), 0 18px 55px rgba(0,0,0,.4);
-}
-.popCard:active{ transform: translateY(1px); }
-
-.popPoster{
-  width: 100%;
-  height: auto;
-  aspect-ratio: 2 / 3;
-  object-fit: cover;
-  border-radius: 12px;
-  border: 1px solid rgba(120,170,255,.18);
-  display: block;
-}
-
-.popTitle{
-  font-size: 12px;
-  line-height: 1.25;
-  color: var(--text);
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-@media (min-width: 560px){
-  .popGrid{ grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .popTitle{ font-size: 13px; }
-}
-@media (min-width: 860px){
-  .popGrid{ grid-template-columns: repeat(6, minmax(0, 1fr)); }
-  .popTitle{ font-size: 13px; }
+.chipMeta{
+  display:block;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 /* -----------------------------
    Footer
 ------------------------------*/
-.foot{ padding: 14px 4px 0; text-align:center; }
+.foot{
+  padding: 14px 4px 0;
+  text-align:center;
+}
 
 /* -----------------------------
    Modal (Watchlist)
@@ -579,7 +565,11 @@ input[type="range"]{ width:100%; accent-color: var(--accent); }
   margin-bottom: 10px;
 }
 
-.watchlist{ display:flex; flex-direction:column; gap: 12px; }
+.watchlist{
+  display:flex;
+  flex-direction:column;
+  gap: 12px;
+}
 
 .watchItem{
   display:flex;
@@ -599,3 +589,82 @@ input[type="range"]{ width:100%; accent-color: var(--accent); }
 }
 
 .watchMeta{ color: var(--muted); margin-top: 6px; }
+
+/* =========================================
+   POPULAR NOW — compact cards (mobile friendly)
+========================================= */
+
+.laneTitle{
+  margin: 18px 0 10px;
+  font-size: 18px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.lane{
+  width: 100%;
+}
+
+/* Grid */
+.popGrid{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)); /* 3 across on phones */
+  gap: 12px;
+}
+
+/* Card */
+.popCard{
+  border: 1px solid rgba(120,170,255,.18);
+  background: rgba(6,10,18,.58);
+  border-radius: 16px;
+  padding: 10px;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.18);
+  transition: transform .06s ease, border-color .18s ease, box-shadow .18s ease;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  width: 100%;
+  max-width: 100%;
+}
+
+.popCard:hover{
+  border-color: rgba(34,211,238,.55);
+  box-shadow: 0 0 0 1px rgba(34,211,238,.12), 0 18px 55px rgba(0,0,0,.4);
+}
+.popCard:active{ transform: translateY(1px); }
+
+/* Poster */
+.popPoster{
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid rgba(120,170,255,.18);
+  display: block;
+}
+
+/* Title */
+.popTitle{
+  font-size: 12px;
+  line-height: 1.25;
+  color: var(--text);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+@media (min-width: 560px){
+  .popGrid{ grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .popTitle{ font-size: 13px; }
+}
+@media (min-width: 860px){
+  .popGrid{ grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .popTitle{ font-size: 13px; }
+}

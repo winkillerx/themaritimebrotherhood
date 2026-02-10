@@ -47,13 +47,12 @@
         </div>
       </div>
 
-      <!-- ✅ Header controls (icons) -->
-      <div class="topBtns">
-        <button id="watchlistBtn" class="btn icon" type="button" title="Watchlist" aria-label="Watchlist">👁️</button>
-        <button id="random" class="btn icon" type="button" title="Random" aria-label="Random">🎲</button>
-        <button id="tvOnly" class="btn icon" type="button" title="TV only" aria-label="TV only">📺</button>
-        <button id="movieOnly" class="btn icon" type="button" title="Movies only" aria-label="Movies only">🎬</button>
-        <button id="genreBtn" class="btn icon" type="button" title="Browse by genre" aria-label="Browse by genre">🏷️</button>
+      <!-- ✅ 4 buttons (no default highlight) -->
+      <div class="topBtns" role="group" aria-label="Mode buttons">
+        <button id="watchlistBtn" class="btn iconBtn" type="button" aria-label="Watchlist">👁️</button>
+        <button id="random" class="btn iconBtn" type="button" aria-label="Random">🎲</button>
+        <button id="tvOnlyBtn" class="btn iconBtn" type="button" aria-label="TV only">📺</button>
+        <button id="movieOnlyBtn" class="btn iconBtn" type="button" aria-label="Movies only">🎬</button>
       </div>
     </header>
 
@@ -67,7 +66,6 @@
       <input id="q" class="input" placeholder="Blade, Heat, Alien..." autocomplete="off" />
       <div id="suggest" class="suggest hidden"></div>
 
-      <!-- Search matches list (full title + year) -->
       <div id="matches" class="chips hidden"></div>
 
       <button id="go" class="btn full" type="button">Search</button>
@@ -86,9 +84,6 @@
           <select id="genre" class="select">
             <option value="any">Any</option>
           </select>
-          <div class="muted" style="margin-top:8px">
-            Tip: pick a genre then hit <span class="accent">🏷️</span> to browse.
-          </div>
         </div>
       </div>
     </section>
@@ -103,7 +98,6 @@
         <div class="muted">No selection yet.</div>
       </div>
 
-      <!-- Target trailer (YouTube embed) -->
       <div id="trailer" class="trailer hidden"></div>
 
       <div id="targetActions" class="actions hidden">
@@ -124,7 +118,6 @@
       </div>
     </section>
 
-    <!-- Popular lanes (Movies + TV) -->
     <section class="card">
       <div class="sectionTitle">
         <h2>Popular Now</h2>
@@ -147,7 +140,6 @@
     </footer>
   </div>
 
-  <!-- Watchlist Modal -->
   <div id="modal" class="modal hidden">
     <div class="modalCard">
       <div class="modalTop">
