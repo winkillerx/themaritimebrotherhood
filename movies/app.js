@@ -1,28 +1,11 @@
-/* app.js — FILM_MATRIX (static frontend)
-   Endpoints expected:
-   - /api/suggest?q=...
-   - /api/search?q=...
-   - /api/resolve?id=...&type=movie|tv
-   - /api/similar?id=...&type=movie|tv&minRating=...&genre=...&yearMin=...
-   - /api/random?minRating=...&genre=...&yearMin=...&media=any|movie|tv
-   - /api/videos?id=...&type=movie|tv   => { key: "YouTubeKey" }
-   - Popular:
-     - /api/popular                 => { movies:[...], tv:[...] }
-       OR:
-     - /api/popular-movies          => { results:[...] }
-     - /api/popular-tv              => { results:[...] }
-*/
-
 const YEAR_MIN = 1950;
 
 const GENRES = [
   ["any", "Any"],
-  // Movies
   [28, "Action"], [12, "Adventure"], [16, "Animation"], [35, "Comedy"], [80, "Crime"],
   [99, "Documentary"], [18, "Drama"], [10751, "Family"], [14, "Fantasy"], [36, "History"],
   [27, "Horror"], [10402, "Music"], [9648, "Mystery"], [10749, "Romance"], [878, "Sci-Fi"],
   [10770, "TV Movie"], [53, "Thriller"], [10752, "War"], [37, "Western"],
-  // TV genres (TMDb TV)
   [10759, "Action & Adventure"], [10762, "Kids"], [10763, "News"], [10764, "Reality"],
   [10765, "Sci-Fi & Fantasy"], [10766, "Soap"], [10767, "Talk"], [10768, "War & Politics"],
 ];
@@ -37,6 +20,9 @@ const els = {
   searchBtn: document.getElementById("go"),
   randomBtn: document.getElementById("random"),
   watchlistBtn: document.getElementById("watchlistBtn"),
+
+  tvOnlyBtn: document.getElementById("tvOnly"),
+  movieOnlyBtn: document.getElementById("movieOnly"),
 
   minRating: document.getElementById("minRating"),
   minRatingVal: document.getElementById("minRatingVal"),
@@ -58,7 +44,6 @@ const els = {
   closeModal: document.getElementById("closeModal"),
   watchlist: document.getElementById("watchlist"),
 
-  // Popular Now section (your index should include these ids)
   popularMovies: document.getElementById("popularMovies"),
   popularTv: document.getElementById("popularTv") || document.getElementById("popularTV"),
 };
@@ -73,24 +58,17 @@ function esc(s = "") {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   }[c]));
 }
-
 function fmtRating(r) {
   if (typeof r !== "number" || !Number.isFinite(r)) return "—";
   return r.toFixed(1);
 }
+function fmtYear(y) { return y ? `(${esc(y)})` : ""; }
 
-function fmtYear(y) {
-  return y ? `(${esc(y)})` : "";
-}
-
-/* ✅ FIX: normalize type safely (prevents .toUpperCase crash) */
 function normType(t) {
   const s = (typeof t === "string" ? t : "").toLowerCase();
   return (s === "tv" || s === "movie") ? s : "movie";
 }
-function typeLabel(t) {
-  return normType(t).toUpperCase();
-}
+function typeLabel(t) { return normType(t).toUpperCase(); }
 
 async function apiGet(path, params = {}) {
   const url = new URL(`${location.origin}${API_BASE}${path}`);
@@ -135,6 +113,31 @@ function clearLists() {
     els.matches.innerHTML = "";
     els.matches.classList.add("hidden");
   }
+}
+
+/* -----------------------------
+   Media Mode (Any/Movie/TV)
+------------------------------*/
+const MODE_KEY = "filmmatrix_media_mode_v1"; // "any" | "movie" | "tv"
+let mediaMode = (localStorage.getItem(MODE_KEY) || "any").toLowerCase();
+if (!["any", "movie", "tv"].includes(mediaMode)) mediaMode = "any";
+
+function setMediaMode(mode) {
+  mediaMode = (mode || "any").toLowerCase();
+  if (!["any", "movie", "tv"].includes(mediaMode)) mediaMode = "any";
+  localStorage.setItem(MODE_KEY, mediaMode);
+  syncModeUI();
+}
+
+function syncModeUI() {
+  if (els.movieOnlyBtn) els.movieOnlyBtn.classList.toggle("primary", mediaMode === "movie");
+  if (els.tvOnlyBtn) els.tvOnlyBtn.classList.toggle("primary", mediaMode === "tv");
+}
+
+function passesMode(itemType) {
+  const t = normType(itemType);
+  if (mediaMode === "any") return true;
+  return t === mediaMode;
 }
 
 /* -----------------------------
@@ -217,7 +220,6 @@ function renderTarget(m) {
 
   if (els.addWatch) els.addWatch.onclick = () => addToWatchlist({ ...m, type: t });
 
-  // Load target trailer automatically
   (async () => {
     try {
       const key = m.trailerKey || await fetchTrailerKey(m.id, t);
@@ -231,7 +233,7 @@ function renderTarget(m) {
 }
 
 /* -----------------------------
-   Render Similar (20 results + trailer button)
+   Render Similar
 ------------------------------*/
 function renderSimilar(items) {
   const list = (items || []).filter(Boolean).slice(0, 20);
@@ -326,10 +328,12 @@ function renderSimilar(items) {
 }
 
 /* -----------------------------
-   Suggestions (show title + year + type)
+   Suggestions
 ------------------------------*/
 function renderSuggestions(items) {
-  const list = (items || []).slice(0, 10);
+  let list = (items || []).slice(0, 20).filter(Boolean);
+  list = list.filter((m) => passesMode(m.type)).slice(0, 10);
+
   if (!els.suggest) return;
 
   if (!list.length) {
@@ -357,11 +361,13 @@ function renderSuggestions(items) {
 }
 
 /* -----------------------------
-   Search matches (optional chip list)
+   Matches
 ------------------------------*/
 function renderMatches(items) {
   if (!els.matches) return;
-  const list = (items || []).slice(0, 10);
+
+  let list = (items || []).slice(0, 40).filter(Boolean);
+  list = list.filter((m) => passesMode(m.type)).slice(0, 10);
 
   if (!list.length) {
     els.matches.innerHTML = "";
@@ -401,7 +407,7 @@ function onSuggestInput() {
 
   suggestTimer = setTimeout(async () => {
     try {
-      const data = await apiGet("/api/suggest", { q });
+      const data = await apiGet("/api/suggest", { q, media: mediaMode });
       renderSuggestions(data.results || []);
     } catch {
       renderSuggestions([]);
@@ -452,16 +458,19 @@ async function doSearch() {
   setMeta("Searching…", false);
 
   try {
-    const data = await apiGet("/api/search", { q });
+    const data = await apiGet("/api/search", { q, media: mediaMode });
     const items = data.items || data.results || [];
 
-    // Show full matches list so "Blade 2 / Blade 3" etc are visible
     renderMatches(items);
 
-    const first = data.target || items[0] || null;
+    const first =
+      (data.target && passesMode(data.target.type) ? data.target : null) ||
+      items.find((x) => x?.id && passesMode(x.type)) ||
+      null;
+
     if (!first?.id) {
       renderTarget(null);
-      setMeta("No match found.", true);
+      setMeta(`No match found for ${mediaMode.toUpperCase()}.`, true);
       return;
     }
 
@@ -486,7 +495,7 @@ async function doRandom() {
       minRating: f.minRating,
       genre: f.genre,
       yearMin: YEAR_MIN,
-      media: "any"
+      media: mediaMode
     });
 
     const target = data.target || null;
@@ -525,15 +534,7 @@ function addToWatchlist(m) {
 
   if (list.some((x) => String(x.id) === String(m.id) && normType(x.type) === t)) return;
 
-  list.unshift({
-    id: m.id,
-    type: t,
-    title: m.title,
-    year: m.year,
-    rating: m.rating,
-    poster: m.poster
-  });
-
+  list.unshift({ id: m.id, type: t, title: m.title, year: m.year, rating: m.rating, poster: m.poster });
   saveWatchlist(list);
   alert("Added to Watchlist ✅");
 }
@@ -578,14 +579,12 @@ function closeWatchlist() {
 }
 
 /* -----------------------------
-   ✅ POPULAR NOW (Movies + TV)
-   - Uses /api/popular if available
-   - Falls back to /api/popular-movies and /api/popular-tv
+   ✅ POPULAR NOW (30 MOVIES + 30 TV)
 ------------------------------*/
 function renderPopularGrid(container, items) {
   if (!container) return;
 
-  const list = (items || []).slice(0, 12);
+  const list = (items || []).slice(0, 30); // ✅ 30
   if (!list.length) {
     container.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
     return;
@@ -625,17 +624,13 @@ async function loadPopularNow() {
   if (els.popularMovies) els.popularMovies.innerHTML = `<div class="muted">Loading…</div>`;
   if (els.popularTv) els.popularTv.innerHTML = `<div class="muted">Loading…</div>`;
 
-  // 1) Try combined endpoint
   try {
     const data = await apiGet("/api/popular", { page: 1 });
     renderPopularGrid(els.popularMovies, data.movies || []);
     renderPopularGrid(els.popularTv, data.tv || []);
     return;
-  } catch {
-    // ignore, fallback below
-  }
+  } catch {}
 
-  // 2) Fallback to split endpoints
   try {
     const [m, t] = await Promise.all([
       apiGet("/api/popular-movies", { page: 1 }),
@@ -663,6 +658,18 @@ function initUI() {
     els.minRating.addEventListener("input", sync);
     sync();
   }
+
+  els.tvOnlyBtn?.addEventListener("click", () => {
+    setMediaMode(mediaMode === "tv" ? "any" : "tv");
+    onSuggestInput();
+  });
+
+  els.movieOnlyBtn?.addEventListener("click", () => {
+    setMediaMode(mediaMode === "movie" ? "any" : "movie");
+    onSuggestInput();
+  });
+
+  syncModeUI();
 
   els.q?.addEventListener("input", onSuggestInput);
   els.q?.addEventListener("keydown", (e) => {
@@ -692,7 +699,6 @@ function initUI() {
   const type = normType(url.searchParams.get("type") || "movie");
   if (id) loadById(id, type);
 
-  // Populate Popular Now
   loadPopularNow();
 }
 
