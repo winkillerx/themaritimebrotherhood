@@ -4,12 +4,14 @@
    - /api/search?q=...
    - /api/resolve?id=...&type=movie|tv
    - /api/similar?id=...&type=movie|tv&minRating=...&genre=...&yearMin=...
-   - /api/random?minRating=...&genre=...&yearMin=...&media=movie|tv
    - /api/videos?id=...&type=movie|tv   => { key: "YouTubeKey" }
    - Popular:
      - /api/popular                 => { movies:[...], tv:[...] } (optional)
      - /api/popular-movies          => { results:[...] } (optional)
      - /api/popular-tv              => { results:[...] } (optional)
+
+   NOTE:
+   ✅ Random is implemented CLIENT-SIDE because /api/random is returning 500 server-side.
 */
 
 const YEAR_MIN = 1950;
@@ -75,12 +77,10 @@ let mediaFilter = "any"; // any | tv | movie
 function setActiveMode(mode) {
   activeMode = mode;
 
-  // Clear all highlights
   [els.watchlistBtn, els.randomBtn, els.tvOnlyBtn, els.movieOnlyBtn].forEach((b) => {
     if (b) b.classList.remove("active");
   });
 
-  // Highlight only the selected one
   if (mode === "watchlist" && els.watchlistBtn) els.watchlistBtn.classList.add("active");
   if (mode === "random" && els.randomBtn) els.randomBtn.classList.add("active");
   if (mode === "tv" && els.tvOnlyBtn) els.tvOnlyBtn.classList.add("active");
@@ -138,8 +138,7 @@ async function apiGet(path, params = {}) {
   catch { json = { error: text || "Invalid JSON" }; }
 
   if (!res.ok) {
-    let msg = json?.error ?? `${res.status} ${res.statusText}`;
-    // ✅ avoid “[object Object]”
+    let msg = json?.error ?? json?.message ?? `${res.status} ${res.statusText}`;
     if (typeof msg === "object") {
       try { msg = JSON.stringify(msg); } catch { msg = "Server error"; }
     }
@@ -503,7 +502,6 @@ async function doSearch() {
   setMeta("Searching…", false);
 
   try {
-    // We do NOT rely on server filtering; we filter client-side safely.
     const data = await apiGet("/api/search", { q });
     const items = data.items || data.results || [];
 
@@ -530,46 +528,78 @@ async function doSearch() {
 }
 
 /* -----------------------------
-   Random (✅ avoids media=any server 500)
+   ✅ Random (CLIENT-SIDE) — uses popular lists
 ------------------------------*/
+let popularCache = { movies: [], tv: [] };
+let popularLoadedOnce = false;
+
+async function ensurePopularCache() {
+  if (popularLoadedOnce && (popularCache.movies.length || popularCache.tv.length)) return;
+
+  // Helper: merge pages until we have >= 60 (enough to feel random)
+  const mergePaged = async (path, typeLabel) => {
+    const out = [];
+    for (let page = 1; page <= 5 && out.length < 60; page++) {
+      const data = await apiGet(path, { page });
+      const arr = data.results || data.items || [];
+      out.push(...arr.map((x) => ({ ...x, type: asType(x.type || x.media_type || typeLabel, typeLabel) })));
+    }
+    return out;
+  };
+
+  // Try combined popular first
+  try {
+    const combined = await apiGet("/api/popular", { page: 1 });
+    const movies = Array.isArray(combined.movies) ? combined.movies : [];
+    const tv = Array.isArray(combined.tv) ? combined.tv : [];
+    popularCache.movies = movies.map((x) => ({ ...x, type: "movie" }));
+    popularCache.tv = tv.map((x) => ({ ...x, type: "tv" }));
+  } catch {
+    // ignore
+  }
+
+  // Top up via split endpoints
+  try {
+    if (popularCache.movies.length < 20) popularCache.movies = await mergePaged("/api/popular-movies", "movie");
+  } catch {}
+  try {
+    if (popularCache.tv.length < 20) popularCache.tv = await mergePaged("/api/popular-tv", "tv");
+  } catch {}
+
+  popularLoadedOnce = true;
+}
+
 async function doRandom() {
   clearLists();
   setMeta("Picking random…", false);
 
   try {
-    const f = getFilters();
+    await ensurePopularCache();
 
-    // If user selected movie/tv, use it. If "any", pick one safely.
-    const desired = mediaFilter === "any" ? pick(["movie", "tv"]) : mediaFilter;
+    const want = mediaFilter; // any|movie|tv
+    let pool = [];
 
-    const tryOrder = desired === "movie" ? ["movie", "tv"] : ["tv", "movie"];
-    let lastErr = null;
+    if (want === "movie") pool = popularCache.movies.slice();
+    else if (want === "tv") pool = popularCache.tv.slice();
+    else pool = [...popularCache.movies, ...popularCache.tv];
 
-    for (const media of tryOrder) {
-      try {
-        const data = await apiGet("/api/random", {
-          minRating: f.minRating,
-          genre: f.genre,
-          yearMin: YEAR_MIN,
-          media // ✅ never "any"
-        });
+    // Safety
+    pool = pool.filter((x) => x && x.id);
 
-        const target = data.target || null;
-        if (!target?.id) throw new Error("Random returned no target.");
-
-        await loadById(target.id, asType(target.type || media, media));
-        setMeta("Random picked ✅", false);
-        return;
-      } catch (err) {
-        lastErr = err;
-      }
+    if (!pool.length) {
+      throw new Error("Popular feed unavailable, cannot pick random.");
     }
 
-    throw lastErr || new Error("Random failed.");
+    // Pick one and load it
+    const chosen = pick(pool);
+    const chosenType = asType(chosen.type || chosen.media_type, "movie");
+
+    await loadById(chosen.id, chosenType);
+    setMeta("Random picked ✅", false);
   } catch (e) {
     renderTarget(null);
     clearLists();
-    setMeta(`Random failed. (API ${e.status || "?"} – ${e.message})`, true);
+    setMeta(`Random failed. (${e.message})`, true);
   }
 }
 
@@ -640,7 +670,7 @@ function closeWatchlist() {
 }
 
 /* -----------------------------
-   Popular Now (✅ 30 movies + 30 tv)
+   Popular Now (30 + 30)
 ------------------------------*/
 function renderPopularGrid(container, items) {
   if (!container) return;
@@ -684,7 +714,6 @@ async function loadPopularNow() {
   if (els.popularMovies) els.popularMovies.innerHTML = `<div class="muted">Loading…</div>`;
   if (els.popularTv) els.popularTv.innerHTML = `<div class="muted">Loading…</div>`;
 
-  // Helper: merge pages until we have >= 30
   const mergePaged = async (path, typeLabel) => {
     const out = [];
     for (let page = 1; page <= 3 && out.length < 30; page++) {
@@ -695,13 +724,11 @@ async function loadPopularNow() {
     return out;
   };
 
-  // 1) Try combined endpoint (optional)
   try {
     const combined = await apiGet("/api/popular", { page: 1 });
     const movies = Array.isArray(combined.movies) ? combined.movies : [];
     const tv = Array.isArray(combined.tv) ? combined.tv : [];
 
-    // If combined doesn't give enough, top up via split endpoints
     let movies30 = movies.map((x) => ({ ...x, type: "movie" }));
     let tv30 = tv.map((x) => ({ ...x, type: "tv" }));
 
@@ -716,12 +743,17 @@ async function loadPopularNow() {
 
     renderPopularGrid(els.popularMovies, movies30);
     renderPopularGrid(els.popularTv, tv30);
+
+    // ✅ also seed random cache
+    popularCache.movies = movies30.slice();
+    popularCache.tv = tv30.slice();
+    popularLoadedOnce = true;
+
     return;
   } catch {
-    // ignore, fallback below
+    // ignore
   }
 
-  // 2) Split endpoints
   try {
     const [movies, tv] = await Promise.all([
       mergePaged("/api/popular-movies", "movie"),
@@ -730,6 +762,12 @@ async function loadPopularNow() {
 
     renderPopularGrid(els.popularMovies, movies);
     renderPopularGrid(els.popularTv, tv);
+
+    // ✅ also seed random cache
+    popularCache.movies = movies.slice();
+    popularCache.tv = tv.slice();
+    popularLoadedOnce = true;
+
   } catch {
     if (els.popularMovies) els.popularMovies.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
     if (els.popularTv) els.popularTv.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
@@ -740,19 +778,16 @@ async function loadPopularNow() {
    Init
 ------------------------------*/
 function initUI() {
-  // Populate genre dropdown
   if (els.genre) {
     els.genre.innerHTML = GENRES.map(([val, name]) => `<option value="${esc(val)}">${esc(name)}</option>`).join("");
   }
 
-  // Range sync
   if (els.minRating && els.minRatingVal) {
     const sync = () => (els.minRatingVal.textContent = `${Number(els.minRating.value || 0)}/10`);
     els.minRating.addEventListener("input", sync);
     sync();
   }
 
-  // Suggestions / Enter to search
   els.q?.addEventListener("input", onSuggestInput);
   els.q?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
@@ -767,14 +802,12 @@ function initUI() {
     doSearch();
   });
 
-  // Hide suggestions when clicking elsewhere
   document.addEventListener("click", (e) => {
     if (!els.suggest?.contains(e.target) && e.target !== els.q) {
       els.suggest?.classList.add("hidden");
     }
   });
 
-  // Watchlist modal
   els.watchlistBtn?.addEventListener("click", () => {
     setActiveMode("watchlist");
     openWatchlist();
@@ -790,17 +823,14 @@ function initUI() {
     }
   });
 
-  // ✅ Mode buttons
   els.randomBtn?.addEventListener("click", () => {
     setActiveMode("random");
-    // random respects mediaFilter
     doRandom();
   });
 
   els.tvOnlyBtn?.addEventListener("click", () => {
     setActiveMode("tv");
     setMediaFilter("tv");
-    // if there's text in search box, run search immediately
     if ((els.q?.value || "").trim()) doSearch();
   });
 
@@ -810,16 +840,13 @@ function initUI() {
     if ((els.q?.value || "").trim()) doSearch();
   });
 
-  // If user arrives with ?id= & type=
   const url = new URL(location.href);
   const id = url.searchParams.get("id");
   const type = asType(url.searchParams.get("type") || "movie", "movie");
   if (id) loadById(id, type);
 
-  // ✅ Populate Popular Now
   loadPopularNow();
 
-  // ✅ nothing highlighted by default
   setActiveMode("none");
 }
 
