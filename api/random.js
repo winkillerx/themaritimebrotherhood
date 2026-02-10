@@ -1,71 +1,52 @@
-import { tmdb, normalizeMovie, normalizeTv, normalizeAny } from './_tmdb.js';
+// movies/api/random.js
+import { tmdb, normalizeMovie, pickYear } from "./_tmdb.js";
 
-// /api/random?minRating=...&genre=...&yearMin=...&media=any|movie|tv
-// NOTE: Random previously used /discover which can occasionally throw TMDb 500.
-// This implementation uses trending/popular pools + filtering for stability.
+function rand(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 export default async function handler(req, res) {
   try {
-    const minRating = Number(req.query.minRating || 0) || 0;
-    const genre = String(req.query.genre || 'any').trim().toLowerCase();
-    const yearMin = Number(req.query.yearMin || 1950) || 1950;
-    const media = String(req.query.media || 'any').trim().toLowerCase();
+    const minRating = Number(req.query.minRating || 0);
+    const genre = (req.query.genre || "any").toLowerCase();
 
-    const want = media === 'movie' || media === 'tv' ? media : 'any';
+    // ✅ default 1950
+    const yearMin = Number(req.query.yearMin || 1950);
+    const yearMax = Number(req.query.yearMax || 9999);
 
-    // helper: filter + normalize
-    const pickFrom = (rawItems, typeHint) => {
-      const list = (rawItems || []).filter(Boolean).map((it) => {
-        // normalize first to give us year/rating/title/type
-        if (typeHint === 'movie') return normalizeMovie(it);
-        if (typeHint === 'tv') return normalizeTv(it);
-        return normalizeAny(it);
-      });
+    const page = 1 + Math.floor(Math.random() * 5);
 
-      const filtered = list.filter((m) => {
-        if (!m || !m.id) return false;
-        if (typeof m.rating === 'number' && m.rating < minRating) return false;
-        if (m.year && Number(m.year) < yearMin) return false;
-        if (genre !== 'any') {
-          const gid = Number(genre);
-          if (Number.isFinite(gid)) {
-            const g = Array.isArray(m.genres) ? m.genres.map(Number) : [];
-            if (!g.includes(gid)) return false;
-          }
-        }
-        if (want !== 'any' && String(m.type || '').toLowerCase() !== want) return false;
-        return true;
-      });
+    const discover = await tmdb("/discover/movie", {
+      sort_by: "popularity.desc",
+      "vote_count.gte": 200,
+      page,
+      include_adult: "false",
+    });
 
-      if (!filtered.length) return null;
-      const idx = Math.floor(Math.random() * filtered.length);
-      return filtered[idx];
-    };
+    let items = (discover.results || []).map(normalizeMovie);
 
-    // 1) Trending pool (bigger mix; stable endpoints)
-    try {
-      const trend = await tmdb(`/trending/all/week`, { page: 1 });
-      const picked = pickFrom(trend?.results || [], 'any');
-      if (picked) return res.status(200).json({ target: picked });
-    } catch {
-      // ignore
+    if (Number.isFinite(minRating) && minRating > 0) {
+      items = items.filter(m => (m.rating || 0) >= minRating);
     }
 
-    // 2) Popular pool (movies + tv)
-    try {
-      const [pm, pt] = await Promise.all([
-        tmdb(`/movie/popular`, { page: 1 }),
-        tmdb(`/tv/popular`, { page: 1 }),
-      ]);
+    items = items.filter(m => {
+      const y = m.year ?? pickYear(m);
+      if (!y) return false;
+      return y >= yearMin && y <= yearMax;
+    });
 
-      const pool = [...(pm?.results || []).map((x) => ({ ...x, __type: 'movie' })), ...(pt?.results || []).map((x) => ({ ...x, __type: 'tv' }))];
-      const picked = pickFrom(pool, 'any');
-      if (picked) return res.status(200).json({ target: picked });
-    } catch {
-      // ignore
+    if (genre !== "any") {
+      const genreId = Number(genre);
+      if (Number.isFinite(genreId) && genreId > 0) {
+        items = items.filter(m => Array.isArray(m.genres) && m.genres.includes(genreId));
+      }
     }
 
-    return res.status(404).json({ error: 'No random title found for the current filters.' });
+    const target = rand(items);
+    if (!target) return res.status(404).json({ error: "No results for filters" });
+
+    res.status(200).json({ target, items });
   } catch (e) {
-    return res.status(500).json({ error: e?.message || 'Random failed' });
+    res.status(e.statusCode || 500).json({ error: e.message || "Unknown error" });
   }
 }

@@ -1,31 +1,48 @@
-import { tmdb, normalizeMovie, normalizeTv } from './_tmdb.js';
+// api/popular.js
+import { tmdb, normalizeAny } from "./_tmdb.js";
 
-// /api/popular?take=50
 export default async function handler(req, res) {
   try {
-    const take = Math.max(1, Math.min(100, Number(req.query.take || 50)));
+    const page = Number(req.query?.page || 1) || 1;
+    const media = String(req.query?.media || "any").toLowerCase(); // any|movie|tv
 
-    // Fetch enough pages to reach `take`
-    const fetchMany = async (path, normalizer) => {
-      const out = [];
-      let page = 1;
-      while (out.length < take && page <= 500) {
-        const data = await tmdb(path, { page });
-        const items = (data?.results || []).map(normalizer).filter(Boolean);
-        out.push(...items);
-        if (!data?.results?.length) break;
-        page += 1;
+    res.setHeader("Content-Type", "application/json");
+    // small cache is fine for popular lists
+    res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=600");
+
+    // helpers that never throw outward
+    const safeFetch = async (fn) => {
+      try {
+        return await fn();
+      } catch {
+        return null;
       }
-      return out.slice(0, take);
     };
 
-    const [movies, tv] = await Promise.all([
-      fetchMany('/movie/popular', normalizeMovie),
-      fetchMany('/tv/popular', normalizeTv),
-    ]);
+    const moviesPromise =
+      media === "tv"
+        ? Promise.resolve([])
+        : safeFetch(async () => {
+            const j = await tmdb("/movie/popular", { page, language: "en-US" });
+            return (j.results || []).map((x) => normalizeAny(x, "movie")).filter(Boolean);
+          });
 
-    res.status(200).json({ movies, tv });
+    const tvPromise =
+      media === "movie"
+        ? Promise.resolve([])
+        : safeFetch(async () => {
+            const j = await tmdb("/tv/popular", { page, language: "en-US" });
+            return (j.results || []).map((x) => normalizeAny(x, "tv")).filter(Boolean);
+          });
+
+    const [movies, tv] = await Promise.all([moviesPromise, tvPromise]);
+
+    // If TMDb is fully down, both may be [] — still return 200 so frontend can render “unavailable” cleanly
+    return res.status(200).json({
+      movies: Array.isArray(movies) ? movies : [],
+      tv: Array.isArray(tv) ? tv : [],
+    });
   } catch (e) {
-    res.status(500).json({ error: e?.message || 'popular failed' });
+    return res.status(500).json({ error: e?.message || "popular failed" });
   }
 }
