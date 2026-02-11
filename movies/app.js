@@ -269,10 +269,11 @@ function renderTarget(m) {
           <div class="pill">⭐ ${esc(fmtRating(m.rating))}</div>
         </div>
 
-        <div class="genresRow">
-          <div class="genresText">${esc(genres || "—")}</div>
-          <div class="typeText muted">${esc(safeUpper(type))}</div>
-        </div>
+      </div>
+
+      <div class="metaRow">
+        <div class="genresText">${esc(genres || "—")}</div>
+        <div class="typeText muted">${esc(safeUpper(type))}</div>
       </div>
 
       <div class="overviewBlock">
@@ -355,10 +356,11 @@ function renderSimilar(items) {
               <div class="pill">⭐ ${esc(fmtRating(m.rating))}</div>
             </div>
 
-            <div class="genresRow">
-              <div class="genresText">${esc(genres || "—")}</div>
-              <div class="typeText muted">${esc(safeUpper(type))}</div>
-            </div>
+          </div>
+
+          <div class="metaRow">
+            <div class="genresText">${esc(genres || "—")}</div>
+            <div class="typeText muted">${esc(safeUpper(type))}</div>
           </div>
 
           <div class="overviewBlock">

@@ -394,6 +394,17 @@ input[type="range"]{
   gap: 12px;
   flex-wrap: wrap;
 }
+/* ✅ meta row under poster + title (full width) */
+.metaRow{
+  grid-column: 1 / -1;
+  margin-top: 10px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 
 .genresText{
   color: rgba(231,236,255,.75);
@@ -681,7 +692,7 @@ input[type="range"]{
 .themeWrap{
   width: 100%;
   position: relative;
-  margin-top: 10px;
+  margin-top: 4px;
 }
 
 .themeToggleBtn{
