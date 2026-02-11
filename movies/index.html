@@ -2,29 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <title>FILM MATRIX — Find Similar Movies & TV Shows</title>
-  <meta name="description" content="Type a movie or TV show you love and Film Matrix recommends similar titles instantly (1950+). Filters, trailers, watchlist, share links, random picks, and Popular Now (50 + 50)." />
+  <meta name="description" content="Type a movie or TV show you love and Film Matrix recommends similar titles instantly (1950+), with trailers, watchlist, filters, and popular now." />
 
   <link rel="canonical" href="https://filmmatrix.net/" />
-  <meta name="theme-color" content="#0b1220" />
-
-  <!-- Open Graph -->
-  <meta property="og:title" content="FILM MATRIX — Find Similar Movies & TV Shows" />
-  <meta property="og:description" content="Find what to watch next: Similar matches, trailers, filters, watchlist, share links, random picks, and Popular Now." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://filmmatrix.net/" />
-  <!-- If you have an OG image, uncomment and set path -->
-  <!-- <meta property="og:image" content="https://filmmatrix.net/og.jpg" /> -->
-
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="FILM MATRIX — Find Similar Movies & TV Shows" />
-  <meta name="twitter:description" content="Similar matches, trailers, filters, watchlist, share links, random picks, and Popular Now." />
-  <!-- <meta name="twitter:image" content="https://filmmatrix.net/og.jpg" /> -->
-
   <link rel="icon" href="/favicon.ico" sizes="any" />
+
   <link rel="stylesheet" href="./styles.css" />
 </head>
 
@@ -35,7 +20,7 @@
         <div class="logo">[FM]</div>
         <div class="brandText">
           <div class="name">FILM MATRIX</div>
-          <div class="sub">recommend engine • why-it-matches</div>
+          <div class="sub">similar finder • why-it-matches</div>
         </div>
       </div>
 
@@ -45,37 +30,21 @@
         <button id="tvOnlyBtn" class="btn iconBtn" type="button" aria-label="TV Only">📺</button>
         <button id="movieOnlyBtn" class="btn iconBtn" type="button" aria-label="Movies Only">🎬</button>
       </div>
-
-      <!-- Theme selector row (full width) -->
-      <div class="themeRow">
-        <button id="themeBtn" class="btn themeBtn" type="button" aria-haspopup="listbox" aria-expanded="false">
-          🎨 Theme
-        </button>
-
-        <div id="themeMenu" class="themeMenu hidden" role="listbox" aria-label="Theme">
-          <button class="themeOption" type="button" data-theme="blue">🔵 Blue</button>
-          <button class="themeOption" type="button" data-theme="red">🔴 Red</button>
-          <button class="themeOption" type="button" data-theme="green">🟢 Green</button>
-          <button class="themeOption" type="button" data-theme="purple">🟣 Purple</button>
-          <button class="themeOption" type="button" data-theme="pink">💗 Pink</button>
-        </div>
-      </div>
     </header>
 
     <section class="card">
       <h2>Search</h2>
-
       <p class="muted">
-        <strong>Film Matrix</strong> helps you find what to watch next using TMDb data.
+        <strong>Film Matrix</strong> helps you find what to watch next.
         Type a movie or TV show (1950+), then:
         <br><br>
         • Tap a suggestion (fast autocomplete) or hit <strong>Search</strong><br>
-        • Pick a <strong>Target</strong> and instantly get up to <strong>20 Similar</strong> matches<br>
-        • Each result includes rating, genre, overview, plus a <strong>Trailer</strong> button<br>
+        • Pick a <strong>Target</strong> title and instantly get up to <strong>20 Similar</strong> matches<br>
+        • Each result includes genre + rating + overview and a <strong>Trailer</strong> button<br>
         • Use filters: <strong>Minimum rating</strong> + <strong>Genre</strong><br>
-        • Toggle modes: <strong>TV-only</strong> or <strong>Movies-only</strong><br>
+        • Use mode buttons: <strong>TV-only</strong> or <strong>Movies-only</strong><br>
         • Hit <strong>Random</strong> for a surprise pick (uses Popular feed)<br>
-        • Save picks with <strong>Watchlist</strong> (stored in your browser)<br>
+        • Save titles with <strong>Watchlist</strong> (stored in your browser)<br>
         • Share any pick using <strong>Copy Share Link</strong><br>
         • Browse <strong>Popular Now</strong> (50 movies + 50 TV)
       </p>
@@ -130,8 +99,7 @@
         <h2>Similar</h2>
         <div class="muted">Up to 20 results • each has its own Trailer button.</div>
       </div>
-
-      <div id="results">
+      <div id="results" class="chips">
         <div class="muted">No similar titles found (try another title).</div>
       </div>
     </section>
