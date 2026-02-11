@@ -885,3 +885,30 @@ initUI();
 renderTarget(null);
 clearLists();
 setMeta("Ready.", false);
+/* -----------------------------
+   Theme System
+------------------------------*/
+
+const themeToggle = document.getElementById("themeToggle");
+const themeOptions = document.getElementById("themeOptions");
+const themeButtons = document.querySelectorAll(".themeOption");
+
+themeToggle?.addEventListener("click", () => {
+  themeOptions.classList.toggle("hidden");
+});
+
+themeButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    const theme = btn.getAttribute("data-theme");
+
+    document.body.classList.remove(
+      "theme-blue",
+      "theme-red",
+      "theme-green",
+      "theme-purple"
+    );
+
+    document.body.classList.add(`theme-${theme}`);
+    themeOptions.classList.add("hidden");
+  });
+});
