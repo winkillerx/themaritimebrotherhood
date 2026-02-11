@@ -150,7 +150,10 @@ body::before{
   text-overflow: ellipsis;
   max-width: 100%;
 }
-
+.topBtns .iconBtn{
+  font-size: 30px;
+  line-height: 1;
+}
 .topBtns{
   display:flex;
   gap: 10px;
