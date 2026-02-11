@@ -47,20 +47,12 @@
         </div>
       </div>
 
-      <!-- 4 header buttons -->
-      <div class="topBtns">
-        <button id="watchlistBtn" class="btn">👀 Watchlist</button>
-        <button id="random" class="btn primary">🎲 Random</button>
-        <button id="tvOnlyBtn" class="btn">📺 TV</button>
-        <button id="movieOnlyBtn" class="btn">🎬 Movies</button>
-      </div>
-
-      <!-- Theme row under the 4 buttons -->
-      <div class="themeRow" id="themeRow">
-        <button class="btn themeBtn t-red"    type="button" data-theme="red">🔴 Red</button>
-        <button class="btn themeBtn t-green"  type="button" data-theme="green">🟢 Green</button>
-        <button class="btn themeBtn t-pink"   type="button" data-theme="pink">💗 Pink</button>
-        <button class="btn themeBtn t-purple" type="button" data-theme="purple">🟣 Purple</button>
+      <!-- ✅ 4 buttons (no default highlight) -->
+      <div class="topBtns" role="group" aria-label="Mode buttons">
+        <button id="watchlistBtn" class="btn iconBtn" type="button" aria-label="Watchlist">👁️</button>
+        <button id="random" class="btn iconBtn" type="button" aria-label="Random">🎲</button>
+        <button id="tvOnlyBtn" class="btn iconBtn" type="button" aria-label="TV only">📺</button>
+        <button id="movieOnlyBtn" class="btn iconBtn" type="button" aria-label="Movies only">🎬</button>
       </div>
     </header>
 
@@ -74,10 +66,9 @@
       <input id="q" class="input" placeholder="Blade, Heat, Alien..." autocomplete="off" />
       <div id="suggest" class="suggest hidden"></div>
 
-      <!-- Search matches list (full title + year) -->
       <div id="matches" class="chips hidden"></div>
 
-      <button id="go" class="btn full">Search</button>
+      <button id="go" class="btn full" type="button">Search</button>
 
       <div class="filters">
         <div class="filter">
@@ -107,13 +98,12 @@
         <div class="muted">No selection yet.</div>
       </div>
 
-      <!-- Target trailer (YouTube embed) -->
       <div id="trailer" class="trailer hidden"></div>
 
       <div id="targetActions" class="actions hidden">
-        <button id="addWatch" class="btn">Add to Watchlist</button>
-        <button id="copyLink" class="btn">Copy Share Link</button>
-        <button id="openImdb" class="btn">TMDb</button>
+        <button id="addWatch" class="btn" type="button">Add to Watchlist</button>
+        <button id="copyLink" class="btn" type="button">Copy Share Link</button>
+        <button id="openImdb" class="btn" type="button">TMDb</button>
       </div>
     </section>
 
@@ -128,7 +118,6 @@
       </div>
     </section>
 
-    <!-- Popular lanes (Movies + TV) -->
     <section class="card">
       <div class="sectionTitle">
         <h2>Popular Now</h2>
@@ -151,12 +140,11 @@
     </footer>
   </div>
 
-  <!-- Watchlist Modal -->
   <div id="modal" class="modal hidden">
     <div class="modalCard">
       <div class="modalTop">
         <h3>Watchlist</h3>
-        <button id="closeModal" class="btn">Close</button>
+        <button id="closeModal" class="btn" type="button">Close</button>
       </div>
       <div id="watchlist" class="watchlist"></div>
     </div>
