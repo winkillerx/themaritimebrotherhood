@@ -6,15 +6,15 @@
    - /api/similar?id=...&type=movie|tv&minRating=...&genre=...&yearMin=...
    - /api/videos?id=...&type=movie|tv   => { key: "YouTubeKey" }
    - Popular:
-     - /api/popular                 => { movies:[...], tv:[...] } (supports page)
-     - /api/popular-movies          => { results:[...] } (supports page)
-     - /api/popular-tv              => { results:[...] } (supports page)
+     - /api/popular?page=N => { movies:[...], tv:[...] }
 
-   NOTE:
-   ✅ Random is implemented CLIENT-SIDE (popular feed) for stability.
+   Notes:
+   ✅ Random is CLIENT-SIDE using Popular cache (because /api/random returns 500)
+   ✅ Popular loads 50 movies + 50 tv (multi-page)
 */
 
 const YEAR_MIN = 1950;
+const POPULAR_COUNT = 50; // ✅ 50 each
 
 const GENRES = [
   ["any", "Any"],
@@ -35,15 +35,10 @@ const els = {
   suggest: document.getElementById("suggest"),
   searchBtn: document.getElementById("go"),
 
-  // header buttons
   watchlistBtn: document.getElementById("watchlistBtn"),
   randomBtn: document.getElementById("random"),
   tvOnlyBtn: document.getElementById("tvOnlyBtn"),
   movieOnlyBtn: document.getElementById("movieOnlyBtn"),
-
-  // theme
-  themeBtn: document.getElementById("themeBtn"),
-  themeMenu: document.getElementById("themeMenu"),
 
   minRating: document.getElementById("minRating"),
   minRatingVal: document.getElementById("minRatingVal"),
@@ -65,7 +60,6 @@ const els = {
   closeModal: document.getElementById("closeModal"),
   watchlist: document.getElementById("watchlist"),
 
-  // Popular Now
   popularMovies: document.getElementById("popularMovies"),
   popularTv: document.getElementById("popularTv") || document.getElementById("popularTV"),
 };
@@ -80,19 +74,21 @@ let mediaFilter = "any"; // any | tv | movie
 
 function setActiveMode(mode) {
   activeMode = mode;
+  [els.watchlistBtn, els.randomBtn, els.tvOnlyBtn, els.movieOnlyBtn].forEach((b) => b?.classList.remove("active"));
 
-  [els.watchlistBtn, els.randomBtn, els.tvOnlyBtn, els.movieOnlyBtn].forEach((b) => {
-    if (b) b.classList.remove("active");
-  });
-
-  if (mode === "watchlist" && els.watchlistBtn) els.watchlistBtn.classList.add("active");
-  if (mode === "random" && els.randomBtn) els.randomBtn.classList.add("active");
-  if (mode === "tv" && els.tvOnlyBtn) els.tvOnlyBtn.classList.add("active");
-  if (mode === "movie" && els.movieOnlyBtn) els.movieOnlyBtn.classList.add("active");
+  if (mode === "watchlist") els.watchlistBtn?.classList.add("active");
+  if (mode === "random") els.randomBtn?.classList.add("active");
+  if (mode === "tv") els.tvOnlyBtn?.classList.add("active");
+  if (mode === "movie") els.movieOnlyBtn?.classList.add("active");
 }
 
-function setMediaFilter(next) {
-  mediaFilter = next; // any|movie|tv
+function asType(x, fallback = "movie") {
+  const t = String(x || fallback).toLowerCase();
+  return t === "tv" ? "tv" : "movie";
+}
+
+function safeUpper(x) {
+  return String(x || "").toUpperCase();
 }
 
 /* -----------------------------
@@ -114,28 +110,54 @@ function fmtYear(y) {
   return y ? `(${esc(y)})` : "";
 }
 
-function safeUpper(x) {
-  return String(x || "").toUpperCase();
-}
-
-function asType(x, fallback = "movie") {
-  const t = String(x || fallback).toLowerCase();
-  return t === "tv" ? "tv" : "movie";
-}
-
 function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-async function apiGet(path, params = {}) {
+function setMeta(msg, isError = false) {
+  if (!els.meta) return;
+  els.meta.textContent = msg;
+  els.meta.classList.toggle("muted", !isError);
+  els.meta.classList.toggle("warn", isError);
+}
+
+function getFilters() {
+  const minRating = Number(els.minRating?.value || 0) || 0;
+  const genre = String(els.genre?.value || "any").trim().toLowerCase();
+  return { minRating, genre };
+}
+
+function clearLists() {
+  if (els.results) els.results.innerHTML = `<div class="muted">No similar titles found (try another title).</div>`;
+  if (els.matches) {
+    els.matches.innerHTML = "";
+    els.matches.classList.add("hidden");
+  }
+}
+
+/* -----------------------------
+   apiGet with timeout (prevents “stuck Loading…”)
+------------------------------*/
+async function apiGet(path, params = {}, timeoutMs = 12000) {
   const url = new URL(`${location.origin}${API_BASE}${path}`);
   for (const [k, v] of Object.entries(params)) {
     if (v === undefined || v === null || v === "") continue;
     url.searchParams.set(k, String(v));
   }
 
-  const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
-  const text = await res.text();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  let res, text;
+  try {
+    res = await fetch(url.toString(), {
+      headers: { Accept: "application/json" },
+      signal: controller.signal
+    });
+    text = await res.text();
+  } finally {
+    clearTimeout(timer);
+  }
 
   let json;
   try { json = text ? JSON.parse(text) : {}; }
@@ -151,28 +173,8 @@ async function apiGet(path, params = {}) {
     err.body = json;
     throw err;
   }
+
   return json;
-}
-
-function setMeta(msg, isError = false) {
-  if (!els.meta) return;
-  els.meta.textContent = msg;
-  els.meta.classList.toggle("warn", !!isError);
-  els.meta.classList.toggle("muted", !isError);
-}
-
-function getFilters() {
-  const minRating = Number(els.minRating?.value || 0) || 0;
-  const genre = String(els.genre?.value || "any").trim().toLowerCase();
-  return { minRating, genre };
-}
-
-function clearLists() {
-  if (els.results) els.results.innerHTML = `<div class="muted">No similar titles found (try another title).</div>`;
-  if (els.matches) {
-    els.matches.innerHTML = "";
-    els.matches.classList.add("hidden");
-  }
 }
 
 /* -----------------------------
@@ -197,101 +199,42 @@ async function fetchTrailerKey(id, type) {
 }
 
 /* -----------------------------
-   Read More (universal)
+   Read-more toggle (shared)
 ------------------------------*/
-function attachReadMore(root) {
-  if (!root) return;
-  root.querySelectorAll("[data-desc]").forEach((box) => {
-    const full = box.getAttribute("data-desc") || "";
-    const descEl = box.querySelector(".desc");
-    const btn = box.querySelector(".readMoreBtn");
-    if (!descEl || !btn) return;
+function makeReadMoreHTML(fullText = "", clampLines = 4) {
+  const t = String(fullText || "").trim();
+  if (!t) return { html: `<div class="overviewText muted">No description available.</div>`, hasToggle: false };
 
-    // If it’s short, hide button
-    if (full.length < 180) {
-      btn.classList.add("hidden");
-      descEl.classList.remove("clamp");
-      return;
-    }
+  const safe = esc(t);
+  // Always clamp visually; toggle reveals full
+  return {
+    html: `
+      <div class="overviewText clamp" style="--clamp:${clampLines}" data-full="${safe}">${safe}</div>
+      <button class="btn linkBtn readMoreBtn" type="button">Read more</button>
+    `,
+    hasToggle: true
+  };
+}
 
-    let expanded = false;
-    const sync = () => {
-      if (expanded) {
-        descEl.classList.remove("clamp");
-        btn.textContent = "Read less";
-      } else {
-        descEl.classList.add("clamp");
-        btn.textContent = "Read more";
-      }
-    };
-
+function wireReadMore(rootEl) {
+  if (!rootEl) return;
+  rootEl.querySelectorAll(".readMoreBtn").forEach((btn) => {
     btn.addEventListener("click", () => {
-      expanded = !expanded;
-      sync();
-    });
+      const box = btn.closest(".overviewBlock");
+      const textEl = box?.querySelector(".overviewText");
+      if (!textEl) return;
 
-    // start clamped
-    expanded = false;
-    sync();
+      const expanded = textEl.classList.toggle("expanded");
+      btn.textContent = expanded ? "Show less" : "Read more";
+    });
   });
 }
 
 /* -----------------------------
-   Universal Movie Card HTML
-   - rating under title
-   - genre under rating
-   - genre + description BELOW poster block (left aligned)
-   - buttons centered
-------------------------------*/
-function cardHTML(m, opts = {}) {
-  const type = asType(m.type, "movie");
-  const poster = m.poster
-    ? `<img class="poster" src="${esc(m.poster)}" alt="${esc(m.title)} poster" loading="lazy" />`
-    : `<div class="poster placeholder"></div>`;
-
-  const genres = Array.isArray(m.genres)
-    ? m.genres.map((g) => genreNameById.get(Number(g)) || "").filter(Boolean).join(", ")
-    : "";
-
-  const title = `${esc(m.title)} <span class="year">${fmtYear(m.year)}</span>`;
-  const rating = fmtRating(m.rating);
-
-  // Use full overview when available; the clamp handles it
-  const overviewFull = String(m.overview || "").trim();
-  const overviewShown = overviewFull || "No overview available.";
-
-  const actions = opts.actions || ""; // injected buttons area
-
-  return `
-    <div class="movieCard" data-id="${esc(m.id)}" data-type="${esc(type)}" data-desc="${esc(overviewFull)}">
-      <div class="movieTop">
-        ${poster}
-
-        <div class="movieInfo">
-          <div class="title">${title}</div>
-
-          <div class="ratingPill" aria-label="Rating">
-            <span class="star">⭐</span>
-            <span class="num">${esc(rating)}</span>
-          </div>
-
-          <div class="genreLine">${esc(genres || "—")}</div>
-        </div>
-      </div>
-
-      <div class="desc clamp">${esc(overviewShown)}</div>
-
-      <div class="readMoreRow">
-        <button class="readMoreBtn" type="button">Read more</button>
-      </div>
-
-      ${actions}
-    </div>
-  `;
-}
-
-/* -----------------------------
    Render Target
+   ✅ title row + rating
+   ✅ genres BELOW title row (left)
+   ✅ overview UNDER poster area + spacing
 ------------------------------*/
 function renderTarget(m) {
   if (!els.target) return;
@@ -306,76 +249,78 @@ function renderTarget(m) {
 
   const type = asType(m.type, "movie");
 
-  const actions = `
-    <div class="cardActions">
-      <button class="btn sm openTargetBtn" type="button">Open</button>
-      <button class="btn sm trailerTargetBtn" type="button">Trailer</button>
-      <button class="btn sm tmdbTargetBtn" type="button">TMDb</button>
+  const poster = m.poster
+    ? `<img class="poster" src="${esc(m.poster)}" alt="${esc(m.title)} poster" />`
+    : `<div class="poster placeholder"></div>`;
+
+  const genres = Array.isArray(m.genres)
+    ? m.genres.map((g) => genreNameById.get(Number(g)) || "").filter(Boolean).join(", ")
+    : "";
+
+  const overviewBits = makeReadMoreHTML(m.overview || "", 5);
+
+  els.target.innerHTML = `
+    <div class="targetGrid">
+      ${poster}
+
+      <div class="targetInfo">
+        <div class="titleRow">
+          <div class="title">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
+          <div class="pill">⭐ ${esc(fmtRating(m.rating))}</div>
+        </div>
+
+        <div class="genresRow">
+          <div class="genresText">${esc(genres || "—")}</div>
+          <div class="typeText muted">${esc(safeUpper(type))}</div>
+        </div>
+      </div>
+
+      <div class="overviewBlock">
+        ${overviewBits.html}
+      </div>
     </div>
   `;
 
-  els.target.innerHTML = cardHTML(m, { actions });
+  wireReadMore(els.target);
+
   els.targetActions?.classList.remove("hidden");
 
-  // Target action bar below card (watchlist/share/tmdb)
-  if (els.openImdb) {
-    els.openImdb.onclick = () => {
-      window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(m.id)}`, "_blank");
-    };
-  }
+  els.openImdb && (els.openImdb.onclick = () => {
+    window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(m.id)}`, "_blank");
+  });
 
-  if (els.copyLink) {
-    els.copyLink.onclick = async () => {
-      try {
-        const u = new URL(location.href);
-        u.searchParams.set("id", String(m.id));
-        u.searchParams.set("type", type);
-        await navigator.clipboard.writeText(u.toString());
-        alert("Link copied ✅");
-      } catch {
-        alert("Copy failed (browser blocked clipboard).");
-      }
-    };
-  }
-
-  if (els.addWatch) els.addWatch.onclick = () => addToWatchlist({ ...m, type });
-
-  // inside target card buttons
-  const card = els.target.querySelector(".movieCard");
-  const openBtn = card?.querySelector(".openTargetBtn");
-  const trailerBtn = card?.querySelector(".trailerTargetBtn");
-  const tmdbBtn = card?.querySelector(".tmdbTargetBtn");
-
-  openBtn?.addEventListener("click", () => loadById(m.id, type));
-  tmdbBtn?.addEventListener("click", () => window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(m.id)}`, "_blank"));
-
-  trailerBtn?.addEventListener("click", async () => {
+  els.copyLink && (els.copyLink.onclick = async () => {
     try {
-      trailerBtn.disabled = true;
-      trailerBtn.textContent = "Loading…";
-      const key = m.trailerKey || await fetchTrailerKey(m.id, type);
-      if (!key) {
-        alert("No trailer found.");
-        trailerBtn.textContent = "Trailer";
-        return;
-      }
-      renderTrailerEmbed(key);
-      trailerBtn.textContent = "Trailer";
-    } catch (e) {
-      alert(`Trailer failed: ${e.message}`);
-      trailerBtn.textContent = "Trailer";
-    } finally {
-      trailerBtn.disabled = false;
+      const u = new URL(location.href);
+      u.searchParams.set("id", String(m.id));
+      u.searchParams.set("type", type);
+      await navigator.clipboard.writeText(u.toString());
+      alert("Link copied ✅");
+    } catch {
+      alert("Copy failed (browser blocked clipboard).");
     }
   });
 
-  attachReadMore(els.target);
+  els.addWatch && (els.addWatch.onclick = () => addToWatchlist({ ...m, type }));
+
+  (async () => {
+    try {
+      const key = m.trailerKey || await fetchTrailerKey(m.id, type);
+      renderTrailerEmbed(key);
+    } catch {
+      renderTrailerEmbed("");
+    }
+  })();
 
   setMeta(`Selected: ${m.title}`, false);
 }
 
 /* -----------------------------
    Render Similar
+   ✅ genres below title
+   ✅ overview under poster area
+   ✅ read more toggle per card
+   ✅ centered buttons
 ------------------------------*/
 function renderSimilar(items) {
   const list = (items || []).filter(Boolean).slice(0, 20);
@@ -388,18 +333,55 @@ function renderSimilar(items) {
 
   els.results.innerHTML = list.map((m) => {
     const type = asType(m.type, "movie");
-    const actions = `
-      <div class="cardActions">
-        <button class="btn sm openBtn" type="button">Open</button>
-        <button class="btn sm trailerBtn" type="button">Trailer</button>
-        <button class="btn sm tmdbBtn" type="button">TMDb</button>
+
+    const poster = m.poster
+      ? `<img class="poster" src="${esc(m.poster)}" loading="lazy" alt="${esc(m.title)} poster" />`
+      : `<div class="poster placeholder"></div>`;
+
+    const genres = Array.isArray(m.genres)
+      ? m.genres.map((g) => genreNameById.get(Number(g)) || "").filter(Boolean).slice(0, 4).join(", ")
+      : "";
+
+    const overviewBits = makeReadMoreHTML(m.overview || "", 4);
+
+    return `
+      <div class="simCard" data-id="${esc(m.id)}" data-type="${esc(type)}">
+        <div class="targetGrid">
+          ${poster}
+
+          <div class="targetInfo">
+            <div class="titleRow">
+              <div class="title">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
+              <div class="pill">⭐ ${esc(fmtRating(m.rating))}</div>
+            </div>
+
+            <div class="genresRow">
+              <div class="genresText">${esc(genres || "—")}</div>
+              <div class="typeText muted">${esc(safeUpper(type))}</div>
+            </div>
+          </div>
+
+          <div class="overviewBlock">
+            ${overviewBits.html}
+
+            <div class="simActions">
+              <button class="btn sm openBtn" type="button">Open</button>
+              <button class="btn sm trailerBtn" type="button">Trailer</button>
+              <button class="btn sm tmdbBtn" type="button">TMDb</button>
+            </div>
+
+            <div class="miniTrailer hidden"></div>
+          </div>
+        </div>
       </div>
-      <div class="miniTrailer hidden"></div>
     `;
-    return cardHTML({ ...m, type }, { actions });
   }).join("");
 
-  els.results.querySelectorAll(".movieCard").forEach((card) => {
+  // Read more wiring
+  wireReadMore(els.results);
+
+  // Card wiring
+  els.results.querySelectorAll(".simCard").forEach((card) => {
     const id = card.getAttribute("data-id");
     const type = asType(card.getAttribute("data-type") || "movie", "movie");
 
@@ -409,7 +391,9 @@ function renderSimilar(items) {
     const mini = card.querySelector(".miniTrailer");
 
     openBtn?.addEventListener("click", () => loadById(id, type));
-    tmdbBtn?.addEventListener("click", () => window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(id)}`, "_blank"));
+    tmdbBtn?.addEventListener("click", () =>
+      window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(id)}`, "_blank")
+    );
 
     trailerBtn?.addEventListener("click", async () => {
       try {
@@ -444,8 +428,6 @@ function renderSimilar(items) {
       }
     });
   });
-
-  attachReadMore(els.results);
 }
 
 /* -----------------------------
@@ -483,7 +465,7 @@ function renderSuggestions(items) {
 }
 
 /* -----------------------------
-   Search matches list
+   Search matches (chips)
 ------------------------------*/
 function renderMatches(items) {
   if (!els.matches) return;
@@ -619,80 +601,6 @@ async function doSearch() {
 }
 
 /* -----------------------------
-   ✅ Random (CLIENT-SIDE) — uses popular lists
-------------------------------*/
-let popularCache = { movies: [], tv: [] };
-let popularLoadedOnce = false;
-
-async function mergePopular50(path, typeLabel) {
-  const out = [];
-  for (let page = 1; page <= 5 && out.length < 50; page++) {
-    const data = await apiGet(path, { page });
-    const arr = data.results || data.items || [];
-    out.push(...arr.map((x) => ({ ...x, type: asType(x.type || x.media_type || typeLabel, typeLabel) })));
-  }
-  return out.slice(0, 50);
-}
-
-async function ensurePopularCache() {
-  if (popularLoadedOnce && (popularCache.movies.length || popularCache.tv.length)) return;
-
-  // Try combined popular first (supports pages)
-  try {
-    const movies = [];
-    const tv = [];
-    for (let page = 1; page <= 5 && (movies.length < 50 || tv.length < 50); page++) {
-      const combined = await apiGet("/api/popular", { page });
-      const m = Array.isArray(combined.movies) ? combined.movies : [];
-      const t = Array.isArray(combined.tv) ? combined.tv : [];
-      movies.push(...m.map((x) => ({ ...x, type: "movie" })));
-      tv.push(...t.map((x) => ({ ...x, type: "tv" })));
-    }
-    popularCache.movies = movies.slice(0, 50);
-    popularCache.tv = tv.slice(0, 50);
-    popularLoadedOnce = true;
-    return;
-  } catch {
-    // ignore + fallback
-  }
-
-  // fallback split endpoints
-  try { popularCache.movies = await mergePopular50("/api/popular-movies", "movie"); } catch {}
-  try { popularCache.tv = await mergePopular50("/api/popular-tv", "tv"); } catch {}
-  popularLoadedOnce = true;
-}
-
-async function doRandom() {
-  clearLists();
-  setMeta("Picking random…", false);
-
-  try {
-    await ensurePopularCache();
-
-    const want = mediaFilter; // any|movie|tv
-    let pool = [];
-
-    if (want === "movie") pool = popularCache.movies.slice();
-    else if (want === "tv") pool = popularCache.tv.slice();
-    else pool = [...popularCache.movies, ...popularCache.tv];
-
-    pool = pool.filter((x) => x && x.id);
-
-    if (!pool.length) throw new Error("Popular feed unavailable, cannot pick random.");
-
-    const chosen = pick(pool);
-    const chosenType = asType(chosen.type || chosen.media_type, "movie");
-
-    await loadById(chosen.id, chosenType);
-    setMeta("Random picked ✅", false);
-  } catch (e) {
-    renderTarget(null);
-    clearLists();
-    setMeta(`Random failed. (${e.message})`, true);
-  }
-}
-
-/* -----------------------------
    Watchlist
 ------------------------------*/
 const WL_KEY = "filmmatrix_watchlist_v2";
@@ -732,8 +640,8 @@ function openWatchlist() {
                 <span class="muted"> ${fmtYear(m.year)}</span>
                 <span class="muted"> (${esc(safeUpper(type))})</span>
               </div>
-              <div class="muted" style="margin-top:6px">⭐ ${esc(fmtRating(m.rating))}</div>
-              <div style="margin-top:10px">
+              <div class="watchMeta">⭐ ${esc(fmtRating(m.rating))}</div>
+              <div style="margin-top:8px">
                 <button class="btn sm" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">Open</button>
               </div>
             </div>
@@ -759,12 +667,39 @@ function closeWatchlist() {
 }
 
 /* -----------------------------
-   Popular Now (50 + 50) — stable
+   ✅ Popular Now (50 + 50)
+   Uses /api/popular?page=1..N
 ------------------------------*/
+let popularCache = { movies: [], tv: [] };
+let popularLoadedOnce = false;
+
+async function fetchPopularPagesTo50() {
+  const moviesOut = [];
+  const tvOut = [];
+
+  // TMDb popular is typically 20 per page; 3 pages = 60 -> enough to take 50
+  for (let page = 1; page <= 4; page++) {
+    const data = await apiGet("/api/popular", { page });
+
+    const m = Array.isArray(data.movies) ? data.movies : [];
+    const t = Array.isArray(data.tv) ? data.tv : [];
+
+    moviesOut.push(...m.map(x => ({ ...x, type: "movie" })));
+    tvOut.push(...t.map(x => ({ ...x, type: "tv" })));
+
+    if (moviesOut.length >= POPULAR_COUNT && tvOut.length >= POPULAR_COUNT) break;
+  }
+
+  return {
+    movies: moviesOut.filter(x => x && x.id).slice(0, POPULAR_COUNT),
+    tv: tvOut.filter(x => x && x.id).slice(0, POPULAR_COUNT),
+  };
+}
+
 function renderPopularGrid(container, items) {
   if (!container) return;
 
-  const list = (items || []).filter(Boolean).slice(0, 50);
+  const list = (items || []).filter(Boolean).slice(0, POPULAR_COUNT);
   if (!list.length) {
     container.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
     return;
@@ -804,94 +739,80 @@ async function loadPopularNow() {
   if (els.popularTv) els.popularTv.innerHTML = `<div class="muted">Loading…</div>`;
 
   try {
-    // Try combined popular first (supports page)
-    const movies = [];
-    const tv = [];
-
-    for (let page = 1; page <= 5 && (movies.length < 50 || tv.length < 50); page++) {
-      const combined = await apiGet("/api/popular", { page });
-      const m = Array.isArray(combined.movies) ? combined.movies : [];
-      const t = Array.isArray(combined.tv) ? combined.tv : [];
-      movies.push(...m.map((x) => ({ ...x, type: "movie" })));
-      tv.push(...t.map((x) => ({ ...x, type: "tv" })));
-    }
-
-    const movies50 = movies.slice(0, 50);
-    const tv50 = tv.slice(0, 50);
-
-    renderPopularGrid(els.popularMovies, movies50);
-    renderPopularGrid(els.popularTv, tv50);
-
-    // seed random cache
-    popularCache.movies = movies50.slice();
-    popularCache.tv = tv50.slice();
-    popularLoadedOnce = true;
-    return;
-  } catch {
-    // fallback split endpoints
-  }
-
-  try {
-    const [movies, tv] = await Promise.all([
-      mergePopular50("/api/popular-movies", "movie"),
-      mergePopular50("/api/popular-tv", "tv"),
-    ]);
+    const { movies, tv } = await fetchPopularPagesTo50();
 
     renderPopularGrid(els.popularMovies, movies);
     renderPopularGrid(els.popularTv, tv);
 
-    // seed random cache
+    // ✅ seed random cache too
     popularCache.movies = movies.slice();
     popularCache.tv = tv.slice();
     popularLoadedOnce = true;
+
   } catch (e) {
+    // Never stay stuck on Loading...
     if (els.popularMovies) els.popularMovies.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
     if (els.popularTv) els.popularTv.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
   }
 }
 
 /* -----------------------------
-   Theme
+   ✅ Random (CLIENT-SIDE) — uses popular cache
 ------------------------------*/
-const THEME_KEY = "filmmatrix_theme_v1";
-const THEMES = ["blue", "red", "green", "purple", "pink"];
+async function ensurePopularCache() {
+  if (popularLoadedOnce && (popularCache.movies.length || popularCache.tv.length)) return;
 
-function applyTheme(theme) {
-  const t = THEMES.includes(theme) ? theme : "blue";
-  document.body.setAttribute("data-theme", t);
-  localStorage.setItem(THEME_KEY, t);
+  const { movies, tv } = await fetchPopularPagesTo50();
+  popularCache.movies = movies.slice();
+  popularCache.tv = tv.slice();
+  popularLoadedOnce = true;
 }
 
-function toggleThemeMenu(force) {
-  const open = typeof force === "boolean"
-    ? force
-    : els.themeMenu?.classList.contains("hidden");
+async function doRandom() {
+  clearLists();
+  setMeta("Picking random…", false);
 
-  if (!els.themeMenu || !els.themeBtn) return;
+  try {
+    await ensurePopularCache();
 
-  els.themeMenu.classList.toggle("hidden", !open);
-  els.themeBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    let pool = [];
+    if (mediaFilter === "movie") pool = popularCache.movies.slice();
+    else if (mediaFilter === "tv") pool = popularCache.tv.slice();
+    else pool = [...popularCache.movies, ...popularCache.tv];
+
+    pool = pool.filter(x => x && x.id);
+
+    if (!pool.length) throw new Error("Popular feed unavailable, cannot pick random.");
+
+    const chosen = pick(pool);
+    const chosenType = asType(chosen.type || chosen.media_type, "movie");
+
+    await loadById(chosen.id, chosenType);
+    setMeta("Random picked ✅", false);
+  } catch (e) {
+    renderTarget(null);
+    clearLists();
+    setMeta(`Random failed. (${e.message})`, true);
+  }
 }
 
 /* -----------------------------
    Init
 ------------------------------*/
 function initUI() {
-  // default theme = blue (sticky)
-  const savedTheme = localStorage.getItem(THEME_KEY) || "blue";
-  applyTheme(savedTheme);
-
+  // Genre dropdown
   if (els.genre) {
     els.genre.innerHTML = GENRES.map(([val, name]) => `<option value="${esc(val)}">${esc(name)}</option>`).join("");
   }
 
+  // Rating range sync
   if (els.minRating && els.minRatingVal) {
     const sync = () => (els.minRatingVal.textContent = `${Number(els.minRating.value || 0)}/10`);
     els.minRating.addEventListener("input", sync);
     sync();
   }
 
-  // suggestion behavior
+  // Suggest / Enter to search
   els.q?.addEventListener("input", onSuggestInput);
   els.q?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
@@ -906,31 +827,22 @@ function initUI() {
     doSearch();
   });
 
-  // click-away for suggestions/theme
+  // Hide suggestions when clicking elsewhere
   document.addEventListener("click", (e) => {
-    const t = e.target;
-
-    if (els.suggest && !els.suggest.contains(t) && t !== els.q) {
-      els.suggest.classList.add("hidden");
-    }
-
-    if (els.themeMenu && els.themeBtn) {
-      const clickedTheme = els.themeMenu.contains(t) || els.themeBtn.contains(t);
-      if (!clickedTheme) toggleThemeMenu(false);
+    if (!els.suggest?.contains(e.target) && e.target !== els.q) {
+      els.suggest?.classList.add("hidden");
     }
   });
 
-  // header buttons
+  // Watchlist modal
   els.watchlistBtn?.addEventListener("click", () => {
     setActiveMode("watchlist");
     openWatchlist();
   });
-
   els.closeModal?.addEventListener("click", () => {
     closeWatchlist();
     setActiveMode("none");
   });
-
   els.modal?.addEventListener("click", (e) => {
     if (e.target === els.modal) {
       closeWatchlist();
@@ -938,6 +850,7 @@ function initUI() {
     }
   });
 
+  // Mode buttons
   els.randomBtn?.addEventListener("click", () => {
     setActiveMode("random");
     doRandom();
@@ -945,39 +858,26 @@ function initUI() {
 
   els.tvOnlyBtn?.addEventListener("click", () => {
     setActiveMode("tv");
-    setMediaFilter("tv");
+    mediaFilter = "tv";
     if ((els.q?.value || "").trim()) doSearch();
   });
 
   els.movieOnlyBtn?.addEventListener("click", () => {
     setActiveMode("movie");
-    setMediaFilter("movie");
+    mediaFilter = "movie";
     if ((els.q?.value || "").trim()) doSearch();
   });
 
-  // Theme dropdown
-  els.themeBtn?.addEventListener("click", () => {
-    toggleThemeMenu();
-  });
-
-  els.themeMenu?.querySelectorAll(".themeOption").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const theme = btn.getAttribute("data-theme") || "blue";
-      applyTheme(theme);
-      toggleThemeMenu(false);
-    });
-  });
-
-  // deep link
+  // Load by share link
   const url = new URL(location.href);
   const id = url.searchParams.get("id");
   const type = asType(url.searchParams.get("type") || "movie", "movie");
   if (id) loadById(id, type);
 
-  // popular
+  // Popular Now
   loadPopularNow();
 
-  // no default highlight
+  // ✅ IMPORTANT: no button highlighted on load
   setActiveMode("none");
 }
 
