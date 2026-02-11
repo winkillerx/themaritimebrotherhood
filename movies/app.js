@@ -78,13 +78,14 @@ function setActiveMode(mode) {
   activeMode = mode;
 
   [els.watchlistBtn, els.randomBtn, els.tvOnlyBtn, els.movieOnlyBtn].forEach((b) => {
-    if (b) b.classList.remove("active");
+    if (b) b.classList.remove("active", "primary");
   });
 
-  if (mode === "watchlist" && els.watchlistBtn) els.watchlistBtn.classList.add("active");
-  if (mode === "random" && els.randomBtn) els.randomBtn.classList.add("active");
-  if (mode === "tv" && els.tvOnlyBtn) els.tvOnlyBtn.classList.add("active");
-  if (mode === "movie" && els.movieOnlyBtn) els.movieOnlyBtn.classList.add("active");
+  // ✅ highlight uses .primary (since your CSS already styles it nicely)
+  if (mode === "watchlist" && els.watchlistBtn) els.watchlistBtn.classList.add("primary");
+  if (mode === "random" && els.randomBtn) els.randomBtn.classList.add("primary");
+  if (mode === "tv" && els.tvOnlyBtn) els.tvOnlyBtn.classList.add("primary");
+  if (mode === "movie" && els.movieOnlyBtn) els.movieOnlyBtn.classList.add("primary");
 }
 
 function setMediaFilter(next) {
@@ -121,6 +122,15 @@ function asType(x, fallback = "movie") {
 
 function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function errMsg(e) {
+  // ✅ prevents “[object Object]”
+  if (!e) return "Error";
+  if (typeof e === "string") return e;
+  if (e instanceof Error && e.message) return e.message;
+  if (typeof e.message === "string") return e.message;
+  try { return JSON.stringify(e); } catch { return String(e); }
 }
 
 async function apiGet(path, params = {}) {
@@ -190,6 +200,48 @@ function renderTrailerEmbed(key) {
 async function fetchTrailerKey(id, type) {
   const data = await apiGet("/api/videos", { id, type: asType(type) });
   return data?.key || "";
+}
+
+/* -----------------------------
+   Normalize API items (fixes search/tv/random crashes)
+------------------------------*/
+function normItem(raw, fallbackType = "movie") {
+  if (!raw || typeof raw !== "object") return null;
+
+  const type = asType(raw.type || raw.media_type || fallbackType, fallbackType);
+
+  // Accept multiple shapes from server:
+  const title =
+    raw.title ??
+    raw.name ??
+    raw.original_title ??
+    raw.original_name ??
+    raw.label ??
+    "";
+
+  const year =
+    raw.year ??
+    (raw.release_date ? String(raw.release_date).slice(0, 4) : "") ??
+    (raw.first_air_date ? String(raw.first_air_date).slice(0, 4) : "");
+
+  const id = raw.id ?? raw.tmdbId ?? raw.tmdb_id ?? raw._id;
+  if (!id) return null;
+
+  return {
+    ...raw,
+    id,
+    type,
+    title,
+    year,
+    rating: raw.rating ?? raw.vote_average ?? raw.score ?? null,
+    overview: raw.overview ?? raw.description ?? "",
+    poster: raw.poster ?? raw.poster_url ?? raw.posterUrl ?? raw.poster_path ?? "",
+    genres: Array.isArray(raw.genres) ? raw.genres : Array.isArray(raw.genre_ids) ? raw.genre_ids : raw.genres,
+  };
+}
+
+function normList(arr, fallbackType = "movie") {
+  return (Array.isArray(arr) ? arr : []).map((x) => normItem(x, fallbackType)).filter(Boolean);
 }
 
 /* -----------------------------
@@ -267,7 +319,7 @@ function renderTarget(m) {
    Render Similar
 ------------------------------*/
 function renderSimilar(items) {
-  const list = (items || []).filter(Boolean).slice(0, 20);
+  const list = normList(items, "movie").slice(0, 20);
   if (!els.results) return;
 
   if (!list.length) {
@@ -348,7 +400,7 @@ function renderSimilar(items) {
         mini.classList.remove("hidden");
         trailerBtn.textContent = "Hide trailer";
       } catch (e) {
-        alert(`Trailer failed: ${e.message}`);
+        alert(`Trailer failed: ${errMsg(e)}`);
         trailerBtn.textContent = "Trailer";
       } finally {
         trailerBtn.disabled = false;
@@ -361,7 +413,7 @@ function renderSimilar(items) {
    Suggestions
 ------------------------------*/
 function renderSuggestions(items) {
-  const list = (items || []).slice(0, 10);
+  const list = normList(items, "movie").slice(0, 10);
   if (!els.suggest) return;
 
   if (!list.length) {
@@ -397,7 +449,8 @@ function renderSuggestions(items) {
 function renderMatches(items) {
   if (!els.matches) return;
 
-  const filtered = (items || []).filter(Boolean).filter((m) => {
+  const normalized = normList(items, "movie");
+  const filtered = normalized.filter((m) => {
     if (mediaFilter === "any") return true;
     return asType(m.type, "movie") === mediaFilter;
   });
@@ -447,10 +500,13 @@ function onSuggestInput() {
     try {
       const data = await apiGet("/api/suggest", { q });
       const raw = data.results || data.items || [];
-      const filtered = raw.filter((m) => {
+      const normalized = normList(raw, "movie");
+
+      const filtered = normalized.filter((m) => {
         if (mediaFilter === "any") return true;
         return asType(m.type, "movie") === mediaFilter;
       });
+
       renderSuggestions(filtered);
     } catch {
       renderSuggestions([]);
@@ -468,7 +524,7 @@ async function loadById(id, type = "movie") {
   try {
     const t = asType(type, "movie");
     const r = await apiGet("/api/resolve", { id, type: t });
-    const target = r.target || r;
+    const target = normItem(r.target || r, t);
     if (!target?.id) throw new Error("Resolve did not return a target id.");
 
     const targetType = asType(target.type || t, t);
@@ -487,7 +543,7 @@ async function loadById(id, type = "movie") {
   } catch (e) {
     renderTarget(null);
     clearLists();
-    setMeta(`Failed. (API ${e.status || "?"} – ${e.message})`, true);
+    setMeta(`Failed. (API ${e.status || "?"} – ${errMsg(e)})`, true);
   }
 }
 
@@ -503,7 +559,8 @@ async function doSearch() {
 
   try {
     const data = await apiGet("/api/search", { q });
-    const items = data.items || data.results || [];
+    const rawItems = data.items || data.results || [];
+    const items = normList(rawItems, "movie");
 
     renderMatches(items);
 
@@ -512,7 +569,9 @@ async function doSearch() {
       return asType(m.type, "movie") === mediaFilter;
     });
 
-    const first = data.target || filtered[0] || null;
+    const t0 = data.target ? normItem(data.target, "movie") : null;
+    const first = t0 || filtered[0] || null;
+
     if (!first?.id) {
       renderTarget(null);
       setMeta("No match found.", true);
@@ -523,7 +582,7 @@ async function doSearch() {
   } catch (e) {
     renderTarget(null);
     clearLists();
-    setMeta(`Search failed. (API ${e.status || "?"} – ${e.message})`, true);
+    setMeta(`Search failed. (API ${e.status || "?"} – ${errMsg(e)})`, true);
   }
 }
 
@@ -536,29 +595,24 @@ let popularLoadedOnce = false;
 async function ensurePopularCache() {
   if (popularLoadedOnce && (popularCache.movies.length || popularCache.tv.length)) return;
 
-  // Helper: merge pages until we have >= 60 (enough to feel random)
   const mergePaged = async (path, typeLabel) => {
     const out = [];
     for (let page = 1; page <= 5 && out.length < 60; page++) {
       const data = await apiGet(path, { page });
       const arr = data.results || data.items || [];
-      out.push(...arr.map((x) => ({ ...x, type: asType(x.type || x.media_type || typeLabel, typeLabel) })));
+      out.push(...normList(arr, typeLabel));
     }
     return out;
   };
 
-  // Try combined popular first
   try {
     const combined = await apiGet("/api/popular", { page: 1 });
-    const movies = Array.isArray(combined.movies) ? combined.movies : [];
-    const tv = Array.isArray(combined.tv) ? combined.tv : [];
-    popularCache.movies = movies.map((x) => ({ ...x, type: "movie" }));
-    popularCache.tv = tv.map((x) => ({ ...x, type: "tv" }));
+    popularCache.movies = normList(combined.movies || [], "movie");
+    popularCache.tv = normList(combined.tv || [], "tv");
   } catch {
     // ignore
   }
 
-  // Top up via split endpoints
   try {
     if (popularCache.movies.length < 20) popularCache.movies = await mergePaged("/api/popular-movies", "movie");
   } catch {}
@@ -583,14 +637,12 @@ async function doRandom() {
     else if (want === "tv") pool = popularCache.tv.slice();
     else pool = [...popularCache.movies, ...popularCache.tv];
 
-    // Safety
     pool = pool.filter((x) => x && x.id);
 
     if (!pool.length) {
       throw new Error("Popular feed unavailable, cannot pick random.");
     }
 
-    // Pick one and load it
     const chosen = pick(pool);
     const chosenType = asType(chosen.type || chosen.media_type, "movie");
 
@@ -599,7 +651,7 @@ async function doRandom() {
   } catch (e) {
     renderTarget(null);
     clearLists();
-    setMeta(`Random failed. (${e.message})`, true);
+    setMeta(`Random failed. (${errMsg(e)})`, true);
   }
 }
 
@@ -675,7 +727,7 @@ function closeWatchlist() {
 function renderPopularGrid(container, items) {
   if (!container) return;
 
-  const list = (items || []).filter(Boolean).slice(0, 30);
+  const list = normList(items, "movie").slice(0, 30);
   if (!list.length) {
     container.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
     return;
@@ -709,69 +761,7 @@ function renderPopularGrid(container, items) {
 }
 
 async function loadPopularNow() {
-  if (!els.popularMovies && !els.popularTv) return;
-
-  if (els.popularMovies) els.popularMovies.innerHTML = `<div class="muted">Loading…</div>`;
-  if (els.popularTv) els.popularTv.innerHTML = `<div class="muted">Loading…</div>`;
-
-  const mergePaged = async (path, typeLabel) => {
-    const out = [];
-    for (let page = 1; page <= 3 && out.length < 30; page++) {
-      const data = await apiGet(path, { page });
-      const arr = data.results || data.items || [];
-      out.push(...arr.map((x) => ({ ...x, type: asType(x.type || x.media_type || typeLabel, typeLabel) })));
-    }
-    return out;
-  };
-
-  try {
-    const combined = await apiGet("/api/popular", { page: 1 });
-    const movies = Array.isArray(combined.movies) ? combined.movies : [];
-    const tv = Array.isArray(combined.tv) ? combined.tv : [];
-
-    let movies30 = movies.map((x) => ({ ...x, type: "movie" }));
-    let tv30 = tv.map((x) => ({ ...x, type: "tv" }));
-
-    if (movies30.length < 30) {
-      const more = await mergePaged("/api/popular-movies", "movie");
-      movies30 = [...movies30, ...more];
-    }
-    if (tv30.length < 30) {
-      const more = await mergePaged("/api/popular-tv", "tv");
-      tv30 = [...tv30, ...more];
-    }
-
-    renderPopularGrid(els.popularMovies, movies30);
-    renderPopularGrid(els.popularTv, tv30);
-
-    // ✅ also seed random cache
-    popularCache.movies = movies30.slice();
-    popularCache.tv = tv30.slice();
-    popularLoadedOnce = true;
-
-    return;
-  } catch {
-    // ignore
-  }
-
-  try {
-    const [movies, tv] = await Promise.all([
-      mergePaged("/api/popular-movies", "movie"),
-      mergePaged("/api/popular-tv", "tv"),
-    ]);
-
-    renderPopularGrid(els.popularMovies, movies);
-    renderPopularGrid(els.popularTv, tv);
-
-    // ✅ also seed random cache
-    popularCache.movies = movies.slice();
-    popularCache.tv = tv.slice();
-    popularLoadedOnce = true;
-
-  } catch {
-    if (els.popularMovies) els.popularMovies.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
-    if (els.popularTv) els.popularTv.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
-  }
+  // you said you'll update this manually
 }
 
 /* -----------------------------
@@ -812,10 +802,12 @@ function initUI() {
     setActiveMode("watchlist");
     openWatchlist();
   });
+
   els.closeModal?.addEventListener("click", () => {
     closeWatchlist();
     setActiveMode("none");
   });
+
   els.modal?.addEventListener("click", (e) => {
     if (e.target === els.modal) {
       closeWatchlist();
@@ -831,13 +823,19 @@ function initUI() {
   els.tvOnlyBtn?.addEventListener("click", () => {
     setActiveMode("tv");
     setMediaFilter("tv");
-    if ((els.q?.value || "").trim()) doSearch();
+    if ((els.q?.value || "").trim()) {
+      setActiveMode("none"); // ✅ don't leave tv button "stuck" after search starts
+      doSearch();
+    }
   });
 
   els.movieOnlyBtn?.addEventListener("click", () => {
     setActiveMode("movie");
     setMediaFilter("movie");
-    if ((els.q?.value || "").trim()) doSearch();
+    if ((els.q?.value || "").trim()) {
+      setActiveMode("none"); // ✅ don't leave movie button "stuck" after search starts
+      doSearch();
+    }
   });
 
   const url = new URL(location.href);
@@ -845,8 +843,10 @@ function initUI() {
   const type = asType(url.searchParams.get("type") || "movie", "movie");
   if (id) loadById(id, type);
 
+  // call your own loadPopularNow()
   loadPopularNow();
 
+  // ✅ on load, nothing should be highlighted
   setActiveMode("none");
 }
 
