@@ -5,16 +5,12 @@
    - /api/resolve?id=...&type=movie|tv
    - /api/similar?id=...&type=movie|tv&minRating=...&genre=...&yearMin=...
    - /api/videos?id=...&type=movie|tv   => { key: "YouTubeKey" }
-   - Popular:
-     - /api/popular?page=1..N  => { movies:[...], tv:[...] }
 
    NOTE:
-   ✅ Random implemented CLIENT-SIDE using popular cache
+   ✅ Random is implemented CLIENT-SIDE because /api/random is returning 500 server-side.
 */
 
 const YEAR_MIN = 1950;
-const POPULAR_LIMIT = 50; // ✅ show 50 movies + 50 tv
-const POPULAR_PAGES = 3;  // 3 pages * 20 = 60 -> slice to 50
 
 const GENRES = [
   ["any", "Any"],
@@ -35,11 +31,14 @@ const els = {
   suggest: document.getElementById("suggest"),
   searchBtn: document.getElementById("go"),
 
-  // header buttons (your index must have these ids)
+  // header buttons
   watchlistBtn: document.getElementById("watchlistBtn"),
   randomBtn: document.getElementById("random"),
   tvOnlyBtn: document.getElementById("tvOnlyBtn"),
   movieOnlyBtn: document.getElementById("movieOnlyBtn"),
+
+  // theme row
+  themeRow: document.getElementById("themeRow"),
 
   minRating: document.getElementById("minRating"),
   minRatingVal: document.getElementById("minRatingVal"),
@@ -61,7 +60,7 @@ const els = {
   closeModal: document.getElementById("closeModal"),
   watchlist: document.getElementById("watchlist"),
 
-  // Popular Now containers (your index uses these)
+  // Popular Now
   popularMovies: document.getElementById("popularMovies"),
   popularTv: document.getElementById("popularTv") || document.getElementById("popularTV"),
 };
@@ -92,6 +91,43 @@ function setMediaFilter(next) {
 }
 
 /* -----------------------------
+   Theme switcher
+------------------------------*/
+const THEME_KEY = "filmmatrix_theme_v1"; // red|green|pink|purple
+
+function applyTheme(theme) {
+  const t = String(theme || "").toLowerCase();
+  const allowed = new Set(["red", "green", "pink", "purple"]);
+
+  if (!allowed.has(t)) {
+    document.documentElement.removeAttribute("data-theme");
+    localStorage.removeItem(THEME_KEY);
+  } else {
+    document.documentElement.setAttribute("data-theme", t);
+    localStorage.setItem(THEME_KEY, t);
+  }
+
+  if (els.themeRow) {
+    els.themeRow.querySelectorAll(".themeBtn").forEach((b) => {
+      b.classList.toggle("activeTheme", b.getAttribute("data-theme") === t);
+    });
+  }
+}
+
+function initThemeUI() {
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved) applyTheme(saved);
+
+  if (!els.themeRow) return;
+  els.themeRow.querySelectorAll(".themeBtn").forEach((b) => {
+    b.addEventListener("click", () => {
+      const theme = b.getAttribute("data-theme");
+      applyTheme(theme);
+    });
+  });
+}
+
+/* -----------------------------
    Helpers
 ------------------------------*/
 function esc(s = "") {
@@ -119,33 +155,8 @@ function asType(x, fallback = "movie") {
   return t === "tv" ? "tv" : "movie";
 }
 
-function errMsg(e) {
-  const m = e?.message ?? e?.error ?? e?.toString?.() ?? "Error";
-  return typeof m === "string" ? m : (() => { try { return JSON.stringify(m); } catch { return "Error"; } })();
-}
-
 function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
-}
-
-function uniqById(items) {
-  const map = new Map();
-  (items || []).forEach((x) => {
-    if (!x || x.id == null) return;
-    const key = `${x.id}`;
-    if (!map.has(key)) map.set(key, x);
-  });
-  return Array.from(map.values());
-}
-
-function normList(arr, typeLabel) {
-  return (arr || [])
-    .filter(Boolean)
-    .map((x) => ({
-      ...x,
-      type: asType(x.type || x.media_type || typeLabel, typeLabel),
-    }))
-    .filter((x) => x && x.id != null);
 }
 
 async function apiGet(path, params = {}) {
@@ -344,7 +355,7 @@ function renderSimilar(items) {
     const tmdbBtn = card.querySelector(".tmdbBtn");
     const mini = card.querySelector(".miniTrailer");
 
-    openBtn?.addEventListener("click", () => { setActiveMode("none"); loadById(id, type); });
+    openBtn?.addEventListener("click", () => loadById(id, type));
     tmdbBtn?.addEventListener("click", () => window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(id)}`, "_blank"));
 
     trailerBtn?.addEventListener("click", async () => {
@@ -373,7 +384,7 @@ function renderSimilar(items) {
         mini.classList.remove("hidden");
         trailerBtn.textContent = "Hide trailer";
       } catch (e) {
-        alert(`Trailer failed: ${errMsg(e)}`);
+        alert(`Trailer failed: ${e.message}`);
         trailerBtn.textContent = "Trailer";
       } finally {
         trailerBtn.disabled = false;
@@ -411,7 +422,6 @@ function renderSuggestions(items) {
       const id = b.getAttribute("data-id");
       const type = asType(b.getAttribute("data-type") || "movie", "movie");
       els.suggest.classList.add("hidden");
-      setActiveMode("none");
       if (id) await loadById(id, type);
     });
   });
@@ -451,7 +461,6 @@ function renderMatches(items) {
     btn.addEventListener("click", () => {
       const id = btn.getAttribute("data-id");
       const type = asType(btn.getAttribute("data-type") || "movie", "movie");
-      setActiveMode("none");
       if (id) loadById(id, type);
     });
   });
@@ -514,7 +523,7 @@ async function loadById(id, type = "movie") {
   } catch (e) {
     renderTarget(null);
     clearLists();
-    setMeta(`Failed. (API ${e?.status || "?"} – ${errMsg(e)})`, true);
+    setMeta(`Failed. (API ${e.status || "?"} – ${e.message})`, true);
   }
 }
 
@@ -550,19 +559,46 @@ async function doSearch() {
   } catch (e) {
     renderTarget(null);
     clearLists();
-    setMeta(`Search failed. (API ${e?.status || "?"} – ${errMsg(e)})`, true);
+    setMeta(`Search failed. (API ${e.status || "?"} – ${e.message})`, true);
   }
 }
 
 /* -----------------------------
-   Random (CLIENT-SIDE) — uses popular cache
+   ✅ Random (CLIENT-SIDE) — uses popular lists
 ------------------------------*/
 let popularCache = { movies: [], tv: [] };
 let popularLoadedOnce = false;
 
 async function ensurePopularCache() {
   if (popularLoadedOnce && (popularCache.movies.length || popularCache.tv.length)) return;
-  await loadPopularNow(); // will seed cache
+
+  const mergePaged = async (path, typeLabel) => {
+    const out = [];
+    for (let page = 1; page <= 5 && out.length < 60; page++) {
+      const data = await apiGet(path, { page });
+      const arr = data.results || data.items || [];
+      out.push(...arr.map((x) => ({ ...x, type: asType(x.type || x.media_type || typeLabel, typeLabel) })));
+    }
+    return out;
+  };
+
+  // Try /api/popular (page 1)
+  try {
+    const combined = await apiGet("/api/popular", { page: 1 });
+    const movies = Array.isArray(combined.movies) ? combined.movies : [];
+    const tv = Array.isArray(combined.tv) ? combined.tv : [];
+    popularCache.movies = movies.map((x) => ({ ...x, type: "movie" }));
+    popularCache.tv = tv.map((x) => ({ ...x, type: "tv" }));
+  } catch {}
+
+  try {
+    if (popularCache.movies.length < 20) popularCache.movies = await mergePaged("/api/popular-movies", "movie");
+  } catch {}
+  try {
+    if (popularCache.tv.length < 20) popularCache.tv = await mergePaged("/api/popular-tv", "tv");
+  } catch {}
+
+  popularLoadedOnce = true;
 }
 
 async function doRandom() {
@@ -579,7 +615,7 @@ async function doRandom() {
     else if (want === "tv") pool = popularCache.tv.slice();
     else pool = [...popularCache.movies, ...popularCache.tv];
 
-    pool = pool.filter((x) => x && x.id != null);
+    pool = pool.filter((x) => x && x.id);
 
     if (!pool.length) throw new Error("Popular feed unavailable, cannot pick random.");
 
@@ -591,7 +627,7 @@ async function doRandom() {
   } catch (e) {
     renderTarget(null);
     clearLists();
-    setMeta(`Random failed. (${errMsg(e)})`, true);
+    setMeta(`Random failed. (${e.message})`, true);
   }
 }
 
@@ -650,7 +686,6 @@ function openWatchlist() {
       const id = b.getAttribute("data-id");
       const type = asType(b.getAttribute("data-type") || "movie", "movie");
       closeWatchlist();
-      setActiveMode("none");
       loadById(id, type);
     });
   });
@@ -663,100 +698,27 @@ function closeWatchlist() {
 }
 
 /* -----------------------------
-   Popular Now (✅ 50 + 50 via paging /api/popular)
+   Popular Now (leave as-is if you handle manually)
 ------------------------------*/
-function renderPopularGrid(container, items, limit = POPULAR_LIMIT) {
-  if (!container) return;
-
-  const list = (items || []).filter(Boolean).slice(0, limit);
-  if (!list.length) {
-    container.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
-    return;
-  }
-
-  container.innerHTML = `
-    <div class="popGrid">
-      ${list.map((m) => {
-        const type = asType(m.type || m.media_type, "movie");
-        const poster = m.poster
-          ? `<img class="popPoster" src="${esc(m.poster)}" loading="lazy" alt="${esc(m.title)} poster" />`
-          : `<div class="popPoster placeholder"></div>`;
-
-        return `
-          <button class="popCard" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">
-            ${poster}
-            <div class="popTitle">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
-          </button>
-        `;
-      }).join("")}
-    </div>
-  `;
-
-  container.querySelectorAll(".popCard").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-id");
-      const type = asType(btn.getAttribute("data-type") || "movie", "movie");
-      setActiveMode("none");
-      if (id) loadById(id, type);
-    });
-  });
-}
-
-async function loadPopularNow() {
-  if (!els.popularMovies && !els.popularTv) return;
-
-  if (els.popularMovies) els.popularMovies.innerHTML = `<div class="muted">Loading...</div>`;
-  if (els.popularTv) els.popularTv.innerHTML = `<div class="muted">Loading...</div>`;
-
-  try {
-    let moviesAll = [];
-    let tvAll = [];
-
-    for (let page = 1; page <= POPULAR_PAGES; page++) {
-      const data = await apiGet("/api/popular", { page });
-
-      moviesAll.push(...normList(data.movies || [], "movie"));
-      tvAll.push(...normList(data.tv || [], "tv"));
-
-      moviesAll = uniqById(moviesAll);
-      tvAll = uniqById(tvAll);
-    }
-
-    const movies50 = moviesAll.slice(0, POPULAR_LIMIT);
-    const tv50 = tvAll.slice(0, POPULAR_LIMIT);
-
-    renderPopularGrid(els.popularMovies, movies50, POPULAR_LIMIT);
-    renderPopularGrid(els.popularTv, tv50, POPULAR_LIMIT);
-
-    // ✅ seed random cache
-    popularCache.movies = movies50.slice();
-    popularCache.tv = tv50.slice();
-    popularLoadedOnce = true;
-
-  } catch (e) {
-    if (els.popularMovies) els.popularMovies.innerHTML = `<div class="muted">Popular movies unavailable.</div>`;
-    if (els.popularTv) els.popularTv.innerHTML = `<div class="muted">Popular TV unavailable.</div>`;
-    setMeta(`Popular failed. (API ${e?.status || "?"} – ${errMsg(e)})`, true);
-  }
+function loadPopularNow() {
+  // you said you’ll manually update this,
+  // so leaving the call in place.
 }
 
 /* -----------------------------
    Init
 ------------------------------*/
 function initUI() {
-  // genre dropdown
   if (els.genre) {
     els.genre.innerHTML = GENRES.map(([val, name]) => `<option value="${esc(val)}">${esc(name)}</option>`).join("");
   }
 
-  // range sync
   if (els.minRating && els.minRatingVal) {
     const sync = () => (els.minRatingVal.textContent = `${Number(els.minRating.value || 0)}/10`);
     els.minRating.addEventListener("input", sync);
     sync();
   }
 
-  // suggest + enter
   els.q?.addEventListener("input", onSuggestInput);
   els.q?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
@@ -771,14 +733,12 @@ function initUI() {
     doSearch();
   });
 
-  // hide suggestions on outside click
   document.addEventListener("click", (e) => {
     if (!els.suggest?.contains(e.target) && e.target !== els.q) {
       els.suggest?.classList.add("hidden");
     }
   });
 
-  // watchlist modal
   els.watchlistBtn?.addEventListener("click", () => {
     setActiveMode("watchlist");
     openWatchlist();
@@ -796,36 +756,34 @@ function initUI() {
     }
   });
 
-  // random
   els.randomBtn?.addEventListener("click", () => {
     setActiveMode("random");
     doRandom();
   });
 
-  // tv only
   els.tvOnlyBtn?.addEventListener("click", () => {
     setActiveMode("tv");
     setMediaFilter("tv");
     if ((els.q?.value || "").trim()) doSearch();
   });
 
-  // movie only
   els.movieOnlyBtn?.addEventListener("click", () => {
     setActiveMode("movie");
     setMediaFilter("movie");
     if ((els.q?.value || "").trim()) doSearch();
   });
 
-  // deep link
   const url = new URL(location.href);
   const id = url.searchParams.get("id");
   const type = asType(url.searchParams.get("type") || "movie", "movie");
   if (id) loadById(id, type);
 
-  // popular
+  // theme buttons
+  initThemeUI();
+
+  // popular now (manual)
   loadPopularNow();
 
-  // ✅ nothing highlighted on load
   setActiveMode("none");
 }
 
