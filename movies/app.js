@@ -1,4 +1,4 @@
-/* app.js — FILM MATRIX (static frontend)
+/* app.js — FILM_MATRIX (static frontend)
    Endpoints expected:
    - /api/suggest?q=...
    - /api/search?q=...
@@ -6,12 +6,12 @@
    - /api/similar?id=...&type=movie|tv&minRating=...&genre=...&yearMin=...
    - /api/videos?id=...&type=movie|tv   => { key: "YouTubeKey" }
    - Popular:
-     - /api/popular                 => { movies:[...], tv:[...] }
-     - /api/popular-movies          => { results:[...] }
-     - /api/popular-tv              => { results:[...] }
+     - /api/popular                 => { movies:[...], tv:[...] } (supports page)
+     - /api/popular-movies          => { results:[...] } (supports page)
+     - /api/popular-tv              => { results:[...] } (supports page)
 
    NOTE:
-   ✅ Random is implemented CLIENT-SIDE using popular feeds.
+   ✅ Random is implemented CLIENT-SIDE (popular feed) for stability.
 */
 
 const YEAR_MIN = 1950;
@@ -35,10 +35,15 @@ const els = {
   suggest: document.getElementById("suggest"),
   searchBtn: document.getElementById("go"),
 
+  // header buttons
   watchlistBtn: document.getElementById("watchlistBtn"),
   randomBtn: document.getElementById("random"),
   tvOnlyBtn: document.getElementById("tvOnlyBtn"),
   movieOnlyBtn: document.getElementById("movieOnlyBtn"),
+
+  // theme
+  themeBtn: document.getElementById("themeBtn"),
+  themeMenu: document.getElementById("themeMenu"),
 
   minRating: document.getElementById("minRating"),
   minRatingVal: document.getElementById("minRatingVal"),
@@ -60,11 +65,9 @@ const els = {
   closeModal: document.getElementById("closeModal"),
   watchlist: document.getElementById("watchlist"),
 
+  // Popular Now
   popularMovies: document.getElementById("popularMovies"),
   popularTv: document.getElementById("popularTv") || document.getElementById("popularTV"),
-
-  themeBtn: document.getElementById("themeBtn"),
-  themeMenu: document.getElementById("themeMenu"),
 };
 
 const API_BASE = "";
@@ -77,9 +80,11 @@ let mediaFilter = "any"; // any | tv | movie
 
 function setActiveMode(mode) {
   activeMode = mode;
+
   [els.watchlistBtn, els.randomBtn, els.tvOnlyBtn, els.movieOnlyBtn].forEach((b) => {
     if (b) b.classList.remove("active");
   });
+
   if (mode === "watchlist" && els.watchlistBtn) els.watchlistBtn.classList.add("active");
   if (mode === "random" && els.randomBtn) els.randomBtn.classList.add("active");
   if (mode === "tv" && els.tvOnlyBtn) els.tvOnlyBtn.classList.add("active");
@@ -153,6 +158,7 @@ function setMeta(msg, isError = false) {
   if (!els.meta) return;
   els.meta.textContent = msg;
   els.meta.classList.toggle("warn", !!isError);
+  els.meta.classList.toggle("muted", !isError);
 }
 
 function getFilters() {
@@ -167,24 +173,6 @@ function clearLists() {
     els.matches.innerHTML = "";
     els.matches.classList.add("hidden");
   }
-}
-
-/* -----------------------------
-   Theme
-------------------------------*/
-const THEME_KEY = "filmmatrix_theme_v1";
-
-function applyTheme(theme) {
-  const t = String(theme || "blue").toLowerCase();
-  const ok = ["blue", "red", "green", "purple", "pink"].includes(t) ? t : "blue";
-  document.documentElement.setAttribute("data-theme", ok);
-  try { localStorage.setItem(THEME_KEY, ok); } catch {}
-}
-
-function loadSavedTheme() {
-  let t = "blue";
-  try { t = localStorage.getItem(THEME_KEY) || "blue"; } catch {}
-  applyTheme(t);
 }
 
 /* -----------------------------
@@ -209,108 +197,97 @@ async function fetchTrailerKey(id, type) {
 }
 
 /* -----------------------------
-   Read-more (generic)
+   Read More (universal)
 ------------------------------*/
-function needsReadMore(text, limit = 200) {
-  const s = String(text || "").trim();
-  return s.length > limit;
-}
+function attachReadMore(root) {
+  if (!root) return;
+  root.querySelectorAll("[data-desc]").forEach((box) => {
+    const full = box.getAttribute("data-desc") || "";
+    const descEl = box.querySelector(".desc");
+    const btn = box.querySelector(".readMoreBtn");
+    if (!descEl || !btn) return;
 
-function trunc(text, limit = 200) {
-  const s = String(text || "").trim();
-  if (s.length <= limit) return s;
-  return s.slice(0, limit).trim() + "…";
+    // If it’s short, hide button
+    if (full.length < 180) {
+      btn.classList.add("hidden");
+      descEl.classList.remove("clamp");
+      return;
+    }
+
+    let expanded = false;
+    const sync = () => {
+      if (expanded) {
+        descEl.classList.remove("clamp");
+        btn.textContent = "Read less";
+      } else {
+        descEl.classList.add("clamp");
+        btn.textContent = "Read more";
+      }
+    };
+
+    btn.addEventListener("click", () => {
+      expanded = !expanded;
+      sync();
+    });
+
+    // start clamped
+    expanded = false;
+    sync();
+  });
 }
 
 /* -----------------------------
-   Render a media card (Target / Similar / Popular)
-   Requirements:
-   - Title line
-   - Rating UNDER title
-   - Genre under rating
-   - Genre + description BELOW poster (left aligned, full width)
-   - Buttons centered
-   - Read more button
+   Universal Movie Card HTML
+   - rating under title
+   - genre under rating
+   - genre + description BELOW poster block (left aligned)
+   - buttons centered
 ------------------------------*/
-function renderMediaCard(m, opts = {}) {
-  const mode = opts.mode || "similar"; // target|similar|popular
+function cardHTML(m, opts = {}) {
   const type = asType(m.type, "movie");
-
-  const poster =
-    m.poster
-      ? `<img class="poster" src="${esc(m.poster)}" alt="${esc(m.title)} poster" loading="lazy" />`
-      : `<div class="poster"></div>`;
+  const poster = m.poster
+    ? `<img class="poster" src="${esc(m.poster)}" alt="${esc(m.title)} poster" loading="lazy" />`
+    : `<div class="poster placeholder"></div>`;
 
   const genres = Array.isArray(m.genres)
     ? m.genres.map((g) => genreNameById.get(Number(g)) || "").filter(Boolean).join(", ")
     : "";
 
+  const title = `${esc(m.title)} <span class="year">${fmtYear(m.year)}</span>`;
+  const rating = fmtRating(m.rating);
+
+  // Use full overview when available; the clamp handles it
   const overviewFull = String(m.overview || "").trim();
-  const limit = mode === "target" ? 260 : 200;
-  const showMore = needsReadMore(overviewFull, limit);
-  const overviewShort = showMore ? trunc(overviewFull, limit) : overviewFull;
+  const overviewShown = overviewFull || "No overview available.";
 
-  const rmId = `rm_${mode}_${esc(m.id)}_${type}`;
-  const rmBtn = showMore
-    ? `<div class="readMoreRow">
-         <button class="btn readMoreBtn" type="button" data-rm="${rmId}" data-state="less">Read more</button>
-       </div>`
-    : "";
-
-  const actions = opts.actionsHtml || "";
+  const actions = opts.actions || ""; // injected buttons area
 
   return `
-    <div class="mediaCard" data-id="${esc(m.id)}" data-type="${esc(type)}" data-mode="${esc(mode)}">
-      <div class="mediaTop">
+    <div class="movieCard" data-id="${esc(m.id)}" data-type="${esc(type)}" data-desc="${esc(overviewFull)}">
+      <div class="movieTop">
         ${poster}
 
-        <div>
-          <div class="mediaTitle">${esc(m.title)} <span class="mediaYear">${fmtYear(m.year)}</span></div>
+        <div class="movieInfo">
+          <div class="title">${title}</div>
 
-          <div class="metaStack">
-            <div class="ratingPill">⭐ ${esc(fmtRating(m.rating))}</div>
-            <div class="genreLine">${esc(genres)}</div>
+          <div class="ratingPill" aria-label="Rating">
+            <span class="star">⭐</span>
+            <span class="num">${esc(rating)}</span>
           </div>
-        </div>
 
-        <div class="belowPoster">
-          <div class="overview" data-rmtext="${rmId}" data-full="${esc(overviewFull)}">${esc(overviewShort)}</div>
-          ${rmBtn}
+          <div class="genreLine">${esc(genres || "—")}</div>
         </div>
       </div>
 
-      ${actions ? `<div class="actionsRow">${actions}</div>` : ``}
+      <div class="desc clamp">${esc(overviewShown)}</div>
+
+      <div class="readMoreRow">
+        <button class="readMoreBtn" type="button">Read more</button>
+      </div>
+
+      ${actions}
     </div>
   `;
-}
-
-function wireReadMore(container) {
-  if (!container) return;
-  container.querySelectorAll("button[data-rm]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const key = btn.getAttribute("data-rm");
-      const state = btn.getAttribute("data-state") || "less";
-      const textEl = container.querySelector(`[data-rmtext="${CSS.escape(key)}"]`);
-      if (!textEl) return;
-
-      const full = textEl.getAttribute("data-full") || "";
-      const mode = container.querySelector(`[data-rm="${CSS.escape(key)}"]`) ? (container.closest("[data-mode]")?.getAttribute("data-mode") || "") : "";
-
-      // decide limit based on where it lives (fallback)
-      let limit = 200;
-      if (String(mode) === "target") limit = 260;
-
-      if (state === "less") {
-        textEl.textContent = full || textEl.textContent;
-        btn.textContent = "Read less";
-        btn.setAttribute("data-state", "more");
-      } else {
-        textEl.textContent = trunc(full, limit);
-        btn.textContent = "Read more";
-        btn.setAttribute("data-state", "less");
-      }
-    });
-  });
 }
 
 /* -----------------------------
@@ -329,11 +306,18 @@ function renderTarget(m) {
 
   const type = asType(m.type, "movie");
 
-  els.target.innerHTML = renderMediaCard(m, { mode: "target" });
-  wireReadMore(els.target);
+  const actions = `
+    <div class="cardActions">
+      <button class="btn sm openTargetBtn" type="button">Open</button>
+      <button class="btn sm trailerTargetBtn" type="button">Trailer</button>
+      <button class="btn sm tmdbTargetBtn" type="button">TMDb</button>
+    </div>
+  `;
 
+  els.target.innerHTML = cardHTML(m, { actions });
   els.targetActions?.classList.remove("hidden");
 
+  // Target action bar below card (watchlist/share/tmdb)
   if (els.openImdb) {
     els.openImdb.onclick = () => {
       window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(m.id)}`, "_blank");
@@ -356,14 +340,36 @@ function renderTarget(m) {
 
   if (els.addWatch) els.addWatch.onclick = () => addToWatchlist({ ...m, type });
 
-  (async () => {
+  // inside target card buttons
+  const card = els.target.querySelector(".movieCard");
+  const openBtn = card?.querySelector(".openTargetBtn");
+  const trailerBtn = card?.querySelector(".trailerTargetBtn");
+  const tmdbBtn = card?.querySelector(".tmdbTargetBtn");
+
+  openBtn?.addEventListener("click", () => loadById(m.id, type));
+  tmdbBtn?.addEventListener("click", () => window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(m.id)}`, "_blank"));
+
+  trailerBtn?.addEventListener("click", async () => {
     try {
+      trailerBtn.disabled = true;
+      trailerBtn.textContent = "Loading…";
       const key = m.trailerKey || await fetchTrailerKey(m.id, type);
+      if (!key) {
+        alert("No trailer found.");
+        trailerBtn.textContent = "Trailer";
+        return;
+      }
       renderTrailerEmbed(key);
-    } catch {
-      renderTrailerEmbed("");
+      trailerBtn.textContent = "Trailer";
+    } catch (e) {
+      alert(`Trailer failed: ${e.message}`);
+      trailerBtn.textContent = "Trailer";
+    } finally {
+      trailerBtn.disabled = false;
     }
-  })();
+  });
+
+  attachReadMore(els.target);
 
   setMeta(`Selected: ${m.title}`, false);
 }
@@ -381,79 +387,65 @@ function renderSimilar(items) {
   }
 
   els.results.innerHTML = list.map((m) => {
-    const id = m.id;
     const type = asType(m.type, "movie");
-
-    const actionsHtml = `
-      <button class="btn" type="button" data-open="${esc(id)}" data-type="${esc(type)}">Open</button>
-      <button class="btn" type="button" data-trailer="${esc(id)}" data-type="${esc(type)}">Trailer</button>
-      <button class="btn" type="button" data-tmdb="${esc(id)}" data-type="${esc(type)}">TMDb</button>
-      <div class="miniTrailer hidden" data-mini="${esc(id)}_${esc(type)}"></div>
+    const actions = `
+      <div class="cardActions">
+        <button class="btn sm openBtn" type="button">Open</button>
+        <button class="btn sm trailerBtn" type="button">Trailer</button>
+        <button class="btn sm tmdbBtn" type="button">TMDb</button>
+      </div>
+      <div class="miniTrailer hidden"></div>
     `;
-
-    return renderMediaCard({ ...m, type }, { mode: "similar", actionsHtml });
+    return cardHTML({ ...m, type }, { actions });
   }).join("");
 
-  // wire actions + readmore
-  wireReadMore(els.results);
+  els.results.querySelectorAll(".movieCard").forEach((card) => {
+    const id = card.getAttribute("data-id");
+    const type = asType(card.getAttribute("data-type") || "movie", "movie");
 
-  els.results.querySelectorAll("button[data-open]").forEach((b) => {
-    b.addEventListener("click", () => {
-      const id = b.getAttribute("data-open");
-      const type = asType(b.getAttribute("data-type") || "movie", "movie");
-      if (id) loadById(id, type);
-    });
-  });
+    const openBtn = card.querySelector(".openBtn");
+    const trailerBtn = card.querySelector(".trailerBtn");
+    const tmdbBtn = card.querySelector(".tmdbBtn");
+    const mini = card.querySelector(".miniTrailer");
 
-  els.results.querySelectorAll("button[data-tmdb]").forEach((b) => {
-    b.addEventListener("click", () => {
-      const id = b.getAttribute("data-tmdb");
-      const type = asType(b.getAttribute("data-type") || "movie", "movie");
-      window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(id)}`, "_blank");
-    });
-  });
+    openBtn?.addEventListener("click", () => loadById(id, type));
+    tmdbBtn?.addEventListener("click", () => window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(id)}`, "_blank"));
 
-  els.results.querySelectorAll("button[data-trailer]").forEach((b) => {
-    b.addEventListener("click", async () => {
-      const id = b.getAttribute("data-trailer");
-      const type = asType(b.getAttribute("data-type") || "movie", "movie");
-      const miniKey = `${id}_${type}`;
-      const mini = els.results.querySelector(`[data-mini="${CSS.escape(miniKey)}"]`);
-      if (!mini) return;
-
-      const showing = !mini.classList.contains("hidden");
-
+    trailerBtn?.addEventListener("click", async () => {
       try {
-        b.disabled = true;
+        trailerBtn.disabled = true;
+        const showing = !mini.classList.contains("hidden");
 
         if (showing) {
           mini.classList.add("hidden");
           mini.innerHTML = "";
-          b.textContent = "Trailer";
+          trailerBtn.textContent = "Trailer";
           return;
         }
 
-        b.textContent = "Loading…";
+        trailerBtn.textContent = "Loading…";
         const key = await fetchTrailerKey(id, type);
 
         if (!key) {
           alert("No trailer found.");
-          b.textContent = "Trailer";
+          trailerBtn.textContent = "Trailer";
           return;
         }
 
         mini.innerHTML =
           `<iframe loading="lazy" src="https://www.youtube.com/embed/${encodeURIComponent(key)}" title="Trailer" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
         mini.classList.remove("hidden");
-        b.textContent = "Hide trailer";
+        trailerBtn.textContent = "Hide trailer";
       } catch (e) {
         alert(`Trailer failed: ${e.message}`);
-        b.textContent = "Trailer";
+        trailerBtn.textContent = "Trailer";
       } finally {
-        b.disabled = false;
+        trailerBtn.disabled = false;
       }
     });
   });
+
+  attachReadMore(els.results);
 }
 
 /* -----------------------------
@@ -632,48 +624,41 @@ async function doSearch() {
 let popularCache = { movies: [], tv: [] };
 let popularLoadedOnce = false;
 
-async function mergePagedPopular(path, typeLabel, need = 60, maxPages = 6) {
+async function mergePopular50(path, typeLabel) {
   const out = [];
-  for (let page = 1; page <= maxPages && out.length < need; page++) {
+  for (let page = 1; page <= 5 && out.length < 50; page++) {
     const data = await apiGet(path, { page });
     const arr = data.results || data.items || [];
     out.push(...arr.map((x) => ({ ...x, type: asType(x.type || x.media_type || typeLabel, typeLabel) })));
   }
-  return out.filter(x => x && x.id);
+  return out.slice(0, 50);
 }
 
 async function ensurePopularCache() {
   if (popularLoadedOnce && (popularCache.movies.length || popularCache.tv.length)) return;
 
-  // Try combined endpoint first (multi page)
+  // Try combined popular first (supports pages)
   try {
     const movies = [];
     const tv = [];
-    for (let page = 1; page <= 6 && (movies.length < 60 || tv.length < 60); page++) {
+    for (let page = 1; page <= 5 && (movies.length < 50 || tv.length < 50); page++) {
       const combined = await apiGet("/api/popular", { page });
       const m = Array.isArray(combined.movies) ? combined.movies : [];
       const t = Array.isArray(combined.tv) ? combined.tv : [];
       movies.push(...m.map((x) => ({ ...x, type: "movie" })));
       tv.push(...t.map((x) => ({ ...x, type: "tv" })));
     }
-    popularCache.movies = movies.filter(x => x && x.id);
-    popularCache.tv = tv.filter(x => x && x.id);
+    popularCache.movies = movies.slice(0, 50);
+    popularCache.tv = tv.slice(0, 50);
+    popularLoadedOnce = true;
+    return;
   } catch {
-    // ignore
+    // ignore + fallback
   }
 
-  // Top up via split endpoints
-  try {
-    if (popularCache.movies.length < 20) {
-      popularCache.movies = await mergePagedPopular("/api/popular-movies", "movie", 60, 6);
-    }
-  } catch {}
-  try {
-    if (popularCache.tv.length < 20) {
-      popularCache.tv = await mergePagedPopular("/api/popular-tv", "tv", 60, 6);
-    }
-  } catch {}
-
+  // fallback split endpoints
+  try { popularCache.movies = await mergePopular50("/api/popular-movies", "movie"); } catch {}
+  try { popularCache.tv = await mergePopular50("/api/popular-tv", "tv"); } catch {}
   popularLoadedOnce = true;
 }
 
@@ -749,7 +734,7 @@ function openWatchlist() {
               </div>
               <div class="muted" style="margin-top:6px">⭐ ${esc(fmtRating(m.rating))}</div>
               <div style="margin-top:10px">
-                <button class="btn" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">Open</button>
+                <button class="btn sm" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">Open</button>
               </div>
             </div>
           </div>
@@ -774,9 +759,9 @@ function closeWatchlist() {
 }
 
 /* -----------------------------
-   Popular Now (50 + 50) — FIX loading
+   Popular Now (50 + 50) — stable
 ------------------------------*/
-function renderPopularLane(container, items, typeLabel) {
+function renderPopularGrid(container, items) {
   if (!container) return;
 
   const list = (items || []).filter(Boolean).slice(0, 50);
@@ -788,78 +773,26 @@ function renderPopularLane(container, items, typeLabel) {
   container.innerHTML = `
     <div class="popGrid">
       ${list.map((m) => {
-        const id = m.id;
-        const type = asType(m.type || m.media_type || typeLabel, typeLabel);
+        const type = asType(m.type || m.media_type, "movie");
+        const poster = m.poster
+          ? `<img class="popPoster" src="${esc(m.poster)}" loading="lazy" alt="${esc(m.title)} poster" />`
+          : `<div class="popPoster placeholder"></div>`;
 
-        const actionsHtml = `
-          <button class="btn" type="button" data-open="${esc(id)}" data-type="${esc(type)}">Open</button>
-          <button class="btn" type="button" data-trailer="${esc(id)}" data-type="${esc(type)}">Trailer</button>
-          <button class="btn" type="button" data-tmdb="${esc(id)}" data-type="${esc(type)}">TMDb</button>
-          <div class="miniTrailer hidden" data-mini="${esc(id)}_${esc(type)}"></div>
+        return `
+          <button class="popCard" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">
+            ${poster}
+            <div class="popTitle">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
+          </button>
         `;
-
-        return `<div class="popCard">${renderMediaCard({ ...m, type }, { mode: "popular", actionsHtml })}</div>`;
       }).join("")}
     </div>
   `;
 
-  wireReadMore(container);
-
-  container.querySelectorAll("button[data-open]").forEach((b) => {
-    b.addEventListener("click", () => {
-      const id = b.getAttribute("data-open");
-      const type = asType(b.getAttribute("data-type") || "movie", "movie");
+  container.querySelectorAll(".popCard").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-id");
+      const type = asType(btn.getAttribute("data-type") || "movie", "movie");
       if (id) loadById(id, type);
-    });
-  });
-
-  container.querySelectorAll("button[data-tmdb]").forEach((b) => {
-    b.addEventListener("click", () => {
-      const id = b.getAttribute("data-tmdb");
-      const type = asType(b.getAttribute("data-type") || "movie", "movie");
-      window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(id)}`, "_blank");
-    });
-  });
-
-  container.querySelectorAll("button[data-trailer]").forEach((b) => {
-    b.addEventListener("click", async () => {
-      const id = b.getAttribute("data-trailer");
-      const type = asType(b.getAttribute("data-type") || "movie", "movie");
-      const miniKey = `${id}_${type}`;
-      const mini = container.querySelector(`[data-mini="${CSS.escape(miniKey)}"]`);
-      if (!mini) return;
-
-      const showing = !mini.classList.contains("hidden");
-
-      try {
-        b.disabled = true;
-
-        if (showing) {
-          mini.classList.add("hidden");
-          mini.innerHTML = "";
-          b.textContent = "Trailer";
-          return;
-        }
-
-        b.textContent = "Loading…";
-        const key = await fetchTrailerKey(id, type);
-
-        if (!key) {
-          alert("No trailer found.");
-          b.textContent = "Trailer";
-          return;
-        }
-
-        mini.innerHTML =
-          `<iframe loading="lazy" src="https://www.youtube.com/embed/${encodeURIComponent(key)}" title="Trailer" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-        mini.classList.remove("hidden");
-        b.textContent = "Hide trailer";
-      } catch (e) {
-        alert(`Trailer failed: ${e.message}`);
-        b.textContent = "Trailer";
-      } finally {
-        b.disabled = false;
-      }
     });
   });
 }
@@ -871,93 +804,94 @@ async function loadPopularNow() {
   if (els.popularTv) els.popularTv.innerHTML = `<div class="muted">Loading…</div>`;
 
   try {
+    // Try combined popular first (supports page)
     const movies = [];
     const tv = [];
 
-    // Pull enough pages to reach 50 each
-    for (let page = 1; page <= 6 && (movies.length < 50 || tv.length < 50); page++) {
+    for (let page = 1; page <= 5 && (movies.length < 50 || tv.length < 50); page++) {
       const combined = await apiGet("/api/popular", { page });
-
       const m = Array.isArray(combined.movies) ? combined.movies : [];
       const t = Array.isArray(combined.tv) ? combined.tv : [];
-
       movies.push(...m.map((x) => ({ ...x, type: "movie" })));
       tv.push(...t.map((x) => ({ ...x, type: "tv" })));
     }
 
-    const movies50 = movies.filter(x => x && x.id).slice(0, 50);
-    const tv50 = tv.filter(x => x && x.id).slice(0, 50);
+    const movies50 = movies.slice(0, 50);
+    const tv50 = tv.slice(0, 50);
 
-    // If combined endpoint gives nothing, fallback to split endpoints
-    if (!movies50.length || !tv50.length) throw new Error("combined popular empty");
-
-    renderPopularLane(els.popularMovies, movies50, "movie");
-    renderPopularLane(els.popularTv, tv50, "tv");
+    renderPopularGrid(els.popularMovies, movies50);
+    renderPopularGrid(els.popularTv, tv50);
 
     // seed random cache
     popularCache.movies = movies50.slice();
     popularCache.tv = tv50.slice();
     popularLoadedOnce = true;
-
     return;
   } catch {
-    // fallback to split endpoints
+    // fallback split endpoints
   }
 
   try {
     const [movies, tv] = await Promise.all([
-      mergePagedPopular("/api/popular-movies", "movie", 50, 6),
-      mergePagedPopular("/api/popular-tv", "tv", 50, 6),
+      mergePopular50("/api/popular-movies", "movie"),
+      mergePopular50("/api/popular-tv", "tv"),
     ]);
 
-    renderPopularLane(els.popularMovies, movies.slice(0, 50), "movie");
-    renderPopularLane(els.popularTv, tv.slice(0, 50), "tv");
+    renderPopularGrid(els.popularMovies, movies);
+    renderPopularGrid(els.popularTv, tv);
 
-    popularCache.movies = movies.slice(0, 50);
-    popularCache.tv = tv.slice(0, 50);
+    // seed random cache
+    popularCache.movies = movies.slice();
+    popularCache.tv = tv.slice();
     popularLoadedOnce = true;
-
-  } catch {
+  } catch (e) {
     if (els.popularMovies) els.popularMovies.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
     if (els.popularTv) els.popularTv.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
   }
 }
 
 /* -----------------------------
+   Theme
+------------------------------*/
+const THEME_KEY = "filmmatrix_theme_v1";
+const THEMES = ["blue", "red", "green", "purple", "pink"];
+
+function applyTheme(theme) {
+  const t = THEMES.includes(theme) ? theme : "blue";
+  document.body.setAttribute("data-theme", t);
+  localStorage.setItem(THEME_KEY, t);
+}
+
+function toggleThemeMenu(force) {
+  const open = typeof force === "boolean"
+    ? force
+    : els.themeMenu?.classList.contains("hidden");
+
+  if (!els.themeMenu || !els.themeBtn) return;
+
+  els.themeMenu.classList.toggle("hidden", !open);
+  els.themeBtn.setAttribute("aria-expanded", open ? "true" : "false");
+}
+
+/* -----------------------------
    Init
 ------------------------------*/
 function initUI() {
-  // Genres
+  // default theme = blue (sticky)
+  const savedTheme = localStorage.getItem(THEME_KEY) || "blue";
+  applyTheme(savedTheme);
+
   if (els.genre) {
     els.genre.innerHTML = GENRES.map(([val, name]) => `<option value="${esc(val)}">${esc(name)}</option>`).join("");
   }
 
-  // Min rating display
   if (els.minRating && els.minRatingVal) {
     const sync = () => (els.minRatingVal.textContent = `${Number(els.minRating.value || 0)}/10`);
     els.minRating.addEventListener("input", sync);
     sync();
   }
 
-  // Theme
-  loadSavedTheme();
-
-  els.themeBtn?.addEventListener("click", () => {
-    const open = !els.themeMenu?.classList.contains("hidden");
-    els.themeMenu?.classList.toggle("hidden", open);
-    els.themeBtn?.setAttribute("aria-expanded", String(!open));
-  });
-
-  els.themeMenu?.querySelectorAll(".themeOption").forEach((b) => {
-    b.addEventListener("click", () => {
-      const t = b.getAttribute("data-theme");
-      applyTheme(t);
-      els.themeMenu?.classList.add("hidden");
-      els.themeBtn?.setAttribute("aria-expanded", "false");
-    });
-  });
-
-  // Suggest input
+  // suggestion behavior
   els.q?.addEventListener("input", onSuggestInput);
   els.q?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
@@ -967,34 +901,36 @@ function initUI() {
     }
   });
 
-  // Hide suggest on outside click
-  document.addEventListener("click", (e) => {
-    const t = e.target;
-    if (els.suggest && els.q && !els.suggest.contains(t) && t !== els.q) {
-      els.suggest.classList.add("hidden");
-    }
-    // close theme if clicking outside
-    if (els.themeMenu && els.themeBtn && !els.themeMenu.contains(t) && t !== els.themeBtn && !els.themeBtn.contains(t)) {
-      els.themeMenu.classList.add("hidden");
-      els.themeBtn.setAttribute("aria-expanded", "false");
-    }
-  });
-
-  // Search click
   els.searchBtn?.addEventListener("click", () => {
     setActiveMode("none");
     doSearch();
   });
 
-  // Watchlist modal
+  // click-away for suggestions/theme
+  document.addEventListener("click", (e) => {
+    const t = e.target;
+
+    if (els.suggest && !els.suggest.contains(t) && t !== els.q) {
+      els.suggest.classList.add("hidden");
+    }
+
+    if (els.themeMenu && els.themeBtn) {
+      const clickedTheme = els.themeMenu.contains(t) || els.themeBtn.contains(t);
+      if (!clickedTheme) toggleThemeMenu(false);
+    }
+  });
+
+  // header buttons
   els.watchlistBtn?.addEventListener("click", () => {
     setActiveMode("watchlist");
     openWatchlist();
   });
+
   els.closeModal?.addEventListener("click", () => {
     closeWatchlist();
     setActiveMode("none");
   });
+
   els.modal?.addEventListener("click", (e) => {
     if (e.target === els.modal) {
       closeWatchlist();
@@ -1002,13 +938,11 @@ function initUI() {
     }
   });
 
-  // Random
   els.randomBtn?.addEventListener("click", () => {
     setActiveMode("random");
     doRandom();
   });
 
-  // Filters: tv/movie mode buttons
   els.tvOnlyBtn?.addEventListener("click", () => {
     setActiveMode("tv");
     setMediaFilter("tv");
@@ -1021,15 +955,29 @@ function initUI() {
     if ((els.q?.value || "").trim()) doSearch();
   });
 
-  // Deep link support
+  // Theme dropdown
+  els.themeBtn?.addEventListener("click", () => {
+    toggleThemeMenu();
+  });
+
+  els.themeMenu?.querySelectorAll(".themeOption").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const theme = btn.getAttribute("data-theme") || "blue";
+      applyTheme(theme);
+      toggleThemeMenu(false);
+    });
+  });
+
+  // deep link
   const url = new URL(location.href);
   const id = url.searchParams.get("id");
   const type = asType(url.searchParams.get("type") || "movie", "movie");
   if (id) loadById(id, type);
 
-  // Popular Now (50 each)
+  // popular
   loadPopularNow();
 
+  // no default highlight
   setActiveMode("none");
 }
 
