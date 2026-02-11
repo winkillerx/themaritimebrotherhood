@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="en" data-theme="purple">
+<html lang="en" data-theme="blue">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <title>FILM MATRIX — Find Similar Movies & TV Shows</title>
-  <meta name="description" content="Type a movie or TV show you love and Film Matrix recommends similar titles instantly (1950+), with trailers, watchlist, filters, and popular now." />
+  <meta name="description" content="Type a movie or TV show you love and Film Matrix recommends similar titles instantly (1950+), with trailers, watchlist, filters, modes, and Popular Now." />
 
   <link rel="canonical" href="https://filmmatrix.net/" />
   <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -20,7 +20,7 @@
         <div class="logo">[FM]</div>
         <div class="brandText">
           <div class="name">FILM MATRIX</div>
-          <div class="sub">similar finder • why-it-matches</div>
+          <div class="sub">recommend engine • why-it-matches</div>
         </div>
       </div>
 
@@ -31,12 +31,14 @@
         <button id="movieOnlyBtn" class="btn iconBtn" type="button" aria-label="Movies Only">🎬</button>
       </div>
 
+      <!-- Theme selector row (full width, below icon row) -->
       <div class="themeRow">
         <button id="themeBtn" class="btn themeBtn" type="button" aria-haspopup="listbox" aria-expanded="false">
           🎨 Theme
         </button>
 
         <div id="themeMenu" class="themeMenu hidden" role="listbox" aria-label="Theme">
+          <button class="themeOption" type="button" data-theme="blue">🔵 Blue</button>
           <button class="themeOption" type="button" data-theme="red">🔴 Red</button>
           <button class="themeOption" type="button" data-theme="green">🟢 Green</button>
           <button class="themeOption" type="button" data-theme="purple">🟣 Purple</button>
@@ -52,14 +54,14 @@
         Type a movie or TV show (1950+), then:
         <br><br>
         • Tap a suggestion (fast autocomplete) or hit <strong>Search</strong><br>
-        • Pick a <strong>Target</strong> title and instantly get up to <strong>20 Similar</strong> matches<br>
-        • Each result includes genre + rating + overview and a <strong>Trailer</strong> button<br>
+        • Pick a <strong>Target</strong> and instantly get up to <strong>20 Similar</strong> matches<br>
+        • Each result shows <strong>genre</strong> + <strong>rating</strong> + overview + its own <strong>Trailer</strong><br>
         • Use filters: <strong>Minimum rating</strong> + <strong>Genre</strong><br>
         • Use mode buttons: <strong>TV-only</strong> or <strong>Movies-only</strong><br>
-        • Hit <strong>Random</strong> for a surprise pick (uses Popular feed)<br>
-        • Save titles with <strong>Watchlist</strong> (stored in your browser)<br>
+        • Hit <strong>Random</strong> for a surprise pick (uses Popular cache)<br>
+        • Save picks to <strong>Watchlist</strong> (stored in your browser)<br>
         • Share any pick using <strong>Copy Share Link</strong><br>
-        • Browse <strong>Popular Now</strong> (50 movies + 50 TV)
+        • Browse <strong>Popular Now</strong> (<strong>50 movies</strong> + <strong>50 TV</strong>)
       </p>
 
       <label class="lbl">Movie / TV</label>
@@ -124,12 +126,12 @@
       </div>
 
       <h3 class="laneTitle">Popular Movies</h3>
-      <div id="popularMovies">
+      <div id="popularMovies" class="lane">
         <div class="muted">Loading…</div>
       </div>
 
       <h3 class="laneTitle">Popular TV Shows</h3>
-      <div id="popularTv">
+      <div id="popularTv" class="lane">
         <div class="muted">Loading…</div>
       </div>
     </section>
