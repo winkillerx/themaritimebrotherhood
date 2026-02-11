@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>FILM MATRIX — Find Similar Movies & TV Shows</title>
+  <meta name="description" content="Type a movie or TV show you love and Film Matrix recommends similar titles instantly (1950+), with trailers, watchlist, filters, and popular now." />
+
+  <link rel="canonical" href="https://filmmatrix.net/" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <div class="logo">[FM]</div>
+        <div class="brandText">
+          <div class="name">FILM MATRIX</div>
+          <div class="sub">similar finder • why-it-matches</div>
+        </div>
+      </div>
+
+      <div class="topBtns">
+        <button id="watchlistBtn" class="btn iconBtn" type="button" aria-label="Watchlist">👁</button>
+        <button id="random" class="btn iconBtn" type="button" aria-label="Random">🎲</button>
+        <button id="tvOnlyBtn" class="btn iconBtn" type="button" aria-label="TV Only">📺</button>
+        <button id="movieOnlyBtn" class="btn iconBtn" type="button" aria-label="Movies Only">🎬</button>
+
+        <!-- Theme button under the 4 main buttons -->
+        <div class="themeWrap">
+          <button id="themeBtn" class="btn full" type="button" aria-haspopup="menu" aria-expanded="false">
+            Main Theme ▾
+          </button>
+
+          <div id="themeMenu" class="themeMenu hidden" role="menu" aria-label="Theme menu">
+            <button class="btn themeItem" type="button" data-theme="blue" role="menuitem">Blue Stock</button>
+            <button class="btn themeItem" type="button" data-theme="red" role="menuitem">Red</button>
+            <button class="btn themeItem" type="button" data-theme="green" role="menuitem">Green</button>
+            <button class="btn themeItem" type="button" data-theme="purple" role="menuitem">Purple</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>Search</h2>
+      <p class="muted">
+        <strong>Film Matrix</strong> helps you find what to watch next.
+        Type a movie or TV show (1950+), then:
+        <br><br>
+        • Tap a suggestion (fast autocomplete) or hit <strong>Search</strong><br>
+        • Pick a <strong>Target</strong> title and instantly get up to <strong>20 Similar</strong> matches<br>
+        • Each result includes genre + rating + overview and a <strong>Trailer</strong> button<br>
+        • Use filters: <strong>Minimum rating</strong> + <strong>Genre</strong><br>
+        • Use mode buttons: <strong>TV-only</strong> or <strong>Movies-only</strong><br>
+        • Hit <strong>Random</strong> for a surprise pick (uses Popular feed)<br>
+        • Save titles with <strong>Watchlist</strong> (stored in your browser)<br>
+        • Share any pick using <strong>Copy Share Link</strong><br>
+        • Browse <strong>Popular Now</strong> (50 movies + 50 TV)
+      </p>
+
+      <label class="lbl">Movie / TV</label>
+      <input id="q" class="input" placeholder="Blade, Heat, Alien..." autocomplete="off" />
+      <div id="suggest" class="suggest hidden"></div>
+
+      <div id="matches" class="chips hidden"></div>
+
+      <button id="go" class="btn full" type="button">Search</button>
+
+      <div class="filters">
+        <div class="filter">
+          <div class="lblRow">
+            <label class="lbl">Min rating</label>
+            <span id="minRatingVal" class="muted">0/10</span>
+          </div>
+          <input id="minRating" type="range" min="0" max="10" step="0.5" value="0" />
+        </div>
+
+        <div class="filter">
+          <label class="lbl">Genre</label>
+          <select id="genre" class="select">
+            <option value="any">Any</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="sectionTitle">
+        <h2>Target</h2>
+        <div id="meta" class="muted">Ready.</div>
+      </div>
+
+      <div id="target" class="targetBox">
+        <div class="muted">No selection yet.</div>
+      </div>
+
+      <div id="trailer" class="trailer hidden"></div>
+
+      <div id="targetActions" class="actions hidden">
+        <button id="addWatch" class="btn" type="button">Add to Watchlist</button>
+        <button id="copyLink" class="btn" type="button">Copy Share Link</button>
+        <button id="openImdb" class="btn" type="button">TMDb</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="sectionTitle">
+        <h2>Similar</h2>
+        <div class="muted">Up to 20 results • each has its own Trailer button.</div>
+      </div>
+      <div id="results" class="chips">
+        <div class="muted">No similar titles found (try another title).</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="sectionTitle">
+        <h2>Popular Now</h2>
+        <div class="muted">Live from TMDb • movies + TV</div>
+      </div>
+
+      <h3 class="laneTitle">Popular Movies</h3>
+      <div id="popularMovies" class="lane">
+        <div class="muted">Loading…</div>
+      </div>
+
+      <h3 class="laneTitle">Popular TV Shows</h3>
+      <div id="popularTv" class="lane">
+        <div class="muted">Loading…</div>
+      </div>
+    </section>
+
+    <footer class="foot muted">
+      /movies • cyberpunk monospace • TMDb via local proxy • responsive layout
+    </footer>
+  </div>
+
+  <div id="modal" class="modal hidden">
+    <div class="modalCard">
+      <div class="modalTop">
+        <h3>Watchlist</h3>
+        <button id="closeModal" class="btn" type="button">Close</button>
+      </div>
+      <div id="watchlist" class="watchlist"></div>
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
