@@ -799,73 +799,6 @@ async function doRandom() {
 /* -----------------------------
    Init
 ------------------------------*/
-
-/* -----------------------------
-   Theme System (full-site)
-------------------------------*/
-const THEME_KEY = "filmmatrix_theme";
-
-const THEME_LABEL = {
-  blue: "Blue Stock",
-  red: "Red",
-  green: "Green",
-  purple: "Purple",
-};
-
-function applyTheme(theme) {
-  const t = (theme || "blue").toLowerCase();
-  document.body.dataset.theme = THEME_LABEL[t] ? t : "blue";
-
-  const btn = document.getElementById("themeBtn");
-  if (btn) btn.textContent = `${THEME_LABEL[document.body.dataset.theme] || "Main Theme"} ▾`;
-
-  try { localStorage.setItem(THEME_KEY, document.body.dataset.theme); } catch {}
-}
-
-function initThemeUI() {
-  const btn = document.getElementById("themeBtn");
-  const menu = document.getElementById("themeMenu");
-  if (!btn || !menu) return;
-
-  const close = () => {
-    menu.classList.add("hidden");
-    btn.setAttribute("aria-expanded", "false");
-  };
-
-  const open = () => {
-    menu.classList.remove("hidden");
-    btn.setAttribute("aria-expanded", "true");
-  };
-
-  btn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const isOpen = !menu.classList.contains("hidden");
-    if (isOpen) close(); else open();
-  });
-
-  menu.querySelectorAll(".themeItem").forEach((b) => {
-    b.addEventListener("click", (e) => {
-      e.stopPropagation();
-      applyTheme(b.getAttribute("data-theme"));
-      close();
-    });
-  });
-
-  // Close when clicking outside
-  document.addEventListener("click", (e) => {
-    if (!menu.contains(e.target) && e.target !== btn) close();
-  });
-
-  // Escape closes
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") close();
-  });
-
-  // Load saved theme (default: blue)
-  let saved = "blue";
-  try { saved = localStorage.getItem(THEME_KEY) || "blue"; } catch {}
-  applyTheme(saved);
-}
 function initUI() {
   // Genre dropdown
   if (els.genre) {
@@ -944,8 +877,78 @@ function initUI() {
   // Popular Now
   loadPopularNow();
 
-  // Theme
-  initThemeUI();
+
+  /* -----------------------------
+     Theme dropdown (full site palette)
+  ------------------------------*/
+  const THEME_KEY = "filmmatrix_theme_v1";
+  const themeBtn = document.getElementById("themeBtn");
+  const themeMenu = document.getElementById("themeMenu");
+  const themeItems = themeMenu ? Array.from(themeMenu.querySelectorAll(".themeItem")) : [];
+
+  const THEME_LABEL = {
+    blue: "Blue Stock",
+    red: "Red",
+    green: "Green",
+    purple: "Purple"
+  };
+
+  function closeThemeMenu() {
+    if (!themeMenu || !themeBtn) return;
+    themeMenu.classList.add("hidden");
+    themeBtn.setAttribute("aria-expanded", "false");
+  }
+
+  function openThemeMenu() {
+    if (!themeMenu || !themeBtn) return;
+    themeMenu.classList.remove("hidden");
+    themeBtn.setAttribute("aria-expanded", "true");
+  }
+
+  function applyTheme(theme) {
+    const t = (theme || "blue").toLowerCase();
+    const safe = THEME_LABEL[t] ? t : "blue";
+
+    document.body.classList.remove("theme-blue", "theme-red", "theme-green", "theme-purple");
+    document.body.classList.add(`theme-${safe}`);
+
+    if (themeBtn) themeBtn.innerHTML = `${THEME_LABEL[safe]} <span class="caret">▾</span>`;
+    try { localStorage.setItem(THEME_KEY, safe); } catch {}
+  }
+
+  // Toggle menu
+  themeBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!themeMenu) return;
+    const isOpen = !themeMenu.classList.contains("hidden");
+    if (isOpen) closeThemeMenu();
+    else openThemeMenu();
+  });
+
+  // Pick theme
+  themeItems.forEach((b) => {
+    b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      applyTheme(b.getAttribute("data-theme") || "blue");
+      closeThemeMenu();
+    });
+  });
+
+  // Click outside closes
+  document.addEventListener("click", () => closeThemeMenu());
+
+  // Esc closes
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeThemeMenu();
+  });
+
+  // Load saved theme
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    applyTheme(saved || "blue");
+  } catch {
+    applyTheme("blue");
+  }
 
   // ✅ IMPORTANT: no button highlighted on load
   setActiveMode("none");

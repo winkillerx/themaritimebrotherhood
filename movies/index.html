@@ -30,17 +30,17 @@
         <button id="tvOnlyBtn" class="btn iconBtn" type="button" aria-label="TV Only">📺</button>
         <button id="movieOnlyBtn" class="btn iconBtn" type="button" aria-label="Movies Only">🎬</button>
 
-        <!-- Theme button under the 4 main buttons -->
+        <!-- Theme -->
         <div class="themeWrap">
-          <button id="themeBtn" class="btn full" type="button" aria-haspopup="menu" aria-expanded="false">
-            Main Theme ▾
+          <button id="themeBtn" class="btn themeToggleBtn" type="button" aria-haspopup="listbox" aria-expanded="false">
+            Blue Stock <span class="caret">▾</span>
           </button>
 
-          <div id="themeMenu" class="themeMenu hidden" role="menu" aria-label="Theme menu">
-            <button class="btn themeItem" type="button" data-theme="blue" role="menuitem">Blue Stock</button>
-            <button class="btn themeItem" type="button" data-theme="red" role="menuitem">Red</button>
-            <button class="btn themeItem" type="button" data-theme="green" role="menuitem">Green</button>
-            <button class="btn themeItem" type="button" data-theme="purple" role="menuitem">Purple</button>
+          <div id="themeMenu" class="themeMenu hidden" role="listbox" aria-label="Theme">
+            <button class="themeItem" type="button" data-theme="blue">Blue Stock</button>
+            <button class="themeItem" type="button" data-theme="red">Red</button>
+            <button class="themeItem" type="button" data-theme="green">Green</button>
+            <button class="themeItem" type="button" data-theme="purple">Purple</button>
           </div>
         </div>
       </div>
