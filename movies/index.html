@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="purple">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -30,19 +30,19 @@
         <button id="tvOnlyBtn" class="btn iconBtn" type="button" aria-label="TV Only">📺</button>
         <button id="movieOnlyBtn" class="btn iconBtn" type="button" aria-label="Movies Only">🎬</button>
       </div>
-      <!-- Theme selector row (full width) -->
-<div class="themeRow">
-  <button id="themeBtn" class="btn themeBtn" type="button" aria-haspopup="listbox" aria-expanded="false">
-    🎨 Theme
-  </button>
-  </div>
-  <div id="themeMenu" class="themeMenu hidden" role="listbox" aria-label="Theme">
-    <button class="themeOption" type="button" data-theme="red">🔴 Red</button>
-    <button class="themeOption" type="button" data-theme="green">🟢 Green</button>
-    <button class="themeOption" type="button" data-theme="purple">🟣 Purple</button>
-    <button class="themeOption" type="button" data-theme="pink">💗 Pink</button>
 
-</div>
+      <div class="themeRow">
+        <button id="themeBtn" class="btn themeBtn" type="button" aria-haspopup="listbox" aria-expanded="false">
+          🎨 Theme
+        </button>
+
+        <div id="themeMenu" class="themeMenu hidden" role="listbox" aria-label="Theme">
+          <button class="themeOption" type="button" data-theme="red">🔴 Red</button>
+          <button class="themeOption" type="button" data-theme="green">🟢 Green</button>
+          <button class="themeOption" type="button" data-theme="purple">🟣 Purple</button>
+          <button class="themeOption" type="button" data-theme="pink">💗 Pink</button>
+        </div>
+      </div>
     </header>
 
     <section class="card">
@@ -124,12 +124,12 @@
       </div>
 
       <h3 class="laneTitle">Popular Movies</h3>
-      <div id="popularMovies" class="lane">
+      <div id="popularMovies">
         <div class="muted">Loading…</div>
       </div>
 
       <h3 class="laneTitle">Popular TV Shows</h3>
-      <div id="popularTv" class="lane">
+      <div id="popularTv">
         <div class="muted">Loading…</div>
       </div>
     </section>
