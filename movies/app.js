@@ -268,7 +268,6 @@ function renderTarget(m) {
           <div class="title">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
           <div class="pill">⭐ ${esc(fmtRating(m.rating))}</div>
         </div>
-
       </div>
 
       <div class="metaRow">
@@ -355,7 +354,6 @@ function renderSimilar(items) {
               <div class="title">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
               <div class="pill">⭐ ${esc(fmtRating(m.rating))}</div>
             </div>
-
           </div>
 
           <div class="metaRow">
@@ -879,84 +877,78 @@ function initUI() {
   // Popular Now
   loadPopularNow();
 
-
-  /* -----------------------------
-     Theme dropdown (full site palette)
-  ------------------------------*/
-  const THEME_KEY = "filmmatrix_theme_v1";
-  const themeBtn = document.getElementById("themeBtn");
-  const themeMenu = document.getElementById("themeMenu");
-  const themeItems = themeMenu ? Array.from(themeMenu.querySelectorAll(".themeItem")) : [];
-
-  const THEME_LABEL = {
-    blue: "Blue Stock",
-    red: "Red",
-    green: "Green",
-    purple: "Purple"
-  };
-
-  function closeThemeMenu() {
-    if (!themeMenu || !themeBtn) return;
-    themeMenu.classList.add("hidden");
-    themeBtn.setAttribute("aria-expanded", "false");
-  }
-
-  function openThemeMenu() {
-    if (!themeMenu || !themeBtn) return;
-    themeMenu.classList.remove("hidden");
-    themeBtn.setAttribute("aria-expanded", "true");
-  }
-
-  function applyTheme(theme) {
-    const t = (theme || "blue").toLowerCase();
-    const safe = THEME_LABEL[t] ? t : "blue";
-
-    document.body.classList.remove("theme-blue", "theme-red", "theme-green", "theme-purple");
-    document.body.classList.add(`theme-${safe}`);
-
-    if (themeBtn) themeBtn.innerHTML = `${THEME_LABEL[safe]} <span class="caret">▾</span>`;
-    try { localStorage.setItem(THEME_KEY, safe); } catch {}
-  }
-
-  // Toggle menu
-  themeBtn?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    if (!themeMenu) return;
-    const isOpen = !themeMenu.classList.contains("hidden");
-    if (isOpen) closeThemeMenu();
-    else openThemeMenu();
-  });
-
-  // Pick theme
-  themeItems.forEach((b) => {
-    b.addEventListener("click", (e) => {
-      e.stopPropagation();
-      applyTheme(b.getAttribute("data-theme") || "blue");
-      closeThemeMenu();
-    });
-  });
-
-  // Click outside closes
-  document.addEventListener("click", () => closeThemeMenu());
-
-  // Esc closes
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeThemeMenu();
-  });
-
-  // Load saved theme
-  try {
-    const saved = localStorage.getItem(THEME_KEY);
-    applyTheme(saved || "blue");
-  } catch {
-    applyTheme("blue");
-  }
-
   // ✅ IMPORTANT: no button highlighted on load
   setActiveMode("none");
 }
 
+
+/* -----------------------------
+   Theme picker
+------------------------------*/
+const THEME_KEY = "filmmatrix_theme_v1";
+const THEME_LABELS = {
+  blue: "Blue Stock",
+  red: "Red",
+  green: "Green",
+  purple: "Purple",
+};
+
+function applyTheme(theme) {
+  const t = (theme && THEME_LABELS[theme]) ? theme : "blue";
+  document.body.classList.remove("theme-blue","theme-red","theme-green","theme-purple");
+  document.body.classList.add(`theme-${t}`);
+
+  const labelEl = document.getElementById("themeBtnLabel");
+  if (labelEl) labelEl.textContent = THEME_LABELS[t];
+
+  try { localStorage.setItem(THEME_KEY, t); } catch {}
+}
+
+function initThemePicker() {
+  const wrap = document.getElementById("themeWrap");
+  const btn = document.getElementById("themeBtn");
+  const menu = document.getElementById("themeMenu");
+  if (!wrap || !btn || !menu) return;
+
+  const open = () => {
+    menu.classList.remove("hidden");
+    btn.setAttribute("aria-expanded", "true");
+  };
+  const close = () => {
+    menu.classList.add("hidden");
+    btn.setAttribute("aria-expanded", "false");
+  };
+  const toggle = () => (menu.classList.contains("hidden") ? open() : close());
+
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggle();
+  });
+
+  menu.querySelectorAll("[data-theme]").forEach((item) => {
+    item.addEventListener("click", () => {
+      applyTheme(item.getAttribute("data-theme"));
+      close();
+    });
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!wrap.contains(e.target)) close();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") close();
+  });
+
+  // load saved theme
+  let saved = "blue";
+  try { saved = localStorage.getItem(THEME_KEY) || "blue"; } catch {}
+  applyTheme(saved);
+}
+
 initUI();
+initThemePicker();
 renderTarget(null);
 clearLists();
 setMeta("Ready.", false);
