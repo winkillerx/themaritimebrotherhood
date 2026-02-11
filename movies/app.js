@@ -4,22 +4,14 @@
    - /api/search?q=...
    - /api/resolve?id=...&type=movie|tv
    - /api/similar?id=...&type=movie|tv&minRating=...&genre=...&yearMin=...
-   - /api/videos?id=...&type=movie|tv   => { key: "YouTubeKey" }
-   - Popular:
-     - /api/popular                 => { movies:[...], tv:[...] } (optional)
-     - /api/popular-movies          => { results:[...] } (optional)
-     - /api/popular-tv              => { results:[...] } (optional)
-
-   NOTE:
-   ✅ Random is implemented CLIENT-SIDE because /api/random is returning 500 server-side.
-
-   THEME:
-   ✅ Expects HTML elements:
-   - #themeBtn
-   - #themeMenu with buttons .themeOption[data-theme="red|green|purple|pink"]
+   - /api/videos?id=...&type=movie|tv => { key: "YouTubeKey" }
+   - /api/popular?page=1&media=any|movie|tv => { movies:[...], tv:[...] }  (you have this)
 */
 
 const YEAR_MIN = 1950;
+const SIMILAR_LIMIT = 20;     // frontend display cap
+const POPULAR_LIMIT = 50;     // you want 50 movies + 50 tv
+const POPULAR_PAGES = 3;      // TMDb returns ~20 per page, so 3 pages => ~60
 
 const GENRES = [
   ["any", "Any"],
@@ -49,6 +41,7 @@ const els = {
   // theme UI
   themeBtn: document.getElementById("themeBtn"),
   themeMenu: document.getElementById("themeMenu"),
+  themeOptions: Array.from(document.querySelectorAll(".themeOption")),
 
   minRating: document.getElementById("minRating"),
   minRatingVal: document.getElementById("minRatingVal"),
@@ -85,11 +78,9 @@ let mediaFilter = "any"; // any | tv | movie
 
 function setActiveMode(mode) {
   activeMode = mode;
-
   [els.watchlistBtn, els.randomBtn, els.tvOnlyBtn, els.movieOnlyBtn].forEach((b) => {
     if (b) b.classList.remove("active");
   });
-
   if (mode === "watchlist" && els.watchlistBtn) els.watchlistBtn.classList.add("active");
   if (mode === "random" && els.randomBtn) els.randomBtn.classList.add("active");
   if (mode === "tv" && els.tvOnlyBtn) els.tvOnlyBtn.classList.add("active");
@@ -101,33 +92,32 @@ function setMediaFilter(next) {
 }
 
 /* -----------------------------
-   Theme selector
+   Theme
 ------------------------------*/
 const THEME_KEY = "filmmatrix_theme_v1";
-const THEMES = new Set(["red", "green", "purple", "pink"]);
 
 function applyTheme(theme) {
-  const t = THEMES.has(theme) ? theme : "purple";
-  document.documentElement.setAttribute("data-theme", t);
+  const t = String(theme || "purple").toLowerCase();
+  document.documentElement.dataset.theme = t; // <html data-theme="...">
   try { localStorage.setItem(THEME_KEY, t); } catch {}
 }
 
 function loadTheme() {
-  let t = "purple";
-  try { t = localStorage.getItem(THEME_KEY) || "purple"; } catch {}
-  applyTheme(t);
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved) applyTheme(saved);
+    else applyTheme("purple");
+  } catch {
+    applyTheme("purple");
+  }
 }
 
-function openThemeMenu() {
+function toggleThemeMenu(forceOpen) {
   if (!els.themeMenu || !els.themeBtn) return;
-  els.themeMenu.classList.remove("hidden");
-  els.themeBtn.setAttribute("aria-expanded", "true");
-}
-
-function closeThemeMenu() {
-  if (!els.themeMenu || !els.themeBtn) return;
-  els.themeMenu.classList.add("hidden");
-  els.themeBtn.setAttribute("aria-expanded", "false");
+  const isHidden = els.themeMenu.classList.contains("hidden");
+  const shouldOpen = typeof forceOpen === "boolean" ? forceOpen : isHidden;
+  els.themeMenu.classList.toggle("hidden", !shouldOpen);
+  els.themeBtn.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
 }
 
 /* -----------------------------
@@ -211,6 +201,40 @@ function clearLists() {
 }
 
 /* -----------------------------
+   Overview (More/Less) helpers
+------------------------------*/
+function overviewBlock(text, uid) {
+  const raw = String(text || "").trim();
+  const safe = esc(raw);
+  if (!raw) return `<div class="overview muted">No overview available.</div>`;
+
+  const needsToggle = raw.length > 220;
+  const btn = needsToggle
+    ? `<button class="btn sm moreBtn" type="button" data-uid="${esc(uid)}">More</button>`
+    : "";
+
+  return `
+    <div class="overviewBlock">
+      <div id="ov_${esc(uid)}" class="overview clamp4">${safe}</div>
+      ${btn ? `<div class="moreRow">${btn}</div>` : ""}
+    </div>
+  `;
+}
+
+function wireMoreButtons(scopeEl = document) {
+  scopeEl.querySelectorAll(".moreBtn").forEach((b) => {
+    b.addEventListener("click", () => {
+      const uid = b.getAttribute("data-uid");
+      const ov = document.getElementById(`ov_${uid}`);
+      if (!ov) return;
+      const expanded = ov.classList.contains("expanded");
+      ov.classList.toggle("expanded", !expanded);
+      b.textContent = expanded ? "More" : "Less";
+    });
+  });
+}
+
+/* -----------------------------
    Trailer helpers
 ------------------------------*/
 function renderTrailerEmbed(key) {
@@ -247,24 +271,34 @@ function renderTarget(m) {
 
   const type = asType(m.type, "movie");
   const poster = m.poster ? `<img class="poster" src="${esc(m.poster)}" alt="${esc(m.title)} poster" />` : "";
+
   const genres = Array.isArray(m.genres)
     ? m.genres.map((g) => genreNameById.get(Number(g)) || "").filter(Boolean).join(", ")
     : "";
 
+  const uid = `t_${m.id}_${type}`;
+
+  // Title row, then GENRES UNDER IT (like your screenshot)
   els.target.innerHTML = `
-    <div class="targetGrid">
-      ${poster}
-      <div class="targetInfo">
-        <div class="titleRow">
-          <div class="title">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
-          <div class="pill">⭐ ${esc(fmtRating(m.rating))}</div>
+    <div class="targetWrap">
+      <div class="targetGrid">
+        ${poster}
+        <div class="targetInfo">
+          <div class="titleRow">
+            <div class="title">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
+            <div class="pill">⭐ ${esc(fmtRating(m.rating))}</div>
+          </div>
+          <div class="muted genreLine">${esc(genres)}</div>
+          <div class="muted" style="margin-top:10px">Type: ${esc(safeUpper(type))}</div>
         </div>
-        <div class="muted">${esc(genres)}</div>
-        <div class="overview">${esc(m.overview || "")}</div>
-        <div class="muted" style="margin-top:10px">Type: ${esc(safeUpper(type))}</div>
       </div>
+
+      <!-- ✅ Overview moved BELOW the grid (so it sits under poster too) -->
+      ${overviewBlock(m.overview || "", uid)}
     </div>
   `;
+
+  wireMoreButtons(els.target);
 
   els.targetActions?.classList.remove("hidden");
 
@@ -306,7 +340,7 @@ function renderTarget(m) {
    Render Similar
 ------------------------------*/
 function renderSimilar(items) {
-  const list = (items || []).filter(Boolean).slice(0, 20);
+  const list = (items || []).filter(Boolean).slice(0, SIMILAR_LIMIT);
   if (!els.results) return;
 
   if (!list.length) {
@@ -324,6 +358,8 @@ function renderSimilar(items) {
       ? m.genres.map((g) => genreNameById.get(Number(g)) || "").filter(Boolean).slice(0, 4).join(", ")
       : "";
 
+    const uid = `s_${m.id}_${type}`;
+
     return `
       <div class="simCard" data-id="${esc(m.id)}" data-type="${esc(type)}">
         <div class="targetGrid">
@@ -333,21 +369,24 @@ function renderSimilar(items) {
               <div class="title">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
               <div class="pill">⭐ ${esc(fmtRating(m.rating))}</div>
             </div>
-            <div class="muted">${esc(genres)}</div>
-            <div class="overview clamp3">${esc(m.overview || "")}</div>
-
-            <div class="simActions">
-              <button class="btn sm openBtn" type="button">Open</button>
-              <button class="btn sm trailerBtn" type="button">Trailer</button>
-              <button class="btn sm tmdbBtn" type="button">TMDb</button>
-            </div>
-
-            <div class="miniTrailer hidden"></div>
+            <div class="muted genreLine">${esc(genres)}</div>
           </div>
         </div>
+
+        ${overviewBlock(m.overview || "", uid)}
+
+        <div class="simActions">
+          <button class="btn sm openBtn" type="button">Open</button>
+          <button class="btn sm trailerBtn" type="button">Trailer</button>
+          <button class="btn sm tmdbBtn" type="button">TMDb</button>
+        </div>
+
+        <div class="miniTrailer hidden"></div>
       </div>
     `;
   }).join("");
+
+  wireMoreButtons(els.results);
 
   els.results.querySelectorAll(".simCard").forEach((card) => {
     const id = card.getAttribute("data-id");
@@ -567,48 +606,101 @@ async function doSearch() {
 }
 
 /* -----------------------------
-   ✅ Random (CLIENT-SIDE) — uses popular lists
+   Popular Now (50 + 50) + Random seed
 ------------------------------*/
 let popularCache = { movies: [], tv: [] };
-let popularLoadedOnce = false;
 
-async function ensurePopularCache() {
-  if (popularLoadedOnce && (popularCache.movies.length || popularCache.tv.length)) return;
+function renderPopularGrid(container, items) {
+  if (!container) return;
 
-  const mergePaged = async (path, typeLabel) => {
-    const out = [];
-    for (let page = 1; page <= 5 && out.length < 60; page++) {
-      const data = await apiGet(path, { page });
-      const arr = data.results || data.items || [];
-      out.push(...arr.map((x) => ({ ...x, type: asType(x.type || x.media_type || typeLabel, typeLabel) })));
-    }
-    return out;
-  };
+  const list = (items || []).filter(Boolean).slice(0, POPULAR_LIMIT);
+  if (!list.length) {
+    container.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
+    return;
+  }
 
-  try {
-    const combined = await apiGet("/api/popular", { page: 1 });
-    const movies = Array.isArray(combined.movies) ? combined.movies : [];
-    const tv = Array.isArray(combined.tv) ? combined.tv : [];
-    popularCache.movies = movies.map((x) => ({ ...x, type: "movie" }));
-    popularCache.tv = tv.map((x) => ({ ...x, type: "tv" }));
-  } catch {}
+  container.innerHTML = `
+    <div class="popGrid">
+      ${list.map((m) => {
+        const type = asType(m.type || m.media_type, "movie");
+        const poster = m.poster
+          ? `<img class="popPoster" src="${esc(m.poster)}" loading="lazy" alt="${esc(m.title)} poster" />`
+          : `<div class="popPoster placeholder"></div>`;
 
-  try {
-    if (popularCache.movies.length < 20) popularCache.movies = await mergePaged("/api/popular-movies", "movie");
-  } catch {}
-  try {
-    if (popularCache.tv.length < 20) popularCache.tv = await mergePaged("/api/popular-tv", "tv");
-  } catch {}
+        return `
+          <button class="popCard" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">
+            ${poster}
+            <div class="popTitle">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
+          </button>
+        `;
+      }).join("")}
+    </div>
+  `;
 
-  popularLoadedOnce = true;
+  container.querySelectorAll(".popCard").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-id");
+      const type = asType(btn.getAttribute("data-type") || "movie", "movie");
+      if (id) loadById(id, type);
+    });
+  });
 }
 
+async function loadPopularNow() {
+  if (!els.popularMovies && !els.popularTv) return;
+
+  if (els.popularMovies) els.popularMovies.innerHTML = `<div class="muted">Loading…</div>`;
+  if (els.popularTv) els.popularTv.innerHTML = `<div class="muted">Loading…</div>`;
+
+  try {
+    // ✅ Your API returns ~20 per page. Fetch 3 pages -> ~60, then slice 50.
+    const movies = [];
+    const tv = [];
+
+    for (let page = 1; page <= POPULAR_PAGES; page++) {
+      const data = await apiGet("/api/popular", { page, media: "any" });
+
+      (data.movies || []).forEach((x) => movies.push({ ...x, type: "movie" }));
+      (data.tv || []).forEach((x) => tv.push({ ...x, type: "tv" }));
+    }
+
+    // De-dupe by id
+    const dedupe = (arr) => {
+      const seen = new Set();
+      return arr.filter((x) => {
+        const k = String(x?.id || "");
+        if (!k || seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+    };
+
+    const moviesClean = dedupe(movies);
+    const tvClean = dedupe(tv);
+
+    popularCache.movies = moviesClean.slice(0, POPULAR_LIMIT);
+    popularCache.tv = tvClean.slice(0, POPULAR_LIMIT);
+
+    renderPopularGrid(els.popularMovies, popularCache.movies);
+    renderPopularGrid(els.popularTv, popularCache.tv);
+  } catch (e) {
+    if (els.popularMovies) els.popularMovies.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
+    if (els.popularTv) els.popularTv.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
+  }
+}
+
+/* -----------------------------
+   Random (client-side using popular cache)
+------------------------------*/
 async function doRandom() {
   clearLists();
   setMeta("Picking random…", false);
 
   try {
-    await ensurePopularCache();
+    // If popular not loaded yet, load it (so random always works)
+    if (!popularCache.movies.length && !popularCache.tv.length) {
+      await loadPopularNow();
+    }
 
     const want = mediaFilter; // any|movie|tv
     let pool = [];
@@ -688,6 +780,7 @@ function openWatchlist() {
       const id = b.getAttribute("data-id");
       const type = asType(b.getAttribute("data-type") || "movie", "movie");
       closeWatchlist();
+      setActiveMode("none");
       loadById(id, type);
     });
   });
@@ -703,8 +796,33 @@ function closeWatchlist() {
    Init
 ------------------------------*/
 function initUI() {
-  // Theme (load saved theme)
+  // Theme
   loadTheme();
+
+  if (els.themeBtn) {
+    els.themeBtn.addEventListener("click", () => toggleThemeMenu());
+  }
+  if (els.themeOptions?.length) {
+    els.themeOptions.forEach((opt) => {
+      opt.addEventListener("click", () => {
+        const t = opt.getAttribute("data-theme") || "purple";
+        applyTheme(t);
+        toggleThemeMenu(false);
+      });
+    });
+  }
+
+  // close theme menu on outside click
+  document.addEventListener("click", (e) => {
+    const inMenu = els.themeMenu?.contains(e.target);
+    const inBtn = els.themeBtn?.contains(e.target);
+    if (!inMenu && !inBtn) toggleThemeMenu(false);
+
+    // also hide suggestions when clicking elsewhere
+    if (!els.suggest?.contains(e.target) && e.target !== els.q) {
+      els.suggest?.classList.add("hidden");
+    }
+  });
 
   // Populate genre dropdown
   if (els.genre) {
@@ -733,42 +851,15 @@ function initUI() {
     doSearch();
   });
 
-  // Hide suggestions when clicking elsewhere + close theme menu
-  document.addEventListener("click", (e) => {
-    if (!els.suggest?.contains(e.target) && e.target !== els.q) {
-      els.suggest?.classList.add("hidden");
-    }
-    closeThemeMenu();
-  });
-
-  // Theme menu open/close
-  els.themeBtn?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const open = !els.themeMenu?.classList.contains("hidden");
-    if (open) closeThemeMenu();
-    else openThemeMenu();
-  });
-
-  els.themeMenu?.querySelectorAll(".themeOption").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const t = btn.getAttribute("data-theme");
-      applyTheme(t);
-      closeThemeMenu();
-    });
-  });
-
   // Watchlist modal
   els.watchlistBtn?.addEventListener("click", () => {
     setActiveMode("watchlist");
     openWatchlist();
   });
-
   els.closeModal?.addEventListener("click", () => {
     closeWatchlist();
     setActiveMode("none");
   });
-
   els.modal?.addEventListener("click", (e) => {
     if (e.target === els.modal) {
       closeWatchlist();
@@ -776,33 +867,33 @@ function initUI() {
     }
   });
 
-  // Random
   els.randomBtn?.addEventListener("click", () => {
     setActiveMode("random");
     doRandom();
   });
 
-  // TV-only
   els.tvOnlyBtn?.addEventListener("click", () => {
     setActiveMode("tv");
     setMediaFilter("tv");
     if ((els.q?.value || "").trim()) doSearch();
   });
 
-  // Movie-only
   els.movieOnlyBtn?.addEventListener("click", () => {
     setActiveMode("movie");
     setMediaFilter("movie");
     if ((els.q?.value || "").trim()) doSearch();
   });
 
-  // Deep link
+  // If user arrives with ?id= & type=
   const url = new URL(location.href);
   const id = url.searchParams.get("id");
   const type = asType(url.searchParams.get("type") || "movie", "movie");
   if (id) loadById(id, type);
 
-  // Ensure no button is highlighted by default
+  // Popular
+  loadPopularNow();
+
+  // Important: nothing selected by default
   setActiveMode("none");
 }
 
