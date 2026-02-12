@@ -272,11 +272,11 @@ function renderTarget(m) {
           <div class="title">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
           <div class="pill">⭐ ${esc(fmtRating(m.rating))}</div>
         </div>
-      </div>
 
-      <div class="metaRow">
-        <div class="genresText">${esc(genres || "—")}</div>
-        <div class="typeText muted">${esc(safeUpper(type))}</div>
+        <div class="genresRow">
+          <div class="genresText">${esc(genres || "—")}</div>
+          <div class="typeText muted">${esc(safeUpper(type))}</div>
+        </div>
       </div>
 
       <div class="overviewBlock">
@@ -358,11 +358,11 @@ function renderSimilar(items) {
               <div class="title">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
               <div class="pill">⭐ ${esc(fmtRating(m.rating))}</div>
             </div>
-          </div>
 
-          <div class="metaRow">
-            <div class="genresText">${esc(genres || "—")}</div>
-            <div class="typeText muted">${esc(safeUpper(type))}</div>
+            <div class="genresRow">
+              <div class="genresText">${esc(genres || "—")}</div>
+              <div class="typeText muted">${esc(safeUpper(type))}</div>
+            </div>
           </div>
 
           <div class="overviewBlock">
@@ -801,120 +801,22 @@ async function doRandom() {
 }
 
 
+
 /* -----------------------------
-   Actor search (Person)
-   Requires backend endpoints:
+   Actors (Person search)
+   Endpoints expected:
    - /api/person_search?q=...
    - /api/person?id=...
    - /api/person_credits?id=...
 ------------------------------*/
 
-let contextMode = "title"; // "title" | "person"
+let actorSuggestTimer = null;
 
-function renderPersonTarget(p) {
-  if (!els.target) return;
-  renderTrailerEmbed("");
-
-  if (!p) {
-    renderTarget(null);
-    return;
-  }
-
-  const img = p.profile
-    ? `<img class="poster" src="${esc(p.profile)}" alt="${esc(p.name)}" />`
-    : `<div class="poster placeholder"></div>`;
-
-  const knownFor = (p.known_for || "").trim();
-  const bio = (p.bio || "").trim();
-
-  const bioBits = makeReadMoreHTML(bio || "No bio available.", 5);
-
-  els.target.innerHTML = `
-    <div class="targetGrid">
-      ${img}
-
-      <div class="targetInfo">
-        <div class="titleRow">
-          <div class="title">${esc(p.name)}</div>
-          <div class="pill">${esc(knownFor || "ACTOR")}</div>
-        </div>
-      </div>
-
-      <div class="metaRow">
-        <div class="genresText">${esc(p.born || "—")}</div>
-        <div class="typeText muted">${esc(p.place || "")}</div>
-      </div>
-
-      <div class="overviewBlock">
-        ${bioBits.html}
-      </div>
-    </div>
-  `;
-
-  wireReadMore(els.target);
-  els.targetActions?.classList.add("hidden");
-  setMeta(`Selected: ${p.name}`, false);
-}
-
-function renderPersonCredits(items) {
-  if (!els.results) return;
-
-  const list = (items || []).filter(Boolean).slice(0, 50);
-  if (!list.length) {
-    els.results.innerHTML = `<div class="muted">No credits found for this actor.</div>`;
-    return;
-  }
-
-  els.results.innerHTML = list.map((m) => {
-    const type = asType(m.type || m.media_type || "movie", "movie");
-    const poster = m.poster
-      ? `<img class="poster" src="${esc(m.poster)}" loading="lazy" alt="${esc(m.title)} poster" />`
-      : `<div class="poster placeholder"></div>`;
-
-    return `
-      <div class="simCard" data-id="${esc(m.id)}" data-type="${esc(type)}">
-        <div class="targetGrid">
-          ${poster}
-
-          <div class="targetInfo">
-            <div class="titleRow">
-              <div class="title">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
-              <div class="pill">⭐ ${esc(fmtRating(m.rating))}</div>
-            </div>
-          </div>
-
-          <div class="metaRow">
-            <div class="genresText">${esc((m.role || "") || "—")}</div>
-            <div class="typeText muted">${esc(safeUpper(type))}</div>
-          </div>
-
-          <div class="overviewBlock">
-            <div class="simActions">
-              <button class="btn sm openBtn" type="button">Open</button>
-              <button class="btn sm tmdbBtn" type="button">TMDb</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join("");
-
-  els.results.querySelectorAll(".simCard").forEach((card) => {
-    const id = card.getAttribute("data-id");
-    const type = asType(card.getAttribute("data-type") || "movie", "movie");
-
-    card.querySelector(".openBtn")?.addEventListener("click", () => loadById(id, type));
-    card.querySelector(".tmdbBtn")?.addEventListener("click", () =>
-      window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(id)}`, "_blank")
-    );
-  });
-}
-
-function renderActorSuggestions(items) {
+function renderActorSuggestions(items){
   const list = (items || []).slice(0, 10);
   if (!els.actorSuggest) return;
 
-  if (!list.length) {
+  if (!list.length){
     els.actorSuggest.innerHTML = "";
     els.actorSuggest.classList.add("hidden");
     return;
@@ -922,73 +824,155 @@ function renderActorSuggestions(items) {
 
   els.actorSuggest.classList.remove("hidden");
   els.actorSuggest.innerHTML = list.map((p) => {
+    const known = p.known_for_department ? ` • ${esc(p.known_for_department)}` : "";
+    const yr = p.birthday ? ` • ${esc(String(p.birthday).slice(0,4))}` : "";
     return `
-      <button class="suggestItem" type="button" data-person-id="${esc(p.id)}">
-        <span>${esc(p.name)}</span>
-        <span class="muted">${esc(p.known_for || "")}</span>
+      <button class="suggestItem" type="button" data-id="${esc(p.id)}">
+        <span>${esc(p.name)} <span class="muted">${known}${yr}</span></span>
+        <span class="muted">PERSON</span>
       </button>
     `;
   }).join("");
 
   els.actorSuggest.querySelectorAll(".suggestItem").forEach((b) => {
     b.addEventListener("click", async () => {
-      const id = b.getAttribute("data-person-id");
+      const id = b.getAttribute("data-id");
       els.actorSuggest.classList.add("hidden");
-      if (id) await loadPersonById(id);
+      if (id) await loadActorById(id);
     });
   });
 }
 
-let actorSuggestTimer = null;
-function onActorSuggestInput() {
+function onActorSuggestInput(){
   clearTimeout(actorSuggestTimer);
   const q = (els.actorQ?.value || "").trim();
 
-  if (q.length < 2) {
+  if (q.length < 2){
     renderActorSuggestions([]);
     return;
   }
 
   actorSuggestTimer = setTimeout(async () => {
-    try {
+    try{
       const data = await apiGet("/api/person_search", { q });
       renderActorSuggestions(data.results || data.items || []);
-    } catch {
+    }catch{
       renderActorSuggestions([]);
     }
-  }, 160);
+  }, 180);
 }
 
-async function loadPersonById(personId) {
-  contextMode = "person";
+function renderActorTarget(p){
+  if (!els.target) return;
+  renderTrailerEmbed("");
+  els.targetActions?.classList.add("hidden");
+
+  if (!p){
+    els.target.innerHTML = `<div class="muted">No selection yet.</div>`;
+    setMeta("Ready.", false);
+    return;
+  }
+
+  const profile = p.profile
+    ? `<img class="poster" src="${esc(p.profile)}" alt="${esc(p.name)} photo" />`
+    : `<div class="poster placeholder"></div>`;
+
+  const born = p.birthday ? `Born: ${esc(p.birthday)}` : "";
+  const place = p.place_of_birth ? ` • ${esc(p.place_of_birth)}` : "";
+  const known = p.known_for_department ? `Known for: ${esc(p.known_for_department)}` : "";
+  const bio = (p.biography || "").trim();
+
+  const overviewBits = makeReadMoreHTML(bio || "No biography available.", 6);
+
+  els.target.innerHTML = `
+    <div class="targetGrid">
+      ${profile}
+
+      <div class="targetInfo">
+        <div class="titleRow">
+          <div class="title">${esc(p.name)}</div>
+          <div class="pill">👤</div>
+        </div>
+        <div class="muted" style="margin-top:10px; line-height:1.5">
+          ${born}${place}${(born||place) && known ? "<br>" : ""}${known}
+        </div>
+      </div>
+
+      <div class="overviewBlock">
+        ${overviewBits.html}
+      </div>
+    </div>
+  `;
+
+  wireReadMore(els.target);
+  setMeta(`Actor: ${p.name}`, false);
+}
+
+function mapCreditToCard(c){
+  const type = asType(c.media_type || c.type, "movie");
+  const title = c.title || c.name || "";
+  const date = c.release_date || c.first_air_date || "";
+  const year = date ? String(date).slice(0,4) : "";
+  const poster = c.poster_path ? `https://image.tmdb.org/t/p/w500${c.poster_path}` : "";
+  return {
+    id: c.id,
+    type,
+    title,
+    year,
+    rating: c.vote_average,
+    poster,
+    overview: c.overview,
+    genres: Array.isArray(c.genre_ids) ? c.genre_ids : []
+  };
+}
+
+async function loadActorById(id){
   clearLists();
   setMeta("Loading actor…", false);
 
-  try {
-    const p = await apiGet("/api/person", { id: personId });
-    renderPersonTarget(p.person || p);
+  try{
+    const p = await apiGet("/api/person", { id });
+    renderActorTarget(p.person || p);
 
-    const c = await apiGet("/api/person_credits", { id: personId });
-    renderPersonCredits(c.credits || c.cast || c.results || []);
-  } catch (e) {
-    renderPersonTarget(null);
+    const credits = await apiGet("/api/person_credits", { id });
+    const cast = credits.cast || credits.results || [];
+    const mapped = cast
+      .filter(x => x && x.id)
+      .map(mapCreditToCard)
+      // de-dupe by id+type, and prefer higher rating then newer
+      .reduce((acc, item) => {
+        const k = `${item.type}:${item.id}`;
+        if (!acc.map.has(k)) { acc.map.set(k, item); acc.list.push(item); }
+        return acc;
+      }, { map: new Map(), list: [] }).list;
+
+    // sort by popularity-ish: vote_average then year desc
+    mapped.sort((a,b) => (Number(b.rating)||0)-(Number(a.rating)||0) || String(b.year).localeCompare(String(a.year)));
+
+    renderSimilar(mapped.slice(0,20));
+  }catch(e){
+    renderActorTarget(null);
     clearLists();
-    setMeta(`Actor failed. (API ${e.status || "?"} – ${e.message})`, true);
+    setMeta(`Actor search failed. (API ${e.status || "?"} – ${e.message})`, true);
   }
 }
 
-async function doActorSearch() {
+async function doActorSearch(){
   const q = (els.actorQ?.value || "").trim();
   if (!q) return;
-
+  renderActorSuggestions([]);
   setMeta("Searching actor…", false);
-  try {
+
+  try{
     const data = await apiGet("/api/person_search", { q });
-    const first = (data.results || data.items || [])[0];
-    if (!first?.id) throw new Error("No actor found.");
-    await loadPersonById(first.id);
-  } catch (e) {
-    setMeta(`Actor search failed. (${e.message})`, true);
+    const first = (data.results || [])[0];
+    if (!first?.id){
+      setMeta("No actor found.", true);
+      return;
+    }
+    await loadActorById(first.id);
+  }catch(e){
+    setMeta(`Actor search failed. (API ${e.status || "?"} – ${e.message})`, true);
   }
 }
 
@@ -1008,10 +992,8 @@ function initUI() {
     sync();
   }
 
-  // Suggest / Enter to search
-  els.q?.addEventListener("input", onSuggestInput);
-
-  // Actor suggest
+  
+  // Actor suggest / Enter to search
   els.actorQ?.addEventListener("input", onActorSuggestInput);
   els.actorQ?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
@@ -1020,6 +1002,9 @@ function initUI() {
     }
   });
   els.actorGo?.addEventListener("click", () => doActorSearch());
+
+// Suggest / Enter to search
+  els.q?.addEventListener("input", onSuggestInput);
   els.q?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -1038,17 +1023,12 @@ function initUI() {
     if (!els.suggest?.contains(e.target) && e.target !== els.q) {
       els.suggest?.classList.add("hidden");
     }
-  });
-
-  
-
-  // Hide actor suggestions when clicking elsewhere
-  document.addEventListener("click", (e) => {
     if (!els.actorSuggest?.contains(e.target) && e.target !== els.actorQ) {
       els.actorSuggest?.classList.add("hidden");
     }
   });
-// Watchlist modal
+
+  // Watchlist modal
   els.watchlistBtn?.addEventListener("click", () => {
     setActiveMode("watchlist");
     openWatchlist();
@@ -1095,74 +1075,7 @@ function initUI() {
   setActiveMode("none");
 }
 
-
-/* -----------------------------
-   Theme picker
-------------------------------*/
-const THEME_KEY = "filmmatrix_theme_v1";
-const THEME_LABELS = {
-  blue: "Blue Stock",
-  red: "Red",
-  green: "Green",
-  purple: "Purple",
-};
-
-function applyTheme(theme) {
-  const t = (theme && THEME_LABELS[theme]) ? theme : "blue";
-  document.body.classList.remove("theme-blue","theme-red","theme-green","theme-purple");
-  document.body.classList.add(`theme-${t}`);
-
-  const labelEl = document.getElementById("themeBtnLabel");
-  if (labelEl) labelEl.textContent = THEME_LABELS[t];
-
-  try { localStorage.setItem(THEME_KEY, t); } catch {}
-}
-
-function initThemePicker() {
-  const wrap = document.getElementById("themeWrap");
-  const btn = document.getElementById("themeBtn");
-  const menu = document.getElementById("themeMenu");
-  if (!wrap || !btn || !menu) return;
-
-  const open = () => {
-    menu.classList.remove("hidden");
-    btn.setAttribute("aria-expanded", "true");
-  };
-  const close = () => {
-    menu.classList.add("hidden");
-    btn.setAttribute("aria-expanded", "false");
-  };
-  const toggle = () => (menu.classList.contains("hidden") ? open() : close());
-
-  btn.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    toggle();
-  });
-
-  menu.querySelectorAll("[data-theme]").forEach((item) => {
-    item.addEventListener("click", () => {
-      applyTheme(item.getAttribute("data-theme"));
-      close();
-    });
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!wrap.contains(e.target)) close();
-  });
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") close();
-  });
-
-  // load saved theme
-  let saved = "blue";
-  try { saved = localStorage.getItem(THEME_KEY) || "blue"; } catch {}
-  applyTheme(saved);
-}
-
 initUI();
-initThemePicker();
 renderTarget(null);
 clearLists();
 setMeta("Ready.", false);

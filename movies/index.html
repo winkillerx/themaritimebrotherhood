@@ -20,7 +20,7 @@
         <div class="logo">[FM]</div>
         <div class="brandText">
           <div class="name">FILM MATRIX</div>
-          <div class="sub">FILM / TV FINDER</div>
+          <div class="sub">similar finder • why-it-matches</div>
         </div>
       </div>
 
@@ -29,20 +29,6 @@
         <button id="random" class="btn iconBtn" type="button" aria-label="Random">🎲</button>
         <button id="tvOnlyBtn" class="btn iconBtn" type="button" aria-label="TV Only">📺</button>
         <button id="movieOnlyBtn" class="btn iconBtn" type="button" aria-label="Movies Only">🎬</button>
-
-        <!-- Theme picker (under the 4 buttons) -->
-        <div class="themeWrap" id="themeWrap">
-          <button id="themeBtn" class="btn themeBtn" type="button" aria-haspopup="menu" aria-expanded="false">
-            <span id="themeBtnLabel">Blue Stock</span> <span class="caret">▾</span>
-          </button>
-
-          <div id="themeMenu" class="themeMenu hidden" role="menu" aria-label="Theme">
-            <button class="themeItem" type="button" role="menuitem" data-theme="blue">Blue Stock</button>
-            <button class="themeItem" type="button" role="menuitem" data-theme="red">Red</button>
-            <button class="themeItem" type="button" role="menuitem" data-theme="green">Green</button>
-            <button class="themeItem" type="button" role="menuitem" data-theme="purple">Purple</button>
-          </div>
-        </div>
       </div>
     </header>
 
@@ -87,21 +73,22 @@
           </select>
         </div>
       </div>
-    
-<section class="card">
-  <div class="sectionTitle">
-    <h2>Actors</h2>
-    <div class="muted">Search a person to view details in <strong>Target</strong> and their credits in <strong>Similar</strong>.</div>
-  </div>
+    </section>
 
-  <label class="lbl">Actor / Actress</label>
-  <input id="actorQ" class="input" placeholder="Keanu Reeves, Sigourney Weaver..." autocomplete="off" />
-  <div id="actorSuggest" class="suggest hidden"></div>
 
-  <button id="actorGo" class="btn full" type="button">Find actor</button>
-</section>
+    <section class="card actorCard">
+      <div class="sectionTitle">
+        <h2>Actors</h2>
+        <div class="muted">Search a person to view details in <strong>Target</strong> and their credits in <strong>Similar</strong>.</div>
+      </div>
 
-</section>
+      <label class="lbl">Actor / Actress</label>
+      <input id="actorQ" class="input" placeholder="Brad Pitt, Scarlett Johansson..." autocomplete="off" />
+      <div id="actorSuggest" class="suggest hidden"></div>
+
+      <button id="actorGo" class="btn full" type="button">Find actor</button>
+    </section>
+
 
     <section class="card">
       <div class="sectionTitle">
