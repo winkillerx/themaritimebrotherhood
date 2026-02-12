@@ -199,10 +199,23 @@ h2{
 
 .sectionTitle{
   display:flex;
-  align-items:baseline;
-  justify-content:space-between;
-  gap: 12px;
-  margin-bottom: 12px;
+  flex-direction:column;
+  align-items:flex-start;
+
+  gap: 10px;          /* space between title + subtitle */
+  margin-bottom: 30px; /* space before content below */
+}
+
+.sectionTitle h2{
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.1;
+}
+
+.sectionTitle .muted{
+  font-size: 15px;
+  line-height: 1.5;
+  opacity: .75;
 }
 
 .muted{ color: var(--muted); }
