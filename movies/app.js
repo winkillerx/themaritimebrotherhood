@@ -35,6 +35,10 @@ const els = {
   suggest: document.getElementById("suggest"),
   searchBtn: document.getElementById("go"),
 
+  actorQ: document.getElementById("actorQ"),
+  actorSuggest: document.getElementById("actorSuggest"),
+  actorGo: document.getElementById("actorGo"),
+
   watchlistBtn: document.getElementById("watchlistBtn"),
   randomBtn: document.getElementById("random"),
   tvOnlyBtn: document.getElementById("tvOnlyBtn"),
@@ -796,6 +800,198 @@ async function doRandom() {
   }
 }
 
+
+/* -----------------------------
+   Actor search (Person)
+   Requires backend endpoints:
+   - /api/person_search?q=...
+   - /api/person?id=...
+   - /api/person_credits?id=...
+------------------------------*/
+
+let contextMode = "title"; // "title" | "person"
+
+function renderPersonTarget(p) {
+  if (!els.target) return;
+  renderTrailerEmbed("");
+
+  if (!p) {
+    renderTarget(null);
+    return;
+  }
+
+  const img = p.profile
+    ? `<img class="poster" src="${esc(p.profile)}" alt="${esc(p.name)}" />`
+    : `<div class="poster placeholder"></div>`;
+
+  const knownFor = (p.known_for || "").trim();
+  const bio = (p.bio || "").trim();
+
+  const bioBits = makeReadMoreHTML(bio || "No bio available.", 5);
+
+  els.target.innerHTML = `
+    <div class="targetGrid">
+      ${img}
+
+      <div class="targetInfo">
+        <div class="titleRow">
+          <div class="title">${esc(p.name)}</div>
+          <div class="pill">${esc(knownFor || "ACTOR")}</div>
+        </div>
+      </div>
+
+      <div class="metaRow">
+        <div class="genresText">${esc(p.born || "—")}</div>
+        <div class="typeText muted">${esc(p.place || "")}</div>
+      </div>
+
+      <div class="overviewBlock">
+        ${bioBits.html}
+      </div>
+    </div>
+  `;
+
+  wireReadMore(els.target);
+  els.targetActions?.classList.add("hidden");
+  setMeta(`Selected: ${p.name}`, false);
+}
+
+function renderPersonCredits(items) {
+  if (!els.results) return;
+
+  const list = (items || []).filter(Boolean).slice(0, 50);
+  if (!list.length) {
+    els.results.innerHTML = `<div class="muted">No credits found for this actor.</div>`;
+    return;
+  }
+
+  els.results.innerHTML = list.map((m) => {
+    const type = asType(m.type || m.media_type || "movie", "movie");
+    const poster = m.poster
+      ? `<img class="poster" src="${esc(m.poster)}" loading="lazy" alt="${esc(m.title)} poster" />`
+      : `<div class="poster placeholder"></div>`;
+
+    return `
+      <div class="simCard" data-id="${esc(m.id)}" data-type="${esc(type)}">
+        <div class="targetGrid">
+          ${poster}
+
+          <div class="targetInfo">
+            <div class="titleRow">
+              <div class="title">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
+              <div class="pill">⭐ ${esc(fmtRating(m.rating))}</div>
+            </div>
+          </div>
+
+          <div class="metaRow">
+            <div class="genresText">${esc((m.role || "") || "—")}</div>
+            <div class="typeText muted">${esc(safeUpper(type))}</div>
+          </div>
+
+          <div class="overviewBlock">
+            <div class="simActions">
+              <button class="btn sm openBtn" type="button">Open</button>
+              <button class="btn sm tmdbBtn" type="button">TMDb</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  els.results.querySelectorAll(".simCard").forEach((card) => {
+    const id = card.getAttribute("data-id");
+    const type = asType(card.getAttribute("data-type") || "movie", "movie");
+
+    card.querySelector(".openBtn")?.addEventListener("click", () => loadById(id, type));
+    card.querySelector(".tmdbBtn")?.addEventListener("click", () =>
+      window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(id)}`, "_blank")
+    );
+  });
+}
+
+function renderActorSuggestions(items) {
+  const list = (items || []).slice(0, 10);
+  if (!els.actorSuggest) return;
+
+  if (!list.length) {
+    els.actorSuggest.innerHTML = "";
+    els.actorSuggest.classList.add("hidden");
+    return;
+  }
+
+  els.actorSuggest.classList.remove("hidden");
+  els.actorSuggest.innerHTML = list.map((p) => {
+    return `
+      <button class="suggestItem" type="button" data-person-id="${esc(p.id)}">
+        <span>${esc(p.name)}</span>
+        <span class="muted">${esc(p.known_for || "")}</span>
+      </button>
+    `;
+  }).join("");
+
+  els.actorSuggest.querySelectorAll(".suggestItem").forEach((b) => {
+    b.addEventListener("click", async () => {
+      const id = b.getAttribute("data-person-id");
+      els.actorSuggest.classList.add("hidden");
+      if (id) await loadPersonById(id);
+    });
+  });
+}
+
+let actorSuggestTimer = null;
+function onActorSuggestInput() {
+  clearTimeout(actorSuggestTimer);
+  const q = (els.actorQ?.value || "").trim();
+
+  if (q.length < 2) {
+    renderActorSuggestions([]);
+    return;
+  }
+
+  actorSuggestTimer = setTimeout(async () => {
+    try {
+      const data = await apiGet("/api/person_search", { q });
+      renderActorSuggestions(data.results || data.items || []);
+    } catch {
+      renderActorSuggestions([]);
+    }
+  }, 160);
+}
+
+async function loadPersonById(personId) {
+  contextMode = "person";
+  clearLists();
+  setMeta("Loading actor…", false);
+
+  try {
+    const p = await apiGet("/api/person", { id: personId });
+    renderPersonTarget(p.person || p);
+
+    const c = await apiGet("/api/person_credits", { id: personId });
+    renderPersonCredits(c.credits || c.cast || c.results || []);
+  } catch (e) {
+    renderPersonTarget(null);
+    clearLists();
+    setMeta(`Actor failed. (API ${e.status || "?"} – ${e.message})`, true);
+  }
+}
+
+async function doActorSearch() {
+  const q = (els.actorQ?.value || "").trim();
+  if (!q) return;
+
+  setMeta("Searching actor…", false);
+  try {
+    const data = await apiGet("/api/person_search", { q });
+    const first = (data.results || data.items || [])[0];
+    if (!first?.id) throw new Error("No actor found.");
+    await loadPersonById(first.id);
+  } catch (e) {
+    setMeta(`Actor search failed. (${e.message})`, true);
+  }
+}
+
 /* -----------------------------
    Init
 ------------------------------*/
@@ -814,6 +1010,16 @@ function initUI() {
 
   // Suggest / Enter to search
   els.q?.addEventListener("input", onSuggestInput);
+
+  // Actor suggest
+  els.actorQ?.addEventListener("input", onActorSuggestInput);
+  els.actorQ?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      doActorSearch();
+    }
+  });
+  els.actorGo?.addEventListener("click", () => doActorSearch());
   els.q?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -834,7 +1040,15 @@ function initUI() {
     }
   });
 
-  // Watchlist modal
+  
+
+  // Hide actor suggestions when clicking elsewhere
+  document.addEventListener("click", (e) => {
+    if (!els.actorSuggest?.contains(e.target) && e.target !== els.actorQ) {
+      els.actorSuggest?.classList.add("hidden");
+    }
+  });
+// Watchlist modal
   els.watchlistBtn?.addEventListener("click", () => {
     setActiveMode("watchlist");
     openWatchlist();
