@@ -969,3 +969,11 @@ body.theme-purple{
     max-height: 220px;
   }
 }
+/* ===== Force Watch Provider links to white ===== */
+.watchDropdown a,
+.watchDropdown a:visited,
+.watchDropdown a:hover,
+.watchDropdown a:active {
+  color: var(--text);
+  text-decoration: none;
+}
