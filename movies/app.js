@@ -329,20 +329,16 @@ function wireReadMore(rootEl) {
     });
   });
 }
-/* -----------------------------
-   Mobile scroll fix (Target focus)
-------------------------------*/
+/* -----------------------------------------------------------
+   1) Mobile: auto-scroll to Target
+-----------------------------------------------------------*/
 function scrollToTarget() {
-  const targetEl = document.getElementById("target");
-  if (!targetEl) return;
-
-  // iOS Safari–safe scroll after DOM update
-  requestAnimationFrame(() => {
-    targetEl.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
-  });
+  const el = els.target?.closest(".card") || els.target;
+  if (!el) return;
+  // smooth scroll on mobile after selecting something
+  setTimeout(() => {
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 60);
 }
 /* -----------------------------------------------------------
    SECTION B: renderTarget() (FULL REPLACE)
@@ -699,7 +695,7 @@ async function loadById(id, type = "movie") {
     if (!target?.id) throw new Error("Resolve did not return a target id.");
 
     const targetType = asType(target.type || t, t);
-    renderTarget({ ...target, type: targetType }); scrollToTarget(); // 🔥 mobile fix scrollToTarget(); // 🔥 mobile fix scrollToTarget(); // 🔥 mobile fix
+    renderTarget({ ...target, type: targetType });
 
     const f = getFilters();
     const sim = await apiGet("/api/similar", {
@@ -711,6 +707,7 @@ async function loadById(id, type = "movie") {
     });
 
     renderSimilar(sim.similar || sim.results || []);
+		scrollToTarget();
   } catch (e) {
     renderTarget(null);
     clearLists();
@@ -1049,6 +1046,7 @@ function initUI() {
   if (id) loadById(id, type);
 
   loadPopularNow();
+	renderGenreGrid();
   initThemePicker();
   setActiveMode("none");
 }
@@ -1172,7 +1170,120 @@ document.addEventListener("DOMContentLoaded", () => {
     top.insertBefore(clearBtn, els.closeModal);
   }
 });
+/* -----------------------------------------------------------
+   Genres (50 curated “seed” picks)
+-----------------------------------------------------------*/
+const GENRE_SEEDS = [
+  // Romance / Comedy
+  { label: "Rom-Com", q: "romantic comedy", type: "movie" },
+  { label: "Romance", q: "romance drama", type: "movie" },
+  { label: "Breakup & Healing", q: "breakup drama", type: "movie" },
+  { label: "Teen Romance", q: "teen romance", type: "movie" },
 
+  // Action / Superhero
+  { label: "Superhero", q: "superhero", type: "movie" },
+  { label: "Martial Arts", q: "martial arts", type: "movie" },
+  { label: "War Action", q: "war action", type: "movie" },
+  { label: "Spy Thriller", q: "spy thriller", type: "movie" },
+  { label: "Heist", q: "heist", type: "movie" },
+  { label: "Car / Racing", q: "racing action", type: "movie" },
+
+  // Thriller / Crime
+  { label: "True Crime", q: "true crime", type: "tv" },
+  { label: "Detective", q: "detective mystery", type: "tv" },
+  { label: "Courtroom", q: "courtroom drama", type: "movie" },
+  { label: "Serial Killer", q: "serial killer thriller", type: "movie" },
+  { label: "Organized Crime", q: "mafia crime", type: "tv" },
+  { label: "Bank Robbery", q: "bank robbery", type: "movie" },
+  { label: "Financial / Wall St", q: "wall street", type: "movie" },
+
+  // Horror
+  { label: "Horror", q: "horror", type: "movie" },
+  { label: "Psychological Horror", q: "psychological horror", type: "movie" },
+  { label: "Found Footage", q: "found footage horror", type: "movie" },
+  { label: "Slasher", q: "slasher", type: "movie" },
+  { label: "Haunted House", q: "haunted house", type: "movie" },
+  { label: "Demonic", q: "demon possession", type: "movie" },
+  { label: "Zombie", q: "zombie apocalypse", type: "movie" },
+  { label: "Vampire", q: "vampire", type: "movie" },
+
+  // Sci-Fi / Fantasy
+  { label: "Sci-Fi", q: "science fiction", type: "movie" },
+  { label: "Cyberpunk", q: "cyberpunk", type: "movie" },
+  { label: "AI / Robots", q: "artificial intelligence robots", type: "movie" },
+  { label: "Time Travel", q: "time travel", type: "movie" },
+  { label: "Space", q: "space adventure", type: "movie" },
+  { label: "Post-Apocalyptic", q: "post apocalyptic", type: "movie" },
+  { label: "Fantasy Adventure", q: "fantasy adventure", type: "movie" },
+  { label: "Mythology", q: "mythology gods", type: "movie" },
+
+  // Family / Animation
+  { label: "Family", q: "family movie", type: "movie" },
+  { label: "Animation", q: "animated movie", type: "movie" },
+  { label: "Kids", q: "kids animation", type: "movie" },
+  { label: "Anime", q: "anime", type: "tv" },
+
+  // Drama / Feelings
+  { label: "Coming-of-Age", q: "coming of age", type: "movie" },
+  { label: "Tearjerker", q: "emotional drama", type: "movie" },
+  { label: "Based on True Story", q: "based on a true story", type: "movie" },
+  { label: "Biopic", q: "biographical drama", type: "movie" },
+
+  // Docs / Reality
+  { label: "Documentary", q: "documentary", type: "movie" },
+  { label: "Nature", q: "nature documentary", type: "movie" },
+  { label: "Food", q: "food documentary", type: "tv" },
+  { label: "Travel", q: "travel documentary", type: "tv" },
+
+  // Seasonal / vibes
+  { label: "Christmas", q: "christmas", type: "movie" },
+  { label: "Halloween", q: "halloween horror", type: "movie" },
+
+  // TV specific “genres”
+  { label: "Sitcom", q: "sitcom", type: "tv" },
+  { label: "Mini-Series", q: "miniseries", type: "tv" },
+  { label: "Reality TV", q: "reality", type: "tv" },
+];
+
+function renderGenreGrid() {
+  const grid = document.getElementById("genreGrid");
+  if (!grid) return;
+
+  grid.innerHTML = `
+    <div class="popGrid">
+      ${GENRE_SEEDS.map((g) => `
+        <button class="popCard genreCard" type="button"
+          data-q="${esc(g.q)}"
+          data-type="${esc(g.type)}">
+          <div class="popTitle">${esc(g.label)}</div>
+        </button>
+      `).join("")}
+    </div>
+  `;
+
+  grid.querySelectorAll(".genreCard").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const q = btn.getAttribute("data-q") || "";
+      const t = btn.getAttribute("data-type") || "movie";
+
+      // set filter mode based on tile type
+      if (t === "tv") {
+        mediaFilter = "tv";
+        setActiveMode("tv");
+      } else if (t === "movie") {
+        mediaFilter = "movie";
+        setActiveMode("movie");
+      } else {
+        mediaFilter = "any";
+        setActiveMode("none");
+      }
+
+      if (els.q) els.q.value = q;
+      await doSearch();
+      scrollToTarget();
+    });
+  });
+}
 // Final execution
 initUI();
 renderTarget(null);
