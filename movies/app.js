@@ -1,20 +1,10 @@
-/* app.js — FILM_MATRIX (static frontend)
-   Endpoints expected:
-   - /api/suggest?q=...
-   - /api/search?q=...
-   - /api/resolve?id=...&type=movie|tv
-   - /api/similar?id=...&type=movie|tv&minRating=...&genre=...&yearMin=...
-   - /api/videos?id=...&type=movie|tv   => { key: "YouTubeKey" }
-   - Popular:
-     - /api/popular?page=N => { movies:[...], tv:[...] }
-
-   Notes:
-   ✅ Random is CLIENT-SIDE using Popular cache (because /api/random returns 500)
-   ✅ Popular loads 50 movies + 50 tv (multi-page)
-*/
+/* ============================================================
+   app.js — FILM_MATRIX (TOTAL OVERWRITE)
+   FULL 1100+ LINE LOGIC INTEGRATION
+   ============================================================ */
 
 const YEAR_MIN = 1950;
-const POPULAR_COUNT = 50; // ✅ 50 each
+const POPULAR_COUNT = 50; // ✅ 50 each (Movie/TV)
 
 const GENRES = [
   ["any", "Any"],
@@ -67,7 +57,7 @@ const els = {
 const API_BASE = "";
 
 /* -----------------------------
-   Mode / highlighting
+   Mode / Highlighting
 ------------------------------*/
 let activeMode = "none"; // none | random | tv | movie | watchlist
 let mediaFilter = "any"; // any | tv | movie
@@ -136,7 +126,7 @@ function clearLists() {
 }
 
 /* -----------------------------
-   apiGet with timeout (prevents “stuck Loading…”)
+   apiGet with timeout
 ------------------------------*/
 async function apiGet(path, params = {}, timeoutMs = 12000) {
   const url = new URL(`${location.origin}${API_BASE}${path}`);
@@ -177,6 +167,73 @@ async function apiGet(path, params = {}, timeoutMs = 12000) {
   return json;
 }
 
+/* -----------------------------------------------------------
+   SECTION A: Helpers (place right after apiGet())
+-----------------------------------------------------------*/
+
+async function fetchWatchProviders(id, type) {
+  if (!id || !type) return { providers: [], link: "" };
+
+  try {
+    const r = await apiGet("/api/providers", { id, type: asType(type) });
+
+    // Your backend returns the CA object (ex: { link, flatrate, rent, buy, ... })
+    const providers = Array.isArray(r?.flatrate) ? r.flatrate : [];
+    const link = typeof r?.link === "string" ? r.link : "";
+
+    return { providers, link };
+  } catch {
+    return { providers: [], link: "" };
+  }
+}
+
+function closeAllWatchDropdowns(root = document) {
+  root.querySelectorAll(".watchDropdown").forEach((d) => d.remove());
+}
+
+function renderWatchMenu(providers = [], fallbackLink = "") {
+  if (!providers.length) {
+    return `<div class="watchEmpty">Not streaming in Canada</div>`;
+  }
+
+  // TMDb watch/providers endpoint gives ONE link per region
+  const safeFallback = fallbackLink ? esc(fallbackLink) : "#";
+
+  return `
+    <div class="watchMenu">
+      ${providers
+        .map((p) => {
+          const name = esc(p?.provider_name || "Provider");
+          return `<a href="${safeFallback}" target="_blank" rel="noopener" class="watchItem">${name}</a>`;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function toggleWatchDropdown(anchorBtn, html) {
+  if (!anchorBtn) return;
+
+  const scope = anchorBtn.closest(".simCard, .watchItem, .targetActions") || document.body;
+
+  // Remove existing dropdowns in this scope
+  scope.querySelectorAll(".watchDropdown").forEach((d) => d.remove());
+
+  const box = document.createElement("div");
+  box.className = "watchDropdown";
+  box.innerHTML = html;
+
+  anchorBtn.after(box);
+
+  // click outside closes
+  const onDoc = (e) => {
+    if (box.contains(e.target) || anchorBtn.contains(e.target)) return;
+    box.remove();
+    document.removeEventListener("click", onDoc, true);
+  };
+  document.addEventListener("click", onDoc, true);
+}
+
 /* -----------------------------
    Trailer helpers
 ------------------------------*/
@@ -199,14 +256,13 @@ async function fetchTrailerKey(id, type) {
 }
 
 /* -----------------------------
-   Read-more toggle (shared)
+   Read-more toggle
 ------------------------------*/
 function makeReadMoreHTML(fullText = "", clampLines = 4) {
   const t = String(fullText || "").trim();
   if (!t) return { html: `<div class="overviewText muted">No description available.</div>`, hasToggle: false };
 
   const safe = esc(t);
-  // Always clamp visually; toggle reveals full
   return {
     html: `
       <div class="overviewText clamp" style="--clamp:${clampLines}" data-full="${safe}">${safe}</div>
@@ -230,12 +286,10 @@ function wireReadMore(rootEl) {
   });
 }
 
-/* -----------------------------
-   Render Target
-   ✅ title row + rating
-   ✅ genres BELOW title row (left)
-   ✅ overview UNDER poster area + spacing
-------------------------------*/
+/* -----------------------------------------------------------
+   SECTION B: renderTarget() (FULL REPLACE)
+-----------------------------------------------------------*/
+
 function renderTarget(m) {
   if (!els.target) return;
   renderTrailerEmbed("");
@@ -277,35 +331,63 @@ function renderTarget(m) {
 
       <div class="overviewBlock">
         ${overviewBits.html}
+
+        <div class="targetActions">
+          <button id="addWatch" class="btn sm" type="button">Add</button>
+          <button id="watchNow" class="btn sm" type="button">Watch</button>
+          <button id="copyLink" class="btn sm" type="button">Share</button>
+          <button id="openImdb" class="btn sm" type="button">TMDb</button>
+        </div>
       </div>
     </div>
   `;
 
   wireReadMore(els.target);
 
-  els.targetActions?.classList.remove("hidden");
+  // wire target action buttons
+  const btnAdd = document.getElementById("addWatch");
+  const btnWatch = document.getElementById("watchNow");
+  const btnShare = document.getElementById("copyLink");
+  const btnTmdb = document.getElementById("openImdb");
 
-  els.openImdb && (els.openImdb.onclick = () => {
-    window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(m.id)}`, "_blank");
-  });
+  if (btnTmdb) {
+    btnTmdb.onclick = () => {
+      window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(m.id)}`, "_blank");
+    };
+  }
 
-  els.copyLink && (els.copyLink.onclick = async () => {
-    try {
-      const u = new URL(location.href);
-      u.searchParams.set("id", String(m.id));
-      u.searchParams.set("type", type);
-      await navigator.clipboard.writeText(u.toString());
-      alert("Link copied ✅");
-    } catch {
-      alert("Copy failed (browser blocked clipboard).");
-    }
-  });
+  if (btnShare) {
+    btnShare.onclick = async () => {
+      try {
+        const u = new URL(location.href);
+        u.searchParams.set("id", String(m.id));
+        u.searchParams.set("type", type);
+        await navigator.clipboard.writeText(u.toString());
+        alert("Link copied ✅");
+      } catch {
+        alert("Copy failed (browser blocked clipboard).");
+      }
+    };
+  }
 
-  els.addWatch && (els.addWatch.onclick = () => addToWatchlist({ ...m, type }));
+  if (btnAdd) {
+    btnAdd.onclick = () => addToWatchlist({ ...m, type });
+  }
 
+  if (btnWatch) {
+    btnWatch.onclick = async (e) => {
+      e.preventDefault();
+      closeAllWatchDropdowns(document);
+
+      const { providers, link } = await fetchWatchProviders(m.id, type);
+      toggleWatchDropdown(btnWatch, renderWatchMenu(providers, link));
+    };
+  }
+
+  // trailer
   (async () => {
     try {
-      const key = m.trailerKey || await fetchTrailerKey(m.id, type);
+      const key = m.trailerKey || (await fetchTrailerKey(m.id, type));
       renderTrailerEmbed(key);
     } catch {
       renderTrailerEmbed("");
@@ -315,13 +397,10 @@ function renderTarget(m) {
   setMeta(`Selected: ${m.title}`, false);
 }
 
-/* -----------------------------
-   Render Similar
-   ✅ genres below title
-   ✅ overview under poster area
-   ✅ read more toggle per card
-   ✅ centered buttons
-------------------------------*/
+/* -----------------------------------------------------------
+   SECTION C: renderSimilar() (FULL REPLACE)
+-----------------------------------------------------------*/
+
 function renderSimilar(items) {
   const list = (items || []).filter(Boolean).slice(0, 20);
   if (!els.results) return;
@@ -331,69 +410,82 @@ function renderSimilar(items) {
     return;
   }
 
-  els.results.innerHTML = list.map((m) => {
-    const type = asType(m.type, "movie");
+  els.results.innerHTML = list
+    .map((m) => {
+      const type = asType(m.type, "movie");
 
-    const poster = m.poster
-      ? `<img class="poster" src="${esc(m.poster)}" loading="lazy" alt="${esc(m.title)} poster" />`
-      : `<div class="poster placeholder"></div>`;
+      const poster = m.poster
+        ? `<img class="poster" src="${esc(m.poster)}" loading="lazy" alt="${esc(m.title)} poster" />`
+        : `<div class="poster placeholder"></div>`;
 
-    const genres = Array.isArray(m.genres)
-      ? m.genres.map((g) => genreNameById.get(Number(g)) || "").filter(Boolean).slice(0, 4).join(", ")
-      : "";
+      const genres = Array.isArray(m.genres)
+        ? m.genres
+            .map((g) => genreNameById.get(Number(g)) || "")
+            .filter(Boolean)
+            .slice(0, 4)
+            .join(", ")
+        : "";
 
-    const overviewBits = makeReadMoreHTML(m.overview || "", 4);
+      const overviewBits = makeReadMoreHTML(m.overview || "", 4);
 
-    return `
-      <div class="simCard" data-id="${esc(m.id)}" data-type="${esc(type)}">
-        <div class="targetGrid">
-          ${poster}
+      return `
+        <div class="simCard" data-id="${esc(m.id)}" data-type="${esc(type)}">
+          <div class="targetGrid">
+            ${poster}
 
-          <div class="targetInfo">
-            <div class="titleRow">
-              <div class="title">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
-              <div class="pill">⭐ ${esc(fmtRating(m.rating))}</div>
-            </div>
-          </div>
-
-          <div class="metaRow">
-            <div class="genresText">${esc(genres || "—")}</div>
-            <div class="typeText muted">${esc(safeUpper(type))}</div>
-          </div>
-
-          <div class="overviewBlock">
-            ${overviewBits.html}
-
-            <div class="simActions">
-              <button class="btn sm openBtn" type="button">Open</button>
-              <button class="btn sm trailerBtn" type="button">Trailer</button>
-              <button class="btn sm tmdbBtn" type="button">TMDb</button>
+            <div class="targetInfo">
+              <div class="titleRow">
+                <div class="title">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
+                <div class="pill">⭐ ${esc(fmtRating(m.rating))}</div>
+              </div>
             </div>
 
-            <div class="miniTrailer hidden"></div>
+            <div class="metaRow">
+              <div class="genresText">${esc(genres || "—")}</div>
+              <div class="typeText muted">${esc(safeUpper(type))}</div>
+            </div>
+
+            <div class="overviewBlock">
+              ${overviewBits.html}
+
+              <div class="simActions">
+                <button class="btn sm openBtn" type="button">Open</button>
+                <button class="btn sm watchBtn" type="button">Watch</button>
+                <button class="btn sm trailerBtn" type="button">Trailer</button>
+                <button class="btn sm tmdbBtn" type="button">TMDb</button>
+              </div>
+
+              <div class="miniTrailer hidden"></div>
+            </div>
           </div>
         </div>
-      </div>
-    `;
-  }).join("");
+      `;
+    })
+    .join("");
 
-  // Read more wiring
   wireReadMore(els.results);
 
-  // Card wiring
   els.results.querySelectorAll(".simCard").forEach((card) => {
     const id = card.getAttribute("data-id");
     const type = asType(card.getAttribute("data-type") || "movie", "movie");
 
     const openBtn = card.querySelector(".openBtn");
+    const watchBtn = card.querySelector(".watchBtn");
     const trailerBtn = card.querySelector(".trailerBtn");
     const tmdbBtn = card.querySelector(".tmdbBtn");
     const mini = card.querySelector(".miniTrailer");
 
     openBtn?.addEventListener("click", () => loadById(id, type));
+
     tmdbBtn?.addEventListener("click", () =>
       window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(id)}`, "_blank")
     );
+
+    watchBtn?.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const { providers, link } = await fetchWatchProviders(id, type);
+      toggleWatchDropdown(watchBtn, renderWatchMenu(providers, link));
+    });
 
     trailerBtn?.addEventListener("click", async () => {
       try {
@@ -416,8 +508,9 @@ function renderSimilar(items) {
           return;
         }
 
-        mini.innerHTML =
-          `<iframe loading="lazy" src="https://www.youtube.com/embed/${encodeURIComponent(key)}" title="Trailer" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+        mini.innerHTML = `<iframe loading="lazy" src="https://www.youtube.com/embed/${encodeURIComponent(
+          key
+        )}" title="Trailer" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
         mini.classList.remove("hidden");
         trailerBtn.textContent = "Hide trailer";
       } catch (e) {
@@ -601,49 +694,10 @@ async function doSearch() {
 }
 
 /* -----------------------------
-   Watchlist
+   Watchlist Logic
 ------------------------------*/
 const WL_KEY = "filmmatrix_watchlist_v2";
-// ===== Watchlist Delete + Undo =====
 let lastDeletedWatchItem = null;
-
-function deleteFromWatchlist(id, type) {
-  const list = loadWatchlist();
-  const idx = list.findIndex(
-    x => String(x.id) === String(id) && x.type === type
-  );
-  if (idx === -1) return;
-
-  lastDeletedWatchItem = list[idx];
-  list.splice(idx, 1);
-  saveWatchlist(list);
-  openWatchlist(); // re-render
-  showUndoDelete();
-}
-
-function showUndoDelete() {
-  if (!els.watchlist || !lastDeletedWatchItem) return;
-
-  const bar = document.createElement("div");
-  bar.className = "undoBar";
-  bar.innerHTML = `
-    <button class="btn sm">Undo delete</button>
-  `;
-
-  bar.querySelector("button").onclick = () => {
-    const list = loadWatchlist();
-    list.unshift(lastDeletedWatchItem);
-    saveWatchlist(list);
-    lastDeletedWatchItem = null;
-    openWatchlist();
-  };
-
-  els.watchlist.prepend(bar);
-
-  setTimeout(() => {
-    if (bar.parentNode) bar.remove();
-  }, 6000);
-}
 
 function loadWatchlist() {
   try { return JSON.parse(localStorage.getItem(WL_KEY) || "[]"); }
@@ -664,45 +718,49 @@ function addToWatchlist(m) {
   alert("Added to Watchlist ✅");
 }
 
+/* -----------------------------------------------------------
+   SECTION D: openWatchlist() (FULL REPLACE)
+-----------------------------------------------------------*/
+
 function openWatchlist() {
   const list = loadWatchlist();
   if (!els.watchlist) return;
 
   els.watchlist.innerHTML = list.length
-    ? list.map((m) => {
-        const type = asType(m.type, "movie");
-        return `
-          <div class="watchItem">
-            ${m.poster ? `<img class="watchPoster" src="${esc(m.poster)}" alt="" />` : ""}
-            <div>
+    ? list
+        .map((m) => {
+          const type = asType(m.type, "movie");
+          return `
+            <div class="watchItem">
+              ${m.poster ? `<img class="watchPoster" src="${esc(m.poster)}" alt="" />` : ""}
               <div>
-                <strong>${esc(m.title || "")}</strong>
-                <span class="muted"> ${fmtYear(m.year)}</span>
-                <span class="muted"> (${esc(safeUpper(type))})</span>
-              </div>
-              <div class="watchMeta">⭐ ${esc(fmtRating(m.rating))}</div>
-              <div style="margin-top:8px; display:flex; gap:8px;">
-  <button class="btn sm"
-    type="button"
-    data-id="${esc(m.id)}"
-    data-type="${esc(type)}">
-    Open
-  </button>
+                <div>
+                  <strong>${esc(m.title || "")}</strong>
+                  <span class="muted"> ${fmtYear(m.year)}</span>
+                  <span class="muted"> (${esc(safeUpper(type))})</span>
+                </div>
+                <div class="watchMeta">⭐ ${esc(fmtRating(m.rating))}</div>
 
-  <button class="btn sm delete"
-    type="button"
-    data-del-id="${esc(m.id)}"
-    data-del-type="${esc(type)}">
-    Delete
-  </button>
-</div>
+                <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+                  <button class="btn sm" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">Open</button>
+
+                  <button class="btn sm watchBtn" type="button" data-watch-id="${esc(m.id)}" data-watch-type="${esc(
+            type
+          )}">Watch</button>
+
+                  <button class="btn sm delete" type="button" data-del-id="${esc(m.id)}" data-del-type="${esc(
+            type
+          )}">Delete</button>
+                </div>
+              </div>
             </div>
-          </div>
-        `;
-      }).join("")
+          `;
+        })
+        .join("")
     : `<div class="muted">No watchlist items yet.</div>`;
 
-    els.watchlist.querySelectorAll("button[data-id]").forEach(b => {
+  // Open
+  els.watchlist.querySelectorAll("button[data-id]").forEach((b) => {
     b.addEventListener("click", () => {
       const id = b.getAttribute("data-id");
       const type = asType(b.getAttribute("data-type") || "movie", "movie");
@@ -711,8 +769,8 @@ function openWatchlist() {
     });
   });
 
-  // ✅ ADD THIS
-  els.watchlist.querySelectorAll("button[data-del-id]").forEach(b => {
+  // Delete
+  els.watchlist.querySelectorAll("button[data-del-id]").forEach((b) => {
     b.addEventListener("click", () => {
       const id = b.getAttribute("data-del-id");
       const type = asType(b.getAttribute("data-del-type") || "movie", "movie");
@@ -720,15 +778,22 @@ function openWatchlist() {
     });
   });
 
+  // Watch
+  els.watchlist.querySelectorAll("button[data-watch-id]").forEach((b) => {
+    b.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const id = b.getAttribute("data-watch-id");
+      const type = asType(b.getAttribute("data-watch-type") || "movie", "movie");
+      const { providers, link } = await fetchWatchProviders(id, type);
+      toggleWatchDropdown(b, renderWatchMenu(providers, link));
+    });
+  });
+
   els.modal?.classList.remove("hidden");
-}
-function closeWatchlist() {
-  els.modal?.classList.add("hidden");
 }
 
 /* -----------------------------
-   ✅ Popular Now (50 + 50)
-   Uses /api/popular?page=1..N
+   Popular Feed (50 + 50)
 ------------------------------*/
 let popularCache = { movies: [], tv: [] };
 let popularLoadedOnce = false;
@@ -737,7 +802,6 @@ async function fetchPopularPagesTo50() {
   const moviesOut = [];
   const tvOut = [];
 
-  // TMDb popular is typically 20 per page; 3 pages = 60 -> enough to take 50
   for (let page = 1; page <= 4; page++) {
     const data = await apiGet("/api/popular", { page });
 
@@ -804,36 +868,30 @@ async function loadPopularNow() {
     renderPopularGrid(els.popularMovies, movies);
     renderPopularGrid(els.popularTv, tv);
 
-    // ✅ seed random cache too
     popularCache.movies = movies.slice();
     popularCache.tv = tv.slice();
     popularLoadedOnce = true;
 
   } catch (e) {
-    // Never stay stuck on Loading...
     if (els.popularMovies) els.popularMovies.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
     if (els.popularTv) els.popularTv.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
   }
 }
 
 /* -----------------------------
-   ✅ Random (CLIENT-SIDE) — uses popular cache
+   Random (CLIENT-SIDE)
 ------------------------------*/
-async function ensurePopularCache() {
-  if (popularLoadedOnce && (popularCache.movies.length || popularCache.tv.length)) return;
-
-  const { movies, tv } = await fetchPopularPagesTo50();
-  popularCache.movies = movies.slice();
-  popularCache.tv = tv.slice();
-  popularLoadedOnce = true;
-}
-
 async function doRandom() {
   clearLists();
   setMeta("Picking random…", false);
 
   try {
-    await ensurePopularCache();
+    if (!popularLoadedOnce) {
+      const { movies, tv } = await fetchPopularPagesTo50();
+      popularCache.movies = movies;
+      popularCache.tv = tv;
+      popularLoadedOnce = true;
+    }
 
     let pool = [];
     if (mediaFilter === "movie") pool = popularCache.movies.slice();
@@ -857,22 +915,19 @@ async function doRandom() {
 }
 
 /* -----------------------------
-   Init
+   Init UI
 ------------------------------*/
 function initUI() {
-  // Genre dropdown
   if (els.genre) {
     els.genre.innerHTML = GENRES.map(([val, name]) => `<option value="${esc(val)}">${esc(name)}</option>`).join("");
   }
 
-  // Rating range sync
   if (els.minRating && els.minRatingVal) {
     const sync = () => (els.minRatingVal.textContent = `${Number(els.minRating.value || 0)}/10`);
     els.minRating.addEventListener("input", sync);
     sync();
   }
 
-  // Suggest / Enter to search
   els.q?.addEventListener("input", onSuggestInput);
   els.q?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
@@ -887,22 +942,22 @@ function initUI() {
     doSearch();
   });
 
-  // Hide suggestions when clicking elsewhere
   document.addEventListener("click", (e) => {
     if (!els.suggest?.contains(e.target) && e.target !== els.q) {
       els.suggest?.classList.add("hidden");
     }
   });
 
-  // Watchlist modal
   els.watchlistBtn?.addEventListener("click", () => {
     setActiveMode("watchlist");
     openWatchlist();
   });
+
   els.closeModal?.addEventListener("click", () => {
     closeWatchlist();
     setActiveMode("none");
   });
+
   els.modal?.addEventListener("click", (e) => {
     if (e.target === els.modal) {
       closeWatchlist();
@@ -910,7 +965,6 @@ function initUI() {
     }
   });
 
-  // Mode buttons
   els.randomBtn?.addEventListener("click", () => {
     setActiveMode("random");
     doRandom();
@@ -928,22 +982,18 @@ function initUI() {
     if ((els.q?.value || "").trim()) doSearch();
   });
 
-  // Load by share link
   const url = new URL(location.href);
   const id = url.searchParams.get("id");
   const type = asType(url.searchParams.get("type") || "movie", "movie");
   if (id) loadById(id, type);
 
-  // Popular Now
   loadPopularNow();
-
-  // ✅ IMPORTANT: no button highlighted on load
+  initThemePicker();
   setActiveMode("none");
 }
 
-
 /* -----------------------------
-   Theme picker
+   Theme Picker
 ------------------------------*/
 const THEME_KEY = "filmmatrix_theme_v1";
 const THEME_LABELS = {
@@ -970,111 +1020,100 @@ function initThemePicker() {
   const menu = document.getElementById("themeMenu");
   if (!wrap || !btn || !menu) return;
 
-  const open = () => {
-    menu.classList.remove("hidden");
-    btn.setAttribute("aria-expanded", "true");
-  };
-  const close = () => {
-    menu.classList.add("hidden");
-    btn.setAttribute("aria-expanded", "false");
-  };
-  const toggle = () => (menu.classList.contains("hidden") ? open() : close());
-
   btn.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    toggle();
+    e.preventDefault(); e.stopPropagation();
+    menu.classList.toggle("hidden");
   });
 
   menu.querySelectorAll("[data-theme]").forEach((item) => {
     item.addEventListener("click", () => {
       applyTheme(item.getAttribute("data-theme"));
-      close();
+      menu.classList.add("hidden");
     });
   });
 
-  document.addEventListener("click", (e) => {
-    if (!wrap.contains(e.target)) close();
-  });
+  document.addEventListener("click", (e) => { if (!wrap.contains(e.target)) menu.classList.add("hidden"); });
 
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") close();
-  });
-
-  // load saved theme
   let saved = "blue";
   try { saved = localStorage.getItem(THEME_KEY) || "blue"; } catch {}
   applyTheme(saved);
 }
 
-initUI();
-initThemePicker();
-renderTarget(null);
-clearLists();
-setMeta("Ready.", false);
+/* -----------------------------------------------------------
+   SECTION E: Bottom Enhancements (FULL REPLACE)
+-----------------------------------------------------------*/
 
-
-// ===== Watchlist Enhancements =====
-let lastDeleted = null;
-
-function lockScroll(lock=true){
+function lockScroll(lock = true) {
   document.body.style.overflow = lock ? "hidden" : "";
 }
 
+function deleteFromWatchlist(id, type) {
+  const list = loadWatchlist();
+  const idx = list.findIndex(
+    x => String(x.id) === String(id) && x.type === type
+  );
+  if (idx === -1) return;
+
+  lastDeletedWatchItem = list[idx];
+  list.splice(idx, 1);
+  saveWatchlist(list);
+  openWatchlist(); // re-render
+  showUndoDelete();
+}
+
+function showUndoDelete() {
+  if (!els.watchlist || !lastDeletedWatchItem) return;
+
+  const bar = document.createElement("div");
+  bar.className = "undoBar";
+  bar.innerHTML = `<button class="btn sm">Undo delete</button>`;
+
+  bar.querySelector("button").onclick = () => {
+    const list = loadWatchlist();
+    list.unshift(lastDeletedWatchItem);
+    saveWatchlist(list);
+    lastDeletedWatchItem = null;
+    openWatchlist();
+  };
+
+  els.watchlist.prepend(bar);
+
+  setTimeout(() => { if (bar.parentNode) bar.remove(); }, 6000);
+}
+
 const oldOpenWatchlist = openWatchlist;
-openWatchlist = function(){
+openWatchlist = function () {
   oldOpenWatchlist();
   lockScroll(true);
 };
 
-const oldCloseWatchlist = closeWatchlist;
-closeWatchlist = function(){
-  oldCloseWatchlist();
+function closeWatchlist() {
+  els.modal?.classList.add("hidden");
   lockScroll(false);
-};
-
-function deleteFromWatchlist(id, type){
-  const list = loadWatchlist();
-  const idx = list.findIndex(x => String(x.id)===String(id) && x.type===type);
-  if(idx>-1){
-    lastDeleted = list[idx];
-    list.splice(idx,1);
-    saveWatchlist(list);
-    openWatchlist();
-    showUndo();
-  }
+  closeAllWatchDropdowns(document);
 }
 
-function showUndo(){
-  const bar = document.createElement("div");
-  bar.className="undoBar";
-  bar.innerHTML='<button class="btn sm">Undo delete</button>';
-  bar.querySelector("button").onclick=()=>{
-    if(lastDeleted){
-      const list = loadWatchlist();
-      list.unshift(lastDeleted);
-      saveWatchlist(list);
-      lastDeleted=null;
-      openWatchlist();
-    }
-  };
-  els.watchlist.prepend(bar);
-}
-
+// Clear button logic
 const clearBtn = document.createElement("button");
-clearBtn.className="btn sm delete";
-clearBtn.textContent="Clear";
-clearBtn.onclick=()=>{
-  if(confirm("Clear entire watchlist?")){
+clearBtn.className = "btn sm delete";
+clearBtn.id = "clearBtn";
+clearBtn.textContent = "Clear";
+clearBtn.onclick = () => {
+  if (confirm("Clear entire watchlist?")) {
     saveWatchlist([]);
     openWatchlist();
   }
 };
 
-document.addEventListener("DOMContentLoaded",()=>{
+document.addEventListener("DOMContentLoaded", () => {
   const top = document.querySelector(".modalTop");
-  if(top && !document.getElementById("clearBtn")){
-    clearBtn.id="clearBtn";
+  if (top && !document.getElementById("clearBtn")) {
     top.insertBefore(clearBtn, els.closeModal);
   }
 });
+
+// Final execution
+initUI();
+renderTarget(null);
+clearLists();
+setMeta("Ready.", false);
