@@ -535,50 +535,7 @@ function renderGenres(genres = []) {
   // Poster hydration (popular-style posters)
   hydrateGenrePosters(container, genres);
 }
-  /* 🔥 THIS IS WHERE YOUR CODE GOES 🔥 */
-  container.querySelectorAll(".genreCard").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const mode = btn.getAttribute("data-mode") || "search";
-      const type = btn.getAttribute("data-type") || "both";
 
-      if (mode === "discover") {
-        const keywords = btn.getAttribute("data-keywords") || "";
-        const genres = btn.getAttribute("data-genres") || "";
-
-        clearLists();
-        setMeta("Loading category…", false);
-
-        const data = await apiGet("/api/discover", {
-          type,
-          keywords,
-          genres,
-          sort: "popularity.desc",
-          minVotes: 30,
-          region: "CA"
-        });
-
-        const items = data.items || [];
-        renderMatches(items);
-
-        const first = items[0];
-        if (!first?.id) {
-          renderTarget(null);
-          setMeta("No results found for this category.", true);
-          return;
-        }
-
-        await loadById(first.id, first.type);
-        scrollToTarget();
-        return;
-      }
-
-      // fallback search
-      if (els.q) els.q.value = btn.getAttribute("data-q") || "";
-      await doSearch();
-      scrollToTarget();
-    });
-  });
-}
 /* -----------------------------------------------------------
    SECTION B: renderTarget() (FULL REPLACE)
 -----------------------------------------------------------*/
@@ -1285,6 +1242,7 @@ function initUI() {
   if (id) loadById(id, type);
 
     loadPopularNow();
+		renderGenres(GENRE_PRESETS);
   initThemePicker();
   setActiveMode("none");
 }
