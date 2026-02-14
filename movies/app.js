@@ -302,8 +302,6 @@ function renderTarget(m) {
   });
 
   els.addWatch && (els.addWatch.onclick = () => addToWatchlist({ ...m, type }));
-const watchBtn = document.getElementById("watchTarget");
-watchBtn && (watchBtn.onclick = () => addToWatchlist({ ...m, type }));
 
   (async () => {
     try {
