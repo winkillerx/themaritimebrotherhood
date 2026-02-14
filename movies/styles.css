@@ -827,21 +827,38 @@ body.theme-purple{
 /* =========================
    WATCHLIST BUTTON UNIFORM SIZE
 ========================= */
-
-.watchItem .btn.sm {
-  min-width: 90px;          /* forces same width */
-  height: 36px;             /* forces same height */
-  padding: 0 14px;          /* horizontal padding only */
+/* ===== Watchlist button consistency ===== */
+.watchItem .btn,
+.modalTop .btn,
+.undoBar .btn {
+  min-width: 80px;
+  height: 36px;
+  padding: 0 14px;
   font-size: 14px;
   line-height: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-sizing: border-box;
 }
 
-/* Red delete button keeps color but same size */
-.watchItem .btn.sm.delete {
-  min-width: 90px;
-  height: 36px;
+/* Keep delete buttons red */
+.btn.delete {
+  border-color: #ff4d4d;
+  color: #ff4d4d;
+}
+
+.btn.delete:hover {
+  background: rgba(255, 77, 77, 0.12);
+}
+
+/* Undo button same size but neutral */
+.undoBar .btn {
+  min-width: 80px;
+}
+
+/* Clear + Close alignment */
+.modalTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
