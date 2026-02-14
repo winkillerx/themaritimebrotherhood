@@ -572,7 +572,7 @@ input[type="range"]{
     flex: 1 1 100%;
     width:100%;
   }
-
+}
 /* Popular grid (compact) */
 .laneTitle{
   margin: 18px 0 10px;
