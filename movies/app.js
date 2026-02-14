@@ -702,7 +702,7 @@ function openWatchlist() {
       }).join("")
     : `<div class="muted">No watchlist items yet.</div>`;
 
-  els.watchlist.querySelectorAll("button[data-id]").forEach(b => {
+    els.watchlist.querySelectorAll("button[data-id]").forEach(b => {
     b.addEventListener("click", () => {
       const id = b.getAttribute("data-id");
       const type = asType(b.getAttribute("data-type") || "movie", "movie");
@@ -711,9 +711,17 @@ function openWatchlist() {
     });
   });
 
+  // ✅ ADD THIS
+  els.watchlist.querySelectorAll("button[data-del-id]").forEach(b => {
+    b.addEventListener("click", () => {
+      const id = b.getAttribute("data-del-id");
+      const type = asType(b.getAttribute("data-del-type") || "movie", "movie");
+      deleteFromWatchlist(id, type);
+    });
+  });
+
   els.modal?.classList.remove("hidden");
 }
-
 function closeWatchlist() {
   els.modal?.classList.add("hidden");
 }
