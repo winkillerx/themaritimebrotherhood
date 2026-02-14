@@ -199,22 +199,25 @@ function closeAllWatchDropdowns(root = document) {
   root.querySelectorAll(".watchDropdown").forEach((d) => d.remove());
 }
 
-function renderWatchMenu(providers = [], fallbackLink = "") {
-  if (!providers.length) {
+function renderWatchMenu(data) {
+  const { providers, link } = data || {};
+
+  if (!Array.isArray(providers) || providers.length === 0) {
     return `<div class="watchEmpty">Not streaming in Canada</div>`;
   }
 
-  // TMDb watch/providers endpoint gives ONE link per region
-  const safeFallback = fallbackLink ? esc(fallbackLink) : "#";
+  const safeLink = link ? esc(link) : "#";
 
   return `
     <div class="watchMenu">
-      ${providers
-        .map((p) => {
-          const name = esc(p?.provider_name || "Provider");
-          return `<a href="${safeFallback}" target="_blank" rel="noopener" class="watchItem">${name}</a>`;
-        })
-        .join("")}
+      ${providers.map(p => `
+        <a href="${safeLink}"
+           target="_blank"
+           rel="noopener"
+           class="watchItem">
+          ${esc(p.provider_name)}
+        </a>
+      `).join("")}
     </div>
   `;
 }
