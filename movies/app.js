@@ -173,28 +173,30 @@ async function apiGet(path, params = {}, timeoutMs = 12000) {
 
 async function fetchWatchProviders(id, type) {
   try {
-    const r = await apiGet("/api/providers", { id, type });
-
+    const r = await apiGet("/api/providers", { id, type: asType(type) });
     if (!r) return { providers: [], link: null };
 
-    // merge all monetization types
-    const providers = [
-      ...(r.flatrate || []),
-      ...(r.ads || []),
-      ...(r.free || []),
-      ...(r.rent || []),
-      ...(r.buy || [])
-    ];
+    const all = [
+  ...(r.flatrate || []), // streaming first
+  ...(r.free || []),
+  ...(r.ads || []),
+  ...(r.rent || []),
+  ...(r.buy || [])
+];
 
-    return {
-      providers,
-      link: r.link || null
-    };
+    const seen = new Set();
+    const providers = all.filter(p => {
+      const pid = p?.provider_id ?? p?.provider_name;
+      if (!pid || seen.has(pid)) return false;
+      seen.add(pid);
+      return true;
+    });
+
+    return { providers, link: r.link || null };
   } catch {
     return { providers: [], link: null };
   }
 }
-
 function closeAllWatchDropdowns(root = document) {
   root.querySelectorAll(".watchDropdown").forEach((d) => d.remove());
 }
@@ -391,7 +393,7 @@ function renderTarget(m) {
       closeAllWatchDropdowns(document);
 
       const { providers, link } = await fetchWatchProviders(m.id, type);
-      toggleWatchDropdown(btnWatch, renderWatchMenu(providers, link));
+      toggleWatchDropdown(btnWatch, renderWatchMenu({ providers, link }));
     };
   }
 
@@ -495,7 +497,7 @@ function renderSimilar(items) {
     watchBtn?.addEventListener("click", async (e) => {
       e.preventDefault();
       const { providers, link } = await fetchWatchProviders(id, type);
-      toggleWatchDropdown(watchBtn, renderWatchMenu(providers, link));
+      toggleWatchDropdown(watchBtn, renderWatchMenu({ providers, link }));
     });
 
     trailerBtn?.addEventListener("click", async () => {
@@ -796,7 +798,7 @@ function openWatchlist() {
       const id = b.getAttribute("data-watch-id");
       const type = asType(b.getAttribute("data-watch-type") || "movie", "movie");
       const { providers, link } = await fetchWatchProviders(id, type);
-      toggleWatchDropdown(b, renderWatchMenu(providers, link));
+      toggleWatchDropdown(b, renderWatchMenu({ providers, link }));
     });
   });
 
