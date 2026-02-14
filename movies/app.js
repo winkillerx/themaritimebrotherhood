@@ -329,7 +329,21 @@ function wireReadMore(rootEl) {
     });
   });
 }
+/* -----------------------------
+   Mobile scroll fix (Target focus)
+------------------------------*/
+function scrollToTarget() {
+  const targetEl = document.getElementById("target");
+  if (!targetEl) return;
 
+  // iOS Safari–safe scroll after DOM update
+  requestAnimationFrame(() => {
+    targetEl.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  });
+}
 /* -----------------------------------------------------------
    SECTION B: renderTarget() (FULL REPLACE)
 -----------------------------------------------------------*/
@@ -685,7 +699,7 @@ async function loadById(id, type = "movie") {
     if (!target?.id) throw new Error("Resolve did not return a target id.");
 
     const targetType = asType(target.type || t, t);
-    renderTarget({ ...target, type: targetType });
+    renderTarget({ ...target, type: targetType }); scrollToTarget(); // 🔥 mobile fix scrollToTarget(); // 🔥 mobile fix scrollToTarget(); // 🔥 mobile fix
 
     const f = getFilters();
     const sim = await apiGet("/api/similar", {
