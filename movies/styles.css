@@ -598,6 +598,7 @@ input[type="range"]{
   flex-direction:column;
   gap: 8px;
   width:100%;
+	align-self: start;   /* 🔑 stops grid from stretching card height */
   max-width:100%;
 }
 .popCard:hover{
@@ -608,6 +609,7 @@ input[type="range"]{
   width: 100%;
   height: auto;
   aspect-ratio: 2 / 3;
+  max-height: 260px;        /* 🔑 prevents vertical blow-up */
   object-fit: cover;
   border-radius: 12px;
   border: 1px solid rgba(120,170,255,.18);
@@ -962,3 +964,8 @@ body.theme-purple{
 
 .watchEmptyTitle{ font-weight: 800; padding: 10px 10px 0; }
 .watchEmptySub{ padding: 6px 10px 10px; opacity: .75; font-size: 13px; }
+@media (max-width: 520px){
+  .popPoster{
+    max-height: 220px;
+  }
+}
