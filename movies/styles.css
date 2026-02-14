@@ -862,3 +862,81 @@ body.theme-purple{
   align-items: center;
   gap: 10px;
 }
+/* =========================
+   WATCH PROVIDERS DROPDOWN (CA) — Target + Similar + Watchlist
+   Put this at the VERY BOTTOM of styles.css
+========================= */
+
+.watchDropdown{
+  position: relative;
+  margin-top: 10px;
+  width: 100%;
+}
+
+/* dropdown panel */
+.watchMenu{
+  border: 1px solid rgba(120,170,255,.20);
+  background: rgba(6,10,18,.92);
+  border-radius: 18px;
+  padding: 10px;
+  box-shadow: 0 18px 55px rgba(0,0,0,.45);
+  display: grid;
+  gap: 8px;
+}
+
+/* each provider link */
+.watchItem{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  padding: 12px 14px;
+  border-radius: 16px;
+
+  text-decoration: none;
+  color: var(--text);
+
+  border: 1px solid rgba(120,170,255,.14);
+  background: rgba(255,255,255,.06);
+}
+
+.watchItem:hover{
+  border-color: var(--accentBorder);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/* "not available" message */
+.watchEmpty{
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px dashed rgba(120,170,255,.18);
+  background: rgba(255,255,255,.05);
+  color: var(--muted);
+}
+
+/* keep action rows consistent when adding Watch */
+.targetActions,
+.simActions{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  width: 100%;
+}
+
+.targetActions .btn,
+.simActions .btn{
+  flex: 1 1 160px;
+  max-width: 100%;
+  text-align: center;
+}
+
+/* mobile: stack buttons */
+@media (max-width: 420px){
+  .targetActions .btn,
+  .simActions .btn{
+    flex: 1 1 100%;
+    width: 100%;
+  }
+}
