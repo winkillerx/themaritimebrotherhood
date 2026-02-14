@@ -862,3 +862,9 @@ body.theme-purple{
   align-items: center;
   gap: 10px;
 }
+
+/* Watch button (same size as Open/Delete) */
+.btn.sm.watch{
+  background: var(--accent, #3b82f6);
+  color:#fff;
+}
