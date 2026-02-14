@@ -136,6 +136,26 @@ function clearLists() {
 }
 
 /* -----------------------------
+   Watch Providers (CA)
+------------------------------*/
+async function fetchWatchProviders(id, type) {
+  if (!id || !type) return [];
+
+  try {
+    const r = await apiGet("/api/providers", {
+      id,
+      type: asType(type)
+    });
+
+    // TMDb structure: flatrate = streaming subscriptions
+    return Array.isArray(r?.flatrate) ? r.flatrate : [];
+  } catch (err) {
+    console.warn("Watch providers failed", err);
+    return [];
+  }
+}
+
+/* -----------------------------
    apiGet with timeout (prevents “stuck Loading…”)
 ------------------------------*/
 async function apiGet(path, params = {}, timeoutMs = 12000) {
