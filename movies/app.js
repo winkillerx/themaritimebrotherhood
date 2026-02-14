@@ -643,6 +643,7 @@ function openWatchlist() {
               <div class="watchMeta">⭐ ${esc(fmtRating(m.rating))}</div>
               <div style="margin-top:8px">
                 <button class="btn sm" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">Open</button>
+<button class="btn sm warn deleteBtn" type="button" data-del="${esc(m.id)}" data-type="${esc(type)}">Delete</button>
               </div>
             </div>
           </div>
@@ -952,3 +953,25 @@ initThemePicker();
 renderTarget(null);
 clearLists();
 setMeta("Ready.", false);
+
+
+// --- Watchlist delete / clear ---
+const clearWatchlistBtn = document.getElementById("clearWatchlist");
+if (clearWatchlistBtn) {
+  clearWatchlistBtn.onclick = () => {
+    if (!confirm("Clear entire watchlist?")) return;
+    localStorage.removeItem(WL_KEY);
+    openWatchlist();
+  };
+}
+
+document.addEventListener("click", (e) => {
+  const del = e.target.closest(".deleteBtn");
+  if (!del) return;
+  const id = del.getAttribute("data-del");
+  const type = del.getAttribute("data-type");
+  let list = loadWatchlist();
+  list = list.filter(x => !(String(x.id) === String(id) && asType(x.type) === asType(type)));
+  saveWatchlist(list);
+  openWatchlist();
+});
