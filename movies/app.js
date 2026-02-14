@@ -154,7 +154,21 @@ async function fetchWatchProviders(id, type) {
     return [];
   }
 }
+function renderWatchMenu(providers = []) {
+  if (!providers.length) {
+    return `<div class="watchEmpty">Not streaming in Canada</div>`;
+  }
 
+  return `
+    <div class="watchMenu">
+      ${providers.map(p => `
+        <a href="${p.link}" target="_blank" class="watchItem">
+          ${p.provider_name}
+        </a>
+      `).join("")}
+    </div>
+  `;
+}
 /* -----------------------------
    apiGet with timeout (prevents “stuck Loading…”)
 ------------------------------*/
@@ -280,6 +294,21 @@ function renderTarget(m) {
   const overviewBits = makeReadMoreHTML(m.overview || "", 5);
 
   els.target.innerHTML = `
+  const watchBtn = document.getElementById("watchNow");
+if (watchBtn) {
+  watchBtn.onclick = async () => {
+    // remove any existing dropdown
+    document.querySelectorAll(".watchDropdown").forEach(d => d.remove());
+
+    const providers = await fetchWatchProviders(m.id, type);
+
+    const box = document.createElement("div");
+    box.className = "watchDropdown";
+    box.innerHTML = renderWatchMenu(providers);
+
+    watchBtn.after(box);
+  };
+}
     <div class="targetGrid">
       ${poster}
 
@@ -334,7 +363,16 @@ function renderTarget(m) {
 
   setMeta(`Selected: ${m.title}`, false);
 }
+    <div class="overviewBlock">
+      ${overviewBits.html}
 
+      <div class="targetActions">
+        <button id="addWatch" class="btn sm">Add</button>
+        <button id="watchNow" class="btn sm">Watch</button>
+        <button id="copyLink" class="btn sm">Share</button>
+        <button id="openImdb" class="btn sm">TMDb</button>
+      </div>
+    </div>
 /* -----------------------------
    Render Similar
    ✅ genres below title
@@ -384,11 +422,12 @@ function renderSimilar(items) {
           <div class="overviewBlock">
             ${overviewBits.html}
 
-            <div class="simActions">
-              <button class="btn sm openBtn" type="button">Open</button>
-              <button class="btn sm trailerBtn" type="button">Trailer</button>
-              <button class="btn sm tmdbBtn" type="button">TMDb</button>
-            </div>
+<div class="simActions">
+  <button class="btn sm openBtn">Open</button>
+  <button class="btn sm watchBtn">Watch</button>
+  <button class="btn sm trailerBtn">Trailer</button>
+  <button class="btn sm tmdbBtn">TMDb</button>
+</div>
 
             <div class="miniTrailer hidden"></div>
           </div>
@@ -409,11 +448,24 @@ function renderSimilar(items) {
     const trailerBtn = card.querySelector(".trailerBtn");
     const tmdbBtn = card.querySelector(".tmdbBtn");
     const mini = card.querySelector(".miniTrailer");
+     const watchBtn = card.querySelector(".watchBtn");
 
     openBtn?.addEventListener("click", () => loadById(id, type));
     tmdbBtn?.addEventListener("click", () =>
       window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(id)}`, "_blank")
     );
+     watchBtn?.addEventListener("click", async () => {
+  // remove existing dropdowns in this card
+  card.querySelectorAll(".watchDropdown").forEach(d => d.remove());
+
+  const providers = await fetchWatchProviders(id, type);
+
+  const menu = document.createElement("div");
+  menu.className = "watchDropdown";
+  menu.innerHTML = renderWatchMenu(providers);
+
+  watchBtn.after(menu);
+});
 
     trailerBtn?.addEventListener("click", async () => {
       try {
