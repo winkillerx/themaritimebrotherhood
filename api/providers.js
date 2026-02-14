@@ -5,7 +5,6 @@ const TMDB_KEY = process.env.TMDB_API_KEY;
 export default async function handler(req, res) {
   try {
     const { id, type } = req.query;
-
     if (!id || !type) {
       return res.status(400).json({ error: "Missing id or type" });
     }
@@ -16,9 +15,13 @@ export default async function handler(req, res) {
     const r = await fetch(url);
     const j = await r.json();
 
-    const ca = j?.results?.CA;
+    const region =
+      j?.results?.CA ||
+      j?.results?.US ||
+      j?.results?.GB ||
+      null;
 
-    if (!ca) {
+    if (!region) {
       return res.status(200).json({
         providers: [],
         link: null,
@@ -26,14 +29,13 @@ export default async function handler(req, res) {
     }
 
     const providers = [
-      ...(ca.flatrate || []),
-      ...(ca.free || []),
-      ...(ca.ads || []),
-      ...(ca.rent || []),
-      ...(ca.buy || []),
+      ...(region.flatrate || []),
+      ...(region.free || []),
+      ...(region.ads || []),
+      ...(region.rent || []),
+      ...(region.buy || []),
     ];
 
-    // Deduplicate
     const seen = new Set();
     const uniqueProviders = providers.filter(p => {
       if (!p?.provider_id) return false;
@@ -44,7 +46,7 @@ export default async function handler(req, res) {
 
     res.status(200).json({
       providers: uniqueProviders,
-      link: ca.link || null,
+      link: region.link || null,
     });
 
   } catch (err) {
