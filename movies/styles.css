@@ -807,3 +807,20 @@ body.theme-purple{
   --line2: rgba(195, 150, 255, .30);
   --card: rgba(14, 8, 20, .62);
 }
+
+
+/* ===== Watchlist Modal Fixes ===== */
+.modal { overscroll-behavior: contain; }
+.watchlist {
+  max-height: 70vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.btn.delete {
+  color: #ff4d4d;
+  border-color: rgba(255,77,77,.6);
+}
+.undoBar {
+  margin-top: 10px;
+  text-align: center;
+}

@@ -643,7 +643,6 @@ function openWatchlist() {
               <div class="watchMeta">⭐ ${esc(fmtRating(m.rating))}</div>
               <div style="margin-top:8px">
                 <button class="btn sm" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">Open</button>
-<button class="btn sm warn deleteBtn" type="button" data-del="${esc(m.id)}" data-type="${esc(type)}">Delete</button>
               </div>
             </div>
           </div>
@@ -955,23 +954,67 @@ clearLists();
 setMeta("Ready.", false);
 
 
-// --- Watchlist delete / clear ---
-const clearWatchlistBtn = document.getElementById("clearWatchlist");
-if (clearWatchlistBtn) {
-  clearWatchlistBtn.onclick = () => {
-    if (!confirm("Clear entire watchlist?")) return;
-    localStorage.removeItem(WL_KEY);
-    openWatchlist();
-  };
+// ===== Watchlist Enhancements =====
+let lastDeleted = null;
+
+function lockScroll(lock=true){
+  document.body.style.overflow = lock ? "hidden" : "";
 }
 
-document.addEventListener("click", (e) => {
-  const del = e.target.closest(".deleteBtn");
-  if (!del) return;
-  const id = del.getAttribute("data-del");
-  const type = del.getAttribute("data-type");
-  let list = loadWatchlist();
-  list = list.filter(x => !(String(x.id) === String(id) && asType(x.type) === asType(type)));
-  saveWatchlist(list);
-  openWatchlist();
+const oldOpenWatchlist = openWatchlist;
+openWatchlist = function(){
+  oldOpenWatchlist();
+  lockScroll(true);
+};
+
+const oldCloseWatchlist = closeWatchlist;
+closeWatchlist = function(){
+  oldCloseWatchlist();
+  lockScroll(false);
+};
+
+function deleteFromWatchlist(id, type){
+  const list = loadWatchlist();
+  const idx = list.findIndex(x => String(x.id)===String(id) && x.type===type);
+  if(idx>-1){
+    lastDeleted = list[idx];
+    list.splice(idx,1);
+    saveWatchlist(list);
+    openWatchlist();
+    showUndo();
+  }
+}
+
+function showUndo(){
+  const bar = document.createElement("div");
+  bar.className="undoBar";
+  bar.innerHTML='<button class="btn sm">Undo delete</button>';
+  bar.querySelector("button").onclick=()=>{
+    if(lastDeleted){
+      const list = loadWatchlist();
+      list.unshift(lastDeleted);
+      saveWatchlist(list);
+      lastDeleted=null;
+      openWatchlist();
+    }
+  };
+  els.watchlist.prepend(bar);
+}
+
+const clearBtn = document.createElement("button");
+clearBtn.className="btn sm delete";
+clearBtn.textContent="Clear";
+clearBtn.onclick=()=>{
+  if(confirm("Clear entire watchlist?")){
+    saveWatchlist([]);
+    openWatchlist();
+  }
+};
+
+document.addEventListener("DOMContentLoaded",()=>{
+  const top = document.querySelector(".modalTop");
+  if(top && !document.getElementById("clearBtn")){
+    clearBtn.id="clearBtn";
+    top.insertBefore(clearBtn, els.closeModal);
+  }
 });
