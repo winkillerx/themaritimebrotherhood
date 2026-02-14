@@ -869,74 +869,91 @@ body.theme-purple{
 
 .watchDropdown{
   position: relative;
+  width: min(360px, 92vw);
   margin-top: 10px;
-  width: 100%;
+  background: rgba(10,12,18,.98);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0,0,0,.55);
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  z-index: 9999;
 }
 
-/* dropdown panel */
-.watchMenu{
-  border: 1px solid rgba(120,170,255,.20);
-  background: rgba(6,10,18,.92);
-  border-radius: 18px;
-  padding: 10px;
-  box-shadow: 0 18px 55px rgba(0,0,0,.45);
-  display: grid;
+.watchMenu{ padding: 12px; }
+
+.watchHeader{
+  padding: 10px 10px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.watchTitle{ font-weight: 800; letter-spacing: .2px; }
+.watchSub{ margin-top: 2px; opacity: .75; font-size: 13px; }
+
+.watchList{
+  display: flex;
+  flex-direction: column;
   gap: 8px;
+  padding: 12px 6px 10px;
 }
 
-/* each provider link */
 .watchItem{
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
-
-  padding: 12px 14px;
-  border-radius: 16px;
-
+  padding: 10px 10px;
+  border-radius: 12px;
   text-decoration: none;
-  color: var(--text);
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.03);
+  transition: transform .08s ease, background .12s ease, border-color .12s ease;
+}
 
-  border: 1px solid rgba(120,170,255,.14);
+.watchItem:active{ transform: scale(.98); }
+.watchItem:hover{
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.14);
+}
+
+.watchLogo{
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  object-fit: cover;
   background: rgba(255,255,255,.06);
 }
 
-.watchItem:hover{
-  border-color: var(--accentBorder);
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+.watchLogoFallback{
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: rgba(255,255,255,.06);
 }
 
-/* "not available" message */
-.watchEmpty{
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px dashed rgba(120,170,255,.18);
-  background: rgba(255,255,255,.05);
-  color: var(--muted);
-}
+.watchItemText{ flex: 1; min-width: 0; }
+.watchName{ font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.watchHint{ margin-top: 2px; font-size: 12px; opacity: .7; }
 
-/* keep action rows consistent when adding Watch */
-.targetActions,
-.simActions{
-  display:flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-  width: 100%;
-}
+.watchArrow{ font-size: 20px; opacity: .65; margin-left: 4px; }
 
-.targetActions .btn,
-.simActions .btn{
-  flex: 1 1 160px;
-  max-width: 100%;
+.watchFooterBtn{
+  display: block;
+  margin: 6px;
+  padding: 10px 12px;
   text-align: center;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 700;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
 }
 
-/* mobile: stack buttons */
-@media (max-width: 420px){
-  .targetActions .btn,
-  .simActions .btn{
-    flex: 1 1 100%;
-    width: 100%;
-  }
+.watchFooterBtn:hover{
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.16);
 }
+
+.watchEmptyTitle{ font-weight: 800; padding: 10px 10px 0; }
+.watchEmptySub{ padding: 6px 10px 10px; opacity: .75; font-size: 13px; }
