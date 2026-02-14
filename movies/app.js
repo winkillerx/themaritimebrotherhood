@@ -172,18 +172,26 @@ async function apiGet(path, params = {}, timeoutMs = 12000) {
 -----------------------------------------------------------*/
 
 async function fetchWatchProviders(id, type) {
-  if (!id || !type) return { providers: [], link: "" };
-
   try {
-    const r = await apiGet("/api/providers", { id, type: asType(type) });
+    const r = await apiGet("/api/providers", { id, type });
 
-    // Your backend returns the CA object (ex: { link, flatrate, rent, buy, ... })
-    const providers = Array.isArray(r?.flatrate) ? r.flatrate : [];
-    const link = typeof r?.link === "string" ? r.link : "";
+    if (!r) return { providers: [], link: null };
 
-    return { providers, link };
+    // merge all monetization types
+    const providers = [
+      ...(r.flatrate || []),
+      ...(r.ads || []),
+      ...(r.free || []),
+      ...(r.rent || []),
+      ...(r.buy || [])
+    ];
+
+    return {
+      providers,
+      link: r.link || null
+    };
   } catch {
-    return { providers: [], link: "" };
+    return { providers: [], link: null };
   }
 }
 
