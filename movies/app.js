@@ -205,21 +205,56 @@ function renderWatchMenu(data) {
   const { providers, link } = data || {};
 
   if (!Array.isArray(providers) || providers.length === 0) {
-    return `<div class="watchEmpty">Not streaming in Canada</div>`;
+    return `
+      <div class="watchMenu">
+        <div class="watchEmptyTitle">Not available to stream in Canada</div>
+        <div class="watchEmptySub">Try another title, or check TMDb for updates.</div>
+      </div>
+    `;
   }
 
   const safeLink = link ? esc(link) : "#";
+  const logoBase = "https://image.tmdb.org/t/p/w92";
+
+  const sorted = providers.slice().sort((a, b) => {
+    const ap = Number(a?.display_priority ?? 9999);
+    const bp = Number(b?.display_priority ?? 9999);
+    return ap - bp;
+  });
 
   return `
     <div class="watchMenu">
-      ${providers.map(p => `
-        <a href="${safeLink}"
-           target="_blank"
-           rel="noopener"
-           class="watchItem">
-          ${esc(p.provider_name)}
-        </a>
-      `).join("")}
+      <div class="watchHeader">
+        <div class="watchTitle">Watch in Canada</div>
+        <div class="watchSub">Select a provider</div>
+      </div>
+
+      <div class="watchList">
+        ${sorted.map(p => {
+          const name = esc(p?.provider_name || "Provider");
+          const logo = p?.logo_path
+            ? `<img class="watchLogo" src="${logoBase}${esc(p.logo_path)}" alt="${name}" loading="lazy" />`
+            : `<div class="watchLogoFallback">🎬</div>`;
+
+          return `
+            <a class="watchItem"
+               href="${safeLink}"
+               target="_blank"
+               rel="noopener">
+              ${logo}
+              <div class="watchItemText">
+                <div class="watchName">${name}</div>
+                <div class="watchHint">Open availability</div>
+              </div>
+              <div class="watchArrow">›</div>
+            </a>
+          `;
+        }).join("")}
+      </div>
+
+      <a class="watchFooterBtn" href="${safeLink}" target="_blank" rel="noopener">
+        View full watch page
+      </a>
     </div>
   `;
 }
@@ -388,14 +423,15 @@ function renderTarget(m) {
   }
 
   if (btnWatch) {
-    btnWatch.onclick = async (e) => {
-      e.preventDefault();
-      closeAllWatchDropdowns(document);
+  btnWatch.onclick = async (e) => {
+    e.preventDefault();
+    e.stopPropagation(); // important on mobile
+    closeAllWatchDropdowns(document);
 
-      const { providers, link } = await fetchWatchProviders(m.id, type);
-      toggleWatchDropdown(btnWatch, renderWatchMenu({ providers, link }));
-    };
-  }
+    const data = await fetchWatchProviders(m.id, type);
+    toggleWatchDropdown(btnWatch, renderWatchMenu(data));
+  };
+}
 
   // trailer
   (async () => {
@@ -495,10 +531,12 @@ function renderSimilar(items) {
     );
 
     watchBtn?.addEventListener("click", async (e) => {
-      e.preventDefault();
-      const { providers, link } = await fetchWatchProviders(id, type);
-      toggleWatchDropdown(watchBtn, renderWatchMenu({ providers, link }));
-    });
+  e.preventDefault();
+  e.stopPropagation();
+
+  const data = await fetchWatchProviders(id, type);
+  toggleWatchDropdown(watchBtn, renderWatchMenu(data));
+});
 
     trailerBtn?.addEventListener("click", async () => {
       try {
