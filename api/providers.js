@@ -14,24 +14,28 @@ export default async function handler(req, res) {
     const r = await fetch(url);
     const j = await r.json();
 
-    const ca = j?.results?.CA;
+    // Prefer CA, fallback to US
+    const region =
+      j.results?.CA ||
+      j.results?.US ||
+      j.results?.GB ||
+      null;
 
-    if (!ca) {
+    if (!region) {
       return res.status(200).json({ providers: [], link: null });
     }
 
-    // merge all possible provider arrays
-    const providers = [
-      ...(ca.flatrate || []),
-      ...(ca.free || []),
-      ...(ca.ads || []),
-      ...(ca.rent || []),
-      ...(ca.buy || [])
+    const all = [
+      ...(region.flatrate || []),
+      ...(region.free || []),
+      ...(region.ads || []),
+      ...(region.rent || []),
+      ...(region.buy || []),
     ];
 
-    // dedupe providers
+    // De-duplicate providers
     const seen = new Set();
-    const unique = providers.filter(p => {
+    const providers = all.filter(p => {
       if (!p?.provider_id) return false;
       if (seen.has(p.provider_id)) return false;
       seen.add(p.provider_id);
@@ -39,12 +43,11 @@ export default async function handler(req, res) {
     });
 
     return res.status(200).json({
-      providers: unique,
-      link: ca.link || null
+      providers,
+      link: region.link || null
     });
 
   } catch (err) {
-    console.error("providers api error", err);
     return res.status(500).json({ providers: [], link: null });
   }
 }
