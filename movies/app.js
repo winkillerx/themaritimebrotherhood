@@ -1,8 +1,7 @@
 /* ============================================================
-   app.js — FILM_MATRIX (TOTAL OVERWRITE)
-   FULL 1100+ LINE LOGIC INTEGRATION
+   app.js — FILM_MATRIX
+   Genre Discover + Boosted Search Integration
    ============================================================ */
-
 const YEAR_MIN = 1950;
 const POPULAR_COUNT = 50; // ✅ 50 each (Movie/TV)
 
@@ -15,7 +14,90 @@ const GENRES = [
   [10759, "Action & Adventure"], [10762, "Kids"], [10763, "News"], [10764, "Reality"],
   [10765, "Sci-Fi & Fantasy"], [10766, "Soap"], [10767, "Talk"], [10768, "War & Politics"],
 ];
+/* ============================================================
+   GENRE PRESETS — DISCOVER MODE (EXACT 50 CATEGORIES)
+   Used by Genres section below Popular
+   ============================================================ */
 
+const GENRE_PRESETS = [
+  // Crime / True Crime
+  { name: "Serial Killers", keywords: "serial killer,true crime,murder", genres: "80,99", type: "both" },
+  { name: "True Crime Docs", keywords: "true crime,investigation,case", genres: "99,80", type: "both" },
+  { name: "Cold Cases", keywords: "cold case,unsolved", genres: "80,99,9648", type: "both" },
+  { name: "Detectives & расследование", keywords: "detective,investigation", genres: "80,9648", type: "both" },
+  { name: "Mafia & Gangsters", keywords: "mafia,gangster,organized crime", genres: "80,18", type: "both" },
+  { name: "Heists & Robberies", keywords: "heist,robbery,bank job", genres: "80,53", type: "both" },
+  { name: "Courtroom & Trials", keywords: "courtroom,trial,lawyer", genres: "18,80", type: "both" },
+  { name: "Prison Stories", keywords: "prison,inmate,escape", genres: "18,80", type: "both" },
+
+  // Thrillers / Mystery
+  { name: "Psychological Thrillers", keywords: "psychological thriller,mind games", genres: "53,9648", type: "both" },
+  { name: "Mind-Bending Twists", keywords: "twist ending,mind bending", genres: "9648,53,878", type: "both" },
+  { name: "Conspiracy & Coverups", keywords: "conspiracy,cover up,whistleblower", genres: "53,9648", type: "both" },
+  { name: "Whodunits", keywords: "whodunit,mystery", genres: "9648", type: "both" },
+  { name: "Espionage & Spies", keywords: "spy,espionage,agent", genres: "53,28", type: "both" },
+  { name: "Political Thrillers", keywords: "political thriller,election,corruption", genres: "53,18", type: "both" },
+
+  // Action
+  { name: "Action Hits", keywords: "action", genres: "28", type: "both" },
+  { name: "Martial Arts", keywords: "martial arts,fighting", genres: "28", type: "both" },
+  { name: "War Action", keywords: "war,battle", genres: "10752,28", type: "both" },
+  { name: "Survival", keywords: "survival,escape", genres: "28,53,12", type: "both" },
+  { name: "Disaster Movies", keywords: "disaster,catastrophe", genres: "28,53", type: "both" },
+
+  // Superhero / Comic
+  { name: "Superhero", keywords: "superhero,comic book", genres: "28,878", type: "both" },
+  { name: "Anti-Hero", keywords: "anti hero,vigilante", genres: "28,80", type: "both" },
+  { name: "DC Vibes", keywords: "dc comics", genres: "28,878", type: "both" },
+  { name: "Marvel Vibes", keywords: "marvel", genres: "28,878", type: "both" },
+
+  // Horror
+  { name: "Horror Must-Watch", keywords: "horror", genres: "27", type: "both" },
+  { name: "Psychological Horror", keywords: "psychological horror", genres: "27,53", type: "both" },
+  { name: "Found Footage", keywords: "found footage", genres: "27", type: "both" },
+  { name: "Paranormal & Ghosts", keywords: "paranormal,ghost,haunted", genres: "27", type: "both" },
+  { name: "Slashers", keywords: "slasher,killer", genres: "27", type: "both" },
+  { name: "Zombies", keywords: "zombie,undead", genres: "27,28", type: "both" },
+
+  // Sci-Fi
+  { name: "Sci-Fi Essentials", keywords: "science fiction,futuristic", genres: "878", type: "both" },
+  { name: "Time Travel", keywords: "time travel,time loop", genres: "878,53,9648", type: "both" },
+  { name: "AI & Robots", keywords: "artificial intelligence,robots", genres: "878,53", type: "both" },
+  { name: "Cyberpunk", keywords: "cyberpunk,hacker,dystopia", genres: "878", type: "both" },
+  { name: "Space & Aliens", keywords: "space,alien", genres: "878,12", type: "both" },
+  { name: "Post-Apocalyptic", keywords: "post apocalyptic,dystopian", genres: "878,28,53", type: "both" },
+
+  // Fantasy
+  { name: "Fantasy Adventure", keywords: "fantasy adventure", genres: "14,12", type: "both" },
+  { name: "Magic & Wizards", keywords: "magic,wizard", genres: "14,12", type: "both" },
+  { name: "Mythology", keywords: "mythology,gods,legend", genres: "14,12", type: "both" },
+
+  // Romance / Comedy / Feel-good
+  { name: "Rom-Com", keywords: "romantic comedy", genres: "35,10749", type: "both" },
+  { name: "Romantic Drama", keywords: "romantic drama,love story", genres: "18,10749", type: "both" },
+  { name: "Feel-Good", keywords: "feel good,inspiring,uplifting", genres: "35,18", type: "both" },
+  { name: "Dark Comedy", keywords: "dark comedy", genres: "35,80", type: "both" },
+
+  // Business / Tech
+  { name: "Financial & Wall Street", keywords: "finance,wall street,stock market", genres: "18", type: "both" },
+  { name: "Tech & Startups", keywords: "startup,tech company,hacker", genres: "18", type: "both" },
+
+  // Documentary / Reality / History
+  { name: "Documentaries", keywords: "documentary", genres: "99", type: "both" },
+  { name: "Nature Docs", keywords: "nature,wildlife", genres: "99", type: "both" },
+  { name: "History & War Docs", keywords: "history,war documentary", genres: "99,36,10752", type: "both" },
+  { name: "Sports Docs", keywords: "sports documentary", genres: "99", type: "both" },
+
+  // TV-special
+  { name: "Mini-Series", keywords: "miniseries,limited series", genres: "", type: "tv" },
+  { name: "Docuseries", keywords: "docuseries,documentary series", genres: "99", type: "tv" },
+  { name: "Sitcoms", keywords: "sitcom", genres: "35", type: "tv" },
+  { name: "Reality TV", keywords: "reality", genres: "10764", type: "tv" },
+
+  // “Awards / Classics / Cult”
+  { name: "Award Winners", keywords: "oscar winner,award winning", genres: "", type: "both" },
+  { name: "Cult Classics", keywords: "cult classic", genres: "", type: "both" }
+];
 const genreNameById = new Map(
   GENRES.filter(([k]) => k !== "any").map(([id, name]) => [Number(id), name])
 );
@@ -339,6 +421,163 @@ function scrollToTarget() {
   setTimeout(() => {
     el.scrollIntoView({ behavior: "smooth", block: "start" });
   }, 60);
+}
+/* -----------------------------------------------------------
+   SECTION A.6: Genre Grid (Discover Mode)
+----------------------------------------------------------- */
+
+/* -----------------------------------------------------------
+   SECTION A.6: Genres Grid (Discover Mode) — Popular-style w/ posters
+----------------------------------------------------------- */
+
+async function hydrateGenrePosters(container, presets) {
+  if (!container) return;
+
+  // Concurrency limit so you don’t fire 50 requests at once
+  const CONCURRENCY = 4;
+  let i = 0;
+
+  async function worker() {
+    while (i < presets.length) {
+      const idx = i++;
+      const g = presets[idx];
+      const btn = container.querySelector(`.genreCard[data-idx="${idx}"]`);
+      if (!btn) continue;
+
+      try {
+        const data = await apiGet("/api/discover", {
+          type: g.type || "both",
+          keywords: g.keywords || "",
+          genres: g.genres || "",
+          sort: "popularity.desc",
+          minVotes: 30,
+          region: "CA"
+        });
+
+        const first = (data.items || [])[0];
+        const posterEl = btn.querySelector(".popPoster");
+
+        if (first?.poster && posterEl) {
+          // swap placeholder -> image
+          posterEl.outerHTML = `<img class="popPoster" src="${esc(first.poster)}" loading="lazy" alt="${esc(g.name)} poster" />`;
+        }
+      } catch {
+        // keep placeholder if it fails
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+}
+
+function renderGenres(genres = []) {
+  const container = document.getElementById("genreGrid");
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="popGrid">
+      ${genres.map((g, idx) => `
+        <button
+          class="popCard genreCard"
+          type="button"
+          data-idx="${idx}"
+          data-mode="discover"
+          data-type="${g.type || "both"}"
+          data-keywords="${g.keywords || ""}"
+          data-genres="${g.genres || ""}"
+        >
+          <div class="popPoster placeholder"></div>
+          <div class="popTitle">${esc(g.name)}</div>
+        </button>
+      `).join("")}
+    </div>
+  `;
+
+  // Click behavior (your discover logic)
+  container.querySelectorAll(".genreCard").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const type = btn.getAttribute("data-type") || "both";
+      const keywords = btn.getAttribute("data-keywords") || "";
+      const genres = btn.getAttribute("data-genres") || "";
+
+      clearLists();
+      setMeta("Loading category…", false);
+
+      try {
+        const data = await apiGet("/api/discover", {
+          type,
+          keywords,
+          genres,
+          sort: "popularity.desc",
+          minVotes: 30,
+          region: "CA"
+        });
+
+        const items = data.items || [];
+        renderMatches(items);
+
+        const first = items[0];
+        if (!first?.id) {
+          renderTarget(null);
+          setMeta("No results found for this category.", true);
+          return;
+        }
+
+        await loadById(first.id, first.type);
+        scrollToTarget();
+      } catch (e) {
+        renderTarget(null);
+        setMeta(`Category failed. (${e.status || "?"} – ${e.message})`, true);
+      }
+    });
+  });
+
+  // Poster hydration (popular-style posters)
+  hydrateGenrePosters(container, genres);
+}
+  /* 🔥 THIS IS WHERE YOUR CODE GOES 🔥 */
+  container.querySelectorAll(".genreCard").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const mode = btn.getAttribute("data-mode") || "search";
+      const type = btn.getAttribute("data-type") || "both";
+
+      if (mode === "discover") {
+        const keywords = btn.getAttribute("data-keywords") || "";
+        const genres = btn.getAttribute("data-genres") || "";
+
+        clearLists();
+        setMeta("Loading category…", false);
+
+        const data = await apiGet("/api/discover", {
+          type,
+          keywords,
+          genres,
+          sort: "popularity.desc",
+          minVotes: 30,
+          region: "CA"
+        });
+
+        const items = data.items || [];
+        renderMatches(items);
+
+        const first = items[0];
+        if (!first?.id) {
+          renderTarget(null);
+          setMeta("No results found for this category.", true);
+          return;
+        }
+
+        await loadById(first.id, first.type);
+        scrollToTarget();
+        return;
+      }
+
+      // fallback search
+      if (els.q) els.q.value = btn.getAttribute("data-q") || "";
+      await doSearch();
+      scrollToTarget();
+    });
+  });
 }
 /* -----------------------------------------------------------
    SECTION B: renderTarget() (FULL REPLACE)
@@ -1045,8 +1284,7 @@ function initUI() {
   const type = asType(url.searchParams.get("type") || "movie", "movie");
   if (id) loadById(id, type);
 
-  loadPopularNow();
-	renderGenreGrid();
+    loadPopularNow();
   initThemePicker();
   setActiveMode("none");
 }
@@ -1170,80 +1408,7 @@ document.addEventListener("DOMContentLoaded", () => {
     top.insertBefore(clearBtn, els.closeModal);
   }
 });
-/* -----------------------------------------------------------
-   Genres (50 curated “seed” picks)
------------------------------------------------------------*/
-const GENRE_SEEDS = [
-  // Romance / Comedy
-  { label: "Rom-Com", q: "romantic comedy", type: "movie" },
-  { label: "Romance", q: "romance drama", type: "movie" },
-  { label: "Breakup & Healing", q: "breakup drama", type: "movie" },
-  { label: "Teen Romance", q: "teen romance", type: "movie" },
 
-  // Action / Superhero
-  { label: "Superhero", q: "superhero", type: "movie" },
-  { label: "Martial Arts", q: "martial arts", type: "movie" },
-  { label: "War Action", q: "war action", type: "movie" },
-  { label: "Spy Thriller", q: "spy thriller", type: "movie" },
-  { label: "Heist", q: "heist", type: "movie" },
-  { label: "Car / Racing", q: "racing action", type: "movie" },
-
-  // Thriller / Crime
-  { label: "True Crime", q: "true crime", type: "tv" },
-  { label: "Detective", q: "detective mystery", type: "tv" },
-  { label: "Courtroom", q: "courtroom drama", type: "movie" },
-  { label: "Serial Killer", q: "serial killer thriller", type: "movie" },
-  { label: "Organized Crime", q: "mafia crime", type: "tv" },
-  { label: "Bank Robbery", q: "bank robbery", type: "movie" },
-  { label: "Financial / Wall St", q: "wall street", type: "movie" },
-
-  // Horror
-  { label: "Horror", q: "horror", type: "movie" },
-  { label: "Psychological Horror", q: "psychological horror", type: "movie" },
-  { label: "Found Footage", q: "found footage horror", type: "movie" },
-  { label: "Slasher", q: "slasher", type: "movie" },
-  { label: "Haunted House", q: "haunted house", type: "movie" },
-  { label: "Demonic", q: "demon possession", type: "movie" },
-  { label: "Zombie", q: "zombie apocalypse", type: "movie" },
-  { label: "Vampire", q: "vampire", type: "movie" },
-
-  // Sci-Fi / Fantasy
-  { label: "Sci-Fi", q: "science fiction", type: "movie" },
-  { label: "Cyberpunk", q: "cyberpunk", type: "movie" },
-  { label: "AI / Robots", q: "artificial intelligence robots", type: "movie" },
-  { label: "Time Travel", q: "time travel", type: "movie" },
-  { label: "Space", q: "space adventure", type: "movie" },
-  { label: "Post-Apocalyptic", q: "post apocalyptic", type: "movie" },
-  { label: "Fantasy Adventure", q: "fantasy adventure", type: "movie" },
-  { label: "Mythology", q: "mythology gods", type: "movie" },
-
-  // Family / Animation
-  { label: "Family", q: "family movie", type: "movie" },
-  { label: "Animation", q: "animated movie", type: "movie" },
-  { label: "Kids", q: "kids animation", type: "movie" },
-  { label: "Anime", q: "anime", type: "tv" },
-
-  // Drama / Feelings
-  { label: "Coming-of-Age", q: "coming of age", type: "movie" },
-  { label: "Tearjerker", q: "emotional drama", type: "movie" },
-  { label: "Based on True Story", q: "based on a true story", type: "movie" },
-  { label: "Biopic", q: "biographical drama", type: "movie" },
-
-  // Docs / Reality
-  { label: "Documentary", q: "documentary", type: "movie" },
-  { label: "Nature", q: "nature documentary", type: "movie" },
-  { label: "Food", q: "food documentary", type: "tv" },
-  { label: "Travel", q: "travel documentary", type: "tv" },
-
-  // Seasonal / vibes
-  { label: "Christmas", q: "christmas", type: "movie" },
-  { label: "Halloween", q: "halloween horror", type: "movie" },
-
-  // TV specific “genres”
-  { label: "Sitcom", q: "sitcom", type: "tv" },
-  { label: "Mini-Series", q: "miniseries", type: "tv" },
-  { label: "Reality TV", q: "reality", type: "tv" },
-];
 
 function renderGenreGrid() {
   const grid = document.getElementById("genreGrid");
