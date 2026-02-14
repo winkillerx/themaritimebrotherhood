@@ -615,6 +615,14 @@ input[type="range"]{
   border: 1px solid rgba(120,170,255,.18);
   display:block;
 }
+.popPoster.placeholder{
+  background: linear-gradient(
+    135deg,
+    rgba(120,170,255,.08),
+    rgba(120,170,255,.02)
+  );
+  border-style: dashed;
+}
 .popTitle{
   font-size: 12px;
   line-height: 1.25;
@@ -963,7 +971,14 @@ body.theme-purple{
   background: rgba(255,255,255,.10);
   border-color: rgba(255,255,255,.16);
 }
+.genreCard {
+  cursor: pointer;
+}
 
+.genreCard .popTitle {
+  text-align: center;
+  font-weight: 800;
+}
 .watchEmptyTitle{ font-weight: 800; padding: 10px 10px 0; }
 .watchEmptySub{ padding: 6px 10px 10px; opacity: .75; font-size: 13px; }
 @media (max-width: 520px){
