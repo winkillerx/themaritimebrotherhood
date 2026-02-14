@@ -824,3 +824,24 @@ body.theme-purple{
   margin-top: 10px;
   text-align: center;
 }
+/* =========================
+   WATCHLIST BUTTON UNIFORM SIZE
+========================= */
+
+.watchItem .btn.sm {
+  min-width: 90px;          /* forces same width */
+  height: 36px;             /* forces same height */
+  padding: 0 14px;          /* horizontal padding only */
+  font-size: 14px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+/* Red delete button keeps color but same size */
+.watchItem .btn.sm.delete {
+  min-width: 90px;
+  height: 36px;
+}
