@@ -1490,29 +1490,7 @@ function renderGenreGrid() {
     </div>
   `;
 
-  grid.querySelectorAll(".genreCard").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const q = btn.getAttribute("data-q") || "";
-      const t = btn.getAttribute("data-type") || "movie";
-
-      // set filter mode based on tile type
-      if (t === "tv") {
-        mediaFilter = "tv";
-        setActiveMode("tv");
-      } else if (t === "movie") {
-        mediaFilter = "movie";
-        setActiveMode("movie");
-      } else {
-        mediaFilter = "any";
-        setActiveMode("none");
-      }
-
-      if (els.q) els.q.value = q;
-      await doSearch();
-      scrollToTarget();
-    });
-  });
-}
+  
 // Final execution
 initUI();
 renderTarget(null);
