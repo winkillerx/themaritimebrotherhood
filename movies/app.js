@@ -604,46 +604,6 @@ async function doSearch() {
    Watchlist
 ------------------------------*/
 const WL_KEY = "filmmatrix_watchlist_v2";
-// ===== Watchlist Delete + Undo =====
-let lastDeletedWatchItem = null;
-
-function deleteFromWatchlist(id, type) {
-  const list = loadWatchlist();
-  const idx = list.findIndex(
-    x => String(x.id) === String(id) && x.type === type
-  );
-  if (idx === -1) return;
-
-  lastDeletedWatchItem = list[idx];
-  list.splice(idx, 1);
-  saveWatchlist(list);
-  openWatchlist(); // re-render
-  showUndoDelete();
-}
-
-function showUndoDelete() {
-  if (!els.watchlist || !lastDeletedWatchItem) return;
-
-  const bar = document.createElement("div");
-  bar.className = "undoBar";
-  bar.innerHTML = `
-    <button class="btn sm">Undo delete</button>
-  `;
-
-  bar.querySelector("button").onclick = () => {
-    const list = loadWatchlist();
-    list.unshift(lastDeletedWatchItem);
-    saveWatchlist(list);
-    lastDeletedWatchItem = null;
-    openWatchlist();
-  };
-
-  els.watchlist.prepend(bar);
-
-  setTimeout(() => {
-    if (bar.parentNode) bar.remove();
-  }, 6000);
-}
 
 function loadWatchlist() {
   try { return JSON.parse(localStorage.getItem(WL_KEY) || "[]"); }
@@ -681,28 +641,16 @@ function openWatchlist() {
                 <span class="muted"> (${esc(safeUpper(type))})</span>
               </div>
               <div class="watchMeta">⭐ ${esc(fmtRating(m.rating))}</div>
-              <div style="margin-top:8px; display:flex; gap:8px;">
-  <button class="btn sm"
-    type="button"
-    data-id="${esc(m.id)}"
-    data-type="${esc(type)}">
-    Open
-  </button>
-
-  <button class="btn sm delete"
-    type="button"
-    data-del-id="${esc(m.id)}"
-    data-del-type="${esc(type)}">
-    Delete
-  </button>
-</div>
+              <div style="margin-top:8px">
+                <button class="btn sm" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">Open</button>
+              </div>
             </div>
           </div>
         `;
       }).join("")
     : `<div class="muted">No watchlist items yet.</div>`;
 
-    els.watchlist.querySelectorAll("button[data-id]").forEach(b => {
+  els.watchlist.querySelectorAll("button[data-id]").forEach(b => {
     b.addEventListener("click", () => {
       const id = b.getAttribute("data-id");
       const type = asType(b.getAttribute("data-type") || "movie", "movie");
@@ -711,17 +659,9 @@ function openWatchlist() {
     });
   });
 
-  // ✅ ADD THIS
-  els.watchlist.querySelectorAll("button[data-del-id]").forEach(b => {
-    b.addEventListener("click", () => {
-      const id = b.getAttribute("data-del-id");
-      const type = asType(b.getAttribute("data-del-type") || "movie", "movie");
-      deleteFromWatchlist(id, type);
-    });
-  });
-
   els.modal?.classList.remove("hidden");
 }
+
 function closeWatchlist() {
   els.modal?.classList.add("hidden");
 }
