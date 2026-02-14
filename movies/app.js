@@ -469,7 +469,91 @@ async function hydrateGenrePosters(container, presets) {
 
   await Promise.all(Array.from({ length: CONCURRENCY }, worker));
 }
+async function discoverOnce({ type, keywords, genres, minVotes = 30 }) {
+  return apiGet("/api/discover", {
+    type,
+    keywords,
+    genres,
+    sort: "popularity.desc",
+    minVotes,
+    region: "CA",
+  });
+}
 
+async function discoverCategory({ type, keywords, genres }) {
+  // 1) If backend doesn't understand "both", do both ourselves
+  const doType = async (t, minVotes, kw, gn) => {
+    const r = await discoverOnce({ type: t, keywords: kw, genres: gn, minVotes });
+    return (r?.items || []).map(x => ({ ...x, type: asType(x.type || t, t) }));
+  };
+
+  // A) normal pass
+  let items = [];
+  try {
+    if (type === "both") {
+      const [m, tv] = await Promise.all([
+        doType("movie", 30, keywords, genres),
+        doType("tv", 30, keywords, genres),
+      ]);
+      items = [...m, ...tv];
+    } else {
+      items = await doType(type, 30, keywords, genres);
+    }
+  } catch {}
+
+  // B) relax votes if empty
+  if (!items.length) {
+    try {
+      if (type === "both") {
+        const [m, tv] = await Promise.all([
+          doType("movie", 5, keywords, genres),
+          doType("tv", 5, keywords, genres),
+        ]);
+        items = [...m, ...tv];
+      } else {
+        items = await doType(type, 5, keywords, genres);
+      }
+    } catch {}
+  }
+
+  // C) drop keywords if still empty (keywords commonly break discover)
+  if (!items.length) {
+    try {
+      if (type === "both") {
+        const [m, tv] = await Promise.all([
+          doType("movie", 5, "", genres),
+          doType("tv", 5, "", genres),
+        ]);
+        items = [...m, ...tv];
+      } else {
+        items = await doType(type, 5, "", genres);
+      }
+    } catch {}
+  }
+
+  // D) final fallback: search by keywords/name
+  if (!items.length) {
+    const q =
+      (keywords || "").split(",")[0]?.trim() ||
+      (genres ? "" : "") ||
+      "popular";
+    try {
+      const s = await apiGet("/api/search", { q });
+      items = (s?.items || s?.results || []).map(x => ({ ...x, type: asType(x.type, "movie") }));
+    } catch {}
+  }
+
+  // de-dupe by type+id, keep first
+  const seen = new Set();
+  const out = [];
+  for (const it of items) {
+    const k = `${asType(it.type)}:${it.id}`;
+    if (!it?.id || seen.has(k)) continue;
+    seen.add(k);
+    out.push(it);
+  }
+  return out;
+}
 function renderGenres(genres = []) {
   const container = document.getElementById("genreGrid");
   if (!container) return;
@@ -495,42 +579,34 @@ function renderGenres(genres = []) {
 
   // Click behavior (your discover logic)
   container.querySelectorAll(".genreCard").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const type = btn.getAttribute("data-type") || "both";
-      const keywords = btn.getAttribute("data-keywords") || "";
-      const genres = btn.getAttribute("data-genres") || "";
+  btn.addEventListener("click", async () => {
+    const type = btn.getAttribute("data-type") || "both";
+    const keywords = btn.getAttribute("data-keywords") || "";
+    const genres = btn.getAttribute("data-genres") || "";
 
-      clearLists();
-      setMeta("Loading category…", false);
+    clearLists();
+    setMeta("Loading category…", false);
 
-      try {
-        const data = await apiGet("/api/discover", {
-          type,
-          keywords,
-          genres,
-          sort: "popularity.desc",
-          minVotes: 30,
-          region: "CA"
-        });
+    try {
+      const items = await discoverCategory({ type, keywords, genres });
 
-        const items = data.items || [];
-        renderMatches(items);
+      renderMatches(items);
 
-        const first = items[0];
-        if (!first?.id) {
-          renderTarget(null);
-          setMeta("No results found for this category.", true);
-          return;
-        }
-
-        await loadById(first.id, first.type);
-        scrollToTarget();
-      } catch (e) {
+      const first = items[0];
+      if (!first?.id) {
         renderTarget(null);
-        setMeta(`Category failed. (${e.status || "?"} – ${e.message})`, true);
+        setMeta("No results found for this category.", true);
+        return;
       }
-    });
+
+      await loadById(first.id, first.type);
+      scrollToTarget();
+    } catch (e) {
+      renderTarget(null);
+      setMeta(`Category failed. (${e.status || "?"} – ${e.message})`, true);
+    }
   });
+});
 
   // Poster hydration (popular-style posters)
   hydrateGenrePosters(container, genres);
@@ -1084,23 +1160,53 @@ function renderPopularGrid(container, items) {
   }
 
   container.innerHTML = `
-    <div class="popGrid">
-      ${list.map((m) => {
-        const type = asType(m.type || m.media_type, "movie");
-        const poster = m.poster
-          ? `<img class="popPoster" src="${esc(m.poster)}" loading="lazy" alt="${esc(m.title)} poster" />`
-          : `<div class="popPoster placeholder"></div>`;
+  <div class="popGrid">
+    ${genres.map((g, idx) => `
+      <button
+        class="popCard genreCard"
+        type="button"
+        data-idx="${idx}"
+      >
+        <div class="popPoster placeholder"></div>
+        <div class="popTitle">${esc(g.name)}</div>
+      </button>
+    `).join("")}
+  </div>
+`;
+// 🔥 Poster hydration using discoverCategory (FIXED)
+(async () => {
+  const cards = container.querySelectorAll(".genreCard");
 
-        return `
-          <button class="popCard" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">
-            ${poster}
-            <div class="popTitle">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
-          </button>
-        `;
-      }).join("")}
-    </div>
-  `;
+  for (let i = 0; i < cards.length; i++) {
+    const card = cards[i];
+    const g = genres[i];
+    if (!g) continue;
 
+    try {
+      const items = await discoverCategory({
+        type: g.type || "both",
+        keywords: g.keywords || "",
+        genres: g.genres || ""
+      });
+
+      const first = items[0];
+      if (!first?.poster) continue;
+
+      const img = document.createElement("img");
+      img.className = "popPoster";
+      img.loading = "lazy";
+      img.src = first.poster;
+      img.alt = g.name;
+
+      // replace placeholder
+      const placeholder = card.querySelector(".popPoster");
+      placeholder?.replaceWith(img);
+
+    } catch (e) {
+      console.warn("Genre poster failed:", g.name);
+    }
+  }
+})();
   container.querySelectorAll(".popCard").forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = btn.getAttribute("data-id");
