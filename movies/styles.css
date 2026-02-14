@@ -630,7 +630,9 @@ input[type="range"]{
 @media (min-width: 860px){
   .popGrid{ grid-template-columns: repeat(6, minmax(0, 1fr)); }
 }
-
+/* Genres grid uses the same look as Popular */
+#genreGrid .popCard { text-align: center; }
+#genreGrid .popTitle { -webkit-line-clamp: 1; }
 /* Footer */
 .foot{ padding: 14px 4px 0; text-align:center; }
 
