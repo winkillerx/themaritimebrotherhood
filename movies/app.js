@@ -953,68 +953,48 @@ renderTarget(null);
 clearLists();
 setMeta("Ready.", false);
 
-
-// ===== Watchlist Enhancements =====
-let lastDeleted = null;
-
-function lockScroll(lock=true){
-  document.body.style.overflow = lock ? "hidden" : "";
-}
-
-const oldOpenWatchlist = openWatchlist;
-openWatchlist = function(){
-  oldOpenWatchlist();
-  lockScroll(true);
-};
-
-const oldCloseWatchlist = closeWatchlist;
-closeWatchlist = function(){
-  oldCloseWatchlist();
-  lockScroll(false);
-};
+/* =============================
+   Watchlist delete + undo
+============================= */
+let lastDeletedItem = null;
 
 function deleteFromWatchlist(id, type){
   const list = loadWatchlist();
-  const idx = list.findIndex(x => String(x.id)===String(id) && x.type===type);
-  if(idx>-1){
-    lastDeleted = list[idx];
-    list.splice(idx,1);
+  const idx = list.findIndex(x => String(x.id) === String(id) && String(x.type) === String(type));
+  if (idx === -1) return;
+
+  lastDeletedItem = list[idx];
+  list.splice(idx,1);
+  saveWatchlist(list);
+  openWatchlist();
+
+  showUndoToast();
+}
+
+function showUndoToast(){
+  let toast = document.getElementById("undoToast");
+  if(!toast){
+    toast = document.createElement("div");
+    toast.id = "undoToast";
+    toast.className = "undoToast";
+    toast.innerHTML = `
+      <span>Item deleted</span>
+      <button class="btn sm" id="undoDeleteBtn">Undo</button>
+    `;
+    document.body.appendChild(toast);
+  }
+
+  toast.classList.add("show");
+
+  document.getElementById("undoDeleteBtn").onclick = () => {
+    if(!lastDeletedItem) return;
+    const list = loadWatchlist();
+    list.unshift(lastDeletedItem);
     saveWatchlist(list);
+    lastDeletedItem = null;
+    toast.classList.remove("show");
     openWatchlist();
-    showUndo();
-  }
-}
-
-function showUndo(){
-  const bar = document.createElement("div");
-  bar.className="undoBar";
-  bar.innerHTML='<button class="btn sm">Undo delete</button>';
-  bar.querySelector("button").onclick=()=>{
-    if(lastDeleted){
-      const list = loadWatchlist();
-      list.unshift(lastDeleted);
-      saveWatchlist(list);
-      lastDeleted=null;
-      openWatchlist();
-    }
   };
-  els.watchlist.prepend(bar);
+
+  setTimeout(()=>toast.classList.remove("show"),5000);
 }
-
-const clearBtn = document.createElement("button");
-clearBtn.className="btn sm delete";
-clearBtn.textContent="Clear";
-clearBtn.onclick=()=>{
-  if(confirm("Clear entire watchlist?")){
-    saveWatchlist([]);
-    openWatchlist();
-  }
-};
-
-document.addEventListener("DOMContentLoaded",()=>{
-  const top = document.querySelector(".modalTop");
-  if(top && !document.getElementById("clearBtn")){
-    clearBtn.id="clearBtn";
-    top.insertBefore(clearBtn, els.closeModal);
-  }
-});
