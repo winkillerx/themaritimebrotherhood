@@ -1,1132 +1,942 @@
-/* ============================================================
-   app.js — FILM_MATRIX (TOTAL OVERWRITE)
-   FULL 1100+ LINE LOGIC INTEGRATION
-   ============================================================ */
+/* styles.css — FILM_MATRIX (cyberpunk, responsive, crisp)
+   FIXES INCLUDED:
+   ✅ Header text no longer goes behind buttons
+   ✅ iOS Safari sticky+blur sampling fix
+   ✅ Trailer sizing consistent (aspect-ratio)
+   ✅ Similar cards match target skin
+   ✅ Mobile overflow fixes
+   ✅ Genres row BELOW title row
+   ✅ Overview under poster area + spacing
+   ✅ Read more / show less toggle
+   ✅ Buttons centered (target + similar)
+   ✅ Popular grid supports 50 each (frontend)
+*/
 
-const YEAR_MIN = 1950;
-const POPULAR_COUNT = 50; // ✅ 50 each (Movie/TV)
+:root{
+  --bg0:#05060c;
+  --bg1:#070a14;
+  --bg2:#071425;
 
-const GENRES = [
-  ["any", "Any"],
-  [28, "Action"], [12, "Adventure"], [16, "Animation"], [35, "Comedy"], [80, "Crime"],
-  [99, "Documentary"], [18, "Drama"], [10751, "Family"], [14, "Fantasy"], [36, "History"],
-  [27, "Horror"], [10402, "Music"], [9648, "Mystery"], [10749, "Romance"], [878, "Sci-Fi"],
-  [10770, "TV Movie"], [53, "Thriller"], [10752, "War"], [37, "Western"],
-  [10759, "Action & Adventure"], [10762, "Kids"], [10763, "News"], [10764, "Reality"],
-  [10765, "Sci-Fi & Fantasy"], [10766, "Soap"], [10767, "Talk"], [10768, "War & Politics"],
-];
+  --card: rgba(10, 14, 28, .62);
+  --line: rgba(120, 170, 255, .18);
+  --line2: rgba(120, 170, 255, .28);
 
-const genreNameById = new Map(
-  GENRES.filter(([k]) => k !== "any").map(([id, name]) => [Number(id), name])
-);
+  --text:#e7ecff;
+  --muted: rgba(231,236,255,.68);
 
-const els = {
-  q: document.getElementById("q"),
-  suggest: document.getElementById("suggest"),
-  searchBtn: document.getElementById("go"),
+  --accent:#22d3ee;
+  --accent2:#7c3aed;
+  --hot:#ff2bd6;
+  --warn:#ff4d6d;
 
-  watchlistBtn: document.getElementById("watchlistBtn"),
-  randomBtn: document.getElementById("random"),
-  tvOnlyBtn: document.getElementById("tvOnlyBtn"),
-  movieOnlyBtn: document.getElementById("movieOnlyBtn"),
+  /* Theme-driven accents */
+  --accentSoft: rgba(34,211,238,.18);
+  --accentBorder: rgba(34,211,238,.55);
 
-  minRating: document.getElementById("minRating"),
-  minRatingVal: document.getElementById("minRatingVal"),
-  genre: document.getElementById("genre"),
+  --accent2Soft: rgba(124,58,237,.22);
 
-  meta: document.getElementById("meta"),
-  target: document.getElementById("target"),
-  trailer: document.getElementById("trailer"),
+  /* Theme-driven background glows */
+  --glowA: rgba(124,58,237,.22);
+  --glowB: rgba(34,211,238,.18);
+  --glowC: rgba(255,43,214,.10);
 
-  targetActions: document.getElementById("targetActions"),
-  addWatch: document.getElementById("addWatch"),
-  openImdb: document.getElementById("openImdb"),
-  copyLink: document.getElementById("copyLink"),
 
-  results: document.getElementById("results"),
-  matches: document.getElementById("matches"),
+  --r: 22px;
+  --pad: 18px;
 
-  modal: document.getElementById("modal"),
-  closeModal: document.getElementById("closeModal"),
-  watchlist: document.getElementById("watchlist"),
+  --shadow: 0 16px 50px rgba(0,0,0,.45);
+  --shadow2: 0 0 0 1px rgba(120,170,255,.14), 0 16px 60px rgba(0,0,0,.45);
+}
 
-  popularMovies: document.getElementById("popularMovies"),
-  popularTv: document.getElementById("popularTv") || document.getElementById("popularTV"),
-};
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
 
-const API_BASE = "";
+body{
+  margin:0;
+  color:var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  background:
+    radial-gradient(1200px 600px at 15% 10%, var(--glowA), transparent 55%),
+    radial-gradient(900px 520px at 85% 20%, var(--glowB), transparent 55%),
+    radial-gradient(1200px 700px at 50% 100%, var(--glowC), transparent 60%),
+    linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 45%, var(--bg2) 100%);
+
+  overflow-x:hidden;
+}
+
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  background:
+    linear-gradient(to right, rgba(255,255,255,.035) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(to bottom, rgba(255,255,255,.03) 1px, transparent 1px) 0 0 / 48px 48px,
+    radial-gradient(circle at 50% 40%, transparent 35%, rgba(0,0,0,.55) 78%);
+  mix-blend-mode:overlay;
+  opacity:.22;
+}
+
+/* Layout */
+.wrap{
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 18px 14px 40px;
+}
+
+/* header */
+.top{
+  position: sticky;
+  top: 0;
+  z-index: 50;
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 14px;
+
+  padding: 14px 14px;
+  margin: 10px 0 16px;
+
+  border: 1px solid var(--line);
+  border-radius: calc(var(--r) + 6px);
+
+  background: rgba(8, 12, 24, .78);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+
+  box-shadow: var(--shadow2);
+}
+
+/* iOS Safari sticky blur sampling fix */
+@supports (-webkit-touch-callout: none){
+  .top{
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: rgba(8, 12, 24, .92);
+  }
+}
+
+/* brand overflow fix */
+.brand{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.brandText{ min-width:0; }
+
+.logo{
+  width: 58px;
+  height: 58px;
+  display:grid;
+  place-items:center;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  background:
+    radial-gradient(circle at 30% 30%, rgba(34,211,238,.22), transparent 55%),
+    radial-gradient(circle at 70% 80%, rgba(124,58,237,.22), transparent 60%),
+    rgba(6,10,18,.8);
+  box-shadow: 0 0 0 1px rgba(34,211,238,.12), 0 12px 30px rgba(0,0,0,.45);
+}
+
+.name{
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-size: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.sub{
+  margin-top: 4px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.topBtns .iconBtn{
+  font-size: 30px;
+  line-height: 1;
+}
+.topBtns{
+  display:flex;
+  gap: 10px;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 520px){
+  .top{ flex-wrap: wrap; justify-content:flex-start; }
+  .topBtns{ width: 100%; }
+  .topBtns .btn{ flex: 1 1 auto; }
+}
+
+/* cards */
+.card{
+  border: 1px solid var(--line);
+  border-radius: calc(var(--r) + 4px);
+  background: var(--card);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow2);
+  padding: var(--pad);
+  margin: 0 0 16px;
+}
+
+h2{
+  margin: 0 0 10px;
+  font-size: 34px;
+  letter-spacing: .04em;
+}
+
+.sectionTitle{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+
+  gap: 10px;          /* space between title + subtitle */
+  margin-bottom: 30px; /* space before content below */
+}
+
+.sectionTitle h2{
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.1;
+}
+
+.sectionTitle .muted{
+  font-size: 15px;
+  line-height: 1.5;
+  opacity: .75;
+}
+
+.muted{ color: var(--muted); }
+.accent{ color: var(--accent); }
+.warn{ color: var(--warn); }
+.hidden{ display:none !important; }
+
+/* inputs/buttons */
+.lbl{ display:block; margin: 10px 0 8px; color: var(--muted); }
+
+.input, .select{
+  width:100%;
+  padding: 14px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: rgba(3,6,14,.65);
+  color: var(--text);
+  outline: none;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
+}
+
+.input:focus, .select:focus{
+  border-color: var(--accentBorder);
+  box-shadow: 0 0 0 3px rgba(0,0,0,0), 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.btn{
+  border: 1px solid var(--line2);
+  background: rgba(6, 10, 18, .55);
+  color: var(--text);
+  border-radius: 18px;
+  padding: 12px 14px;
+  cursor:pointer;
+  transition: transform .06s ease, box-shadow .18s ease, border-color .18s ease;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.18);
+}
+
+.btn.sm{
+  padding: 10px 12px;
+  border-radius: 16px;
+  font-size: 14px;
+}
+
+.btn:hover{
+  border-color: var(--accentBorder);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent), 0 14px 40px rgba(0,0,0,.35);
+}
+
+.btn:active{ transform: translateY(1px); }
+
+.btn.full{ width:100%; margin-top: 10px; }
+
+/* icon button (header) */
+.iconBtn{
+  width: 64px;
+  height: 46px;
+  display:grid;
+  place-items:center;
+  padding: 0;
+}
+
+.btn.active{
+  border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent), 0 18px 55px rgba(0,0,0,.35);
+  background:
+    radial-gradient(circle at 10% 10%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 55%),
+    radial-gradient(circle at 90% 90%, color-mix(in srgb, var(--accent2) 20%, transparent), transparent 60%),
+    rgba(10, 16, 34, .72);
+}
+
+.filters{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 10px;
+}
+@media (max-width: 720px){
+  .filters{ grid-template-columns: 1fr; }
+}
+
+.lblRow{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap: 10px;
+}
+
+input[type="range"]{
+  width:100%;
+  accent-color: var(--accent);
+}
+
+/* Suggestions dropdown */
+.suggest{
+  margin-top: 8px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(6,10,18,.78);
+  box-shadow: var(--shadow);
+  overflow:hidden;
+}
+
+.suggestItem{
+  width:100%;
+  display:flex;
+  justify-content:space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid rgba(120,170,255,.12);
+  background: transparent;
+  color: var(--text);
+  cursor:pointer;
+}
+.suggestItem:hover{ background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.suggestItem:last-child{ border-bottom:0; }
+
+/* Target / Similar */
+.targetBox{
+  border-radius: 18px;
+  padding: 14px;
+  border: 1px solid rgba(120,170,255,.16);
+  background: rgba(6,10,18,.55);
+}
+
+/* ✅ grid stays 2-col, but overview spans FULL width below */
+.targetGrid{
+  display:grid;
+  grid-template-columns: 130px 1fr;
+  gap: 14px;
+  align-items:start;
+}
+
+.poster{
+  width: 130px;
+  height: 190px;
+  border-radius: 18px;
+  object-fit: cover;
+  border: 1px solid rgba(120,170,255,.22);
+  box-shadow: 0 14px 40px rgba(0,0,0,.45);
+}
+
+.poster.placeholder{
+  background: rgba(255,255,255,.06);
+  border: 1px dashed rgba(120,170,255,.20);
+  box-shadow: none;
+}
+
+/* title row + rating */
+.titleRow{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.title{
+  font-weight: 900;
+  letter-spacing: .02em;
+  font-size: 28px;
+  min-width: 0;
+}
+
+.pill{
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  padding: 10px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+/* ✅ genres BELOW title row (left) */
+.genresRow{
+  margin-top: 10px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ✅ genres/type under poster area */
+.metaRow{
+  grid-column: 1 / -1;
+  margin-top: 10px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.genresText{
+  color: rgba(231,236,255,.75);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: .01em;
+}
+
+.typeText{
+  font-size: 13px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+/* ✅ overview under poster + spacing */
+.overviewBlock{
+  grid-column: 1 / -1;
+  margin-top: 10px;
+  padding-top: 8px;
+}
+
+.overviewText{
+  color: rgba(231,236,255,.78);
+  line-height: 1.55;
+  font-size: 18px;
+  margin-top: 4px;
+}
+
+/* clamp with CSS variable */
+.overviewText.clamp{
+  display: -webkit-box;
+  -webkit-line-clamp: var(--clamp, 4);
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.overviewText.expanded{
+  display:block;
+  -webkit-line-clamp: initial;
+  overflow: visible;
+}
+
+/* read more button */
+.linkBtn{
+  margin-top: 10px;
+  background: transparent;
+  border-color: rgba(120,170,255,.18);
+}
+.linkBtn:hover{
+  border-color: var(--accentBorder);
+}
+
+/* Similar card */
+.simCard{
+  width: 100%;
+  text-align: left;
+  border-radius: 18px;
+  border: 1px solid rgba(120,170,255,.18);
+  background: rgba(6,10,18,.58);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.18);
+  padding: 14px;
+  transition: transform .06s ease, border-color .18s ease, box-shadow .18s ease;
+  overflow: hidden;
+}
+
+.simCard:hover{
+  border-color: var(--accentBorder);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent), 0 18px 55px rgba(0,0,0,.4);
+}
+
+/* ✅ centered buttons */
+.actions,
+.simActions{
+  display:flex;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+}
+
+.actions .btn,
+.simActions .btn{
+  flex: 1 1 160px;
+  max-width: 100%;
+  text-align:center;
+}
+
+/* mini trailer */
+.miniTrailer{
+  margin-top: 14px;
+  border-radius: 18px;
+  overflow:hidden;
+  border: 1px solid rgba(120,170,255,.18);
+  box-shadow: var(--shadow);
+}
+.miniTrailer iframe{
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  display: block;
+}
+
+/* Target trailer */
+.trailer{
+  margin-top: 14px;
+  border-radius: 18px;
+  overflow:hidden;
+  border: 1px solid rgba(120,170,255,.18);
+  box-shadow: var(--shadow);
+}
+.trailer iframe{
+  width:100%;
+  aspect-ratio:16 / 9;
+  border:0;
+  display:block;
+}
+
+/* Chips */
+.chips{
+  display:flex;
+  flex-direction:column;
+  gap: 14px;
+}
+
+.chip{
+  width:100%;
+  text-align:left;
+  border-radius: 18px;
+  border: 1px solid rgba(120,170,255,.18);
+  background: rgba(6,10,18,.55);
+  padding: 12px 14px;
+  cursor:pointer;
+  transition: border-color .18s ease, box-shadow .18s ease, transform .06s ease;
+}
+.chip:hover{
+  border-color: var(--accentBorder);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent), 0 18px 55px rgba(0,0,0,.35);
+}
+.chip:active{ transform: translateY(1px); }
+.chipTitle{ display:block; font-weight: 800; margin-bottom: 6px; }
+.chipMeta{ display:block; color: var(--muted); font-size: 13px; }
+
+/* Mobile tweaks */
+@media (max-width: 520px){
+  h2{ font-size: 30px; }
+  .title{ font-size: 24px; }
+  .targetGrid{ grid-template-columns: 110px 1fr; }
+  .poster{ width: 110px; height: 165px; }
+  .genresText{ font-size: 16px; }
+
+  .titleRow{ flex-direction: column; align-items: flex-start; }
+  .pill{ margin-left: 0; }
+
+}
+@media (max-width: 420px){
+  .actions .btn,
+  .simActions .btn{ flex: 1 1 100%; width:100%; }
+}
+
+/* Popular grid (compact) */
+.laneTitle{
+  margin: 18px 0 10px;
+  font-size: 18px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.popGrid{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.popCard{
+  border: 1px solid rgba(120,170,255,.18);
+  background: rgba(6,10,18,.58);
+  border-radius: 16px;
+  padding: 10px;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.18);
+  transition: transform .06s ease, border-color .18s ease, box-shadow .18s ease;
+  display:flex;
+  flex-direction:column;
+  gap: 8px;
+  width:100%;
+  max-width:100%;
+}
+.popCard:hover{
+  border-color: var(--accentBorder);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent), 0 18px 55px rgba(0,0,0,.4);
+}
+.popPoster{
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid rgba(120,170,255,.18);
+  display:block;
+}
+.popTitle{
+  font-size: 12px;
+  line-height: 1.25;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+@media (min-width: 560px){
+  .popGrid{ grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .popTitle{ font-size: 13px; }
+}
+@media (min-width: 860px){
+  .popGrid{ grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+
+/* Footer */
+.foot{ padding: 14px 4px 0; text-align:center; }
+
+/* Modal */
+.modal{
+  position:fixed;
+  inset:0;
+  background: rgba(0,0,0,.55);
+  display:grid;
+  place-items:center;
+  padding: 16px;
+  z-index: 100;
+}
+.modalCard{
+  width:min(760px, 100%);
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: rgba(6,10,18,.82);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow2);
+  padding: 16px;
+}
+.modalTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.watchlist{
+  display:flex;
+  flex-direction:column;
+  gap: 12px;
+}
+.watchItem{
+  display:flex;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid rgba(120,170,255,.14);
+  border-radius: 18px;
+  background: rgba(10,14,28,.55);
+}
+.watchPoster{
+  width: 54px;
+  height: 78px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid rgba(120,170,255,.18);
+}
+.watchMeta{ color: var(--muted); margin-top: 6px; }
+
 
 /* -----------------------------
-   Mode / Highlighting
+   Theme picker (header)
 ------------------------------*/
-let activeMode = "none"; // none | random | tv | movie | watchlist
-let mediaFilter = "any"; // any | tv | movie
-
-function setActiveMode(mode) {
-  activeMode = mode;
-  [els.watchlistBtn, els.randomBtn, els.tvOnlyBtn, els.movieOnlyBtn].forEach((b) => b?.classList.remove("active"));
-
-  if (mode === "watchlist") els.watchlistBtn?.classList.add("active");
-  if (mode === "random") els.randomBtn?.classList.add("active");
-  if (mode === "tv") els.tvOnlyBtn?.classList.add("active");
-  if (mode === "movie") els.movieOnlyBtn?.classList.add("active");
+.themeWrap{
+  width: 100%;
+  margin-top: 4px; /* closer to the 4 icon buttons */
+  position: relative;
 }
 
-function asType(x, fallback = "movie") {
-  const t = String(x || fallback).toLowerCase();
-  return t === "tv" ? "tv" : "movie";
+.themeBtn{
+  width: 100%;
+  height: 46px;           /* same height as icon buttons */
+  border-radius: 18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap: 8px;
+  font-weight: 800;
+  letter-spacing: .06em;
 }
 
-function safeUpper(x) {
-  return String(x || "").toUpperCase();
+.themeBtn .caret{
+  opacity: .7;
+  font-size: 14px;
+  transform: translateY(1px);
 }
+
+.themeMenu{
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 8px);
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(6,10,18,.90);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow2);
+  overflow: hidden;
+  z-index: 80;
+}
+
+.themeItem{
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.themeItem:hover{
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.themeItem + .themeItem{
+  border-top: 1px solid rgba(120,170,255,.12);
+}
+
+/* Accent-colored titles under posters (Popular + Watchlist) */
+.popTitle{
+  color: var(--accent);
+}
+.popTitle .muted{
+  color: var(--muted);
+}
+
+
 
 /* -----------------------------
-   Helpers
+   Theme palettes (full site)
 ------------------------------*/
-function esc(s = "") {
-  return String(s).replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  }[c]));
+body.theme-blue{
+  --accent:#22d3ee;
+  --accent2:#7c3aed;
+  --hot:#ff2bd6;
+  --warn:#ff4d6d;
+
+  --glowA: rgba(124,58,237,.22);
+  --glowB: rgba(34,211,238,.18);
+  --glowC: rgba(255,43,214,.10);
+
+  --line: rgba(120, 170, 255, .18);
+  --line2: rgba(120, 170, 255, .28);
+  --card: rgba(10, 14, 28, .62);
+}
+body.theme-red{
+  --accent:#ff4d6d;
+  --accent2:#ff2bd6;
+  --hot:#ff2bd6;
+  --warn:#ffb020;
+
+  --glowA: rgba(255,77,109,.22);
+  --glowB: rgba(255,43,214,.14);
+  --glowC: rgba(255,77,109,.08);
+
+  --line: rgba(255, 120, 150, .18);
+  --line2: rgba(255, 120, 150, .30);
+  --card: rgba(20, 10, 18, .62);
+}
+body.theme-green{
+  --accent:#22c55e;
+  --accent2:#16a34a;
+  --hot:#22d3ee;
+  --warn:#ffb020;
+
+  --glowA: rgba(34,197,94,.18);
+  --glowB: rgba(22,163,74,.12);
+  --glowC: rgba(34,211,238,.06);
+
+  --line: rgba(120, 255, 190, .16);
+  --line2: rgba(120, 255, 190, .28);
+  --card: rgba(8, 18, 12, .62);
+}
+body.theme-purple{
+  --accent:#a855f7;
+  --accent2:#7c3aed;
+  --hot:#ff2bd6;
+  --warn:#ff4d6d;
+
+  --glowA: rgba(168,85,247,.22);
+  --glowB: rgba(124,58,237,.16);
+  --glowC: rgba(255,43,214,.08);
+
+  --line: rgba(195, 150, 255, .18);
+  --line2: rgba(195, 150, 255, .30);
+  --card: rgba(14, 8, 20, .62);
 }
 
-function fmtRating(r) {
-  const n = Number(r);
-  if (!Number.isFinite(n)) return "—";
-  return n.toFixed(1);
+
+/* ===== Watchlist Modal Fixes ===== */
+.modal { overscroll-behavior: contain; }
+.watchlist {
+  max-height: 70vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.btn.delete {
+  color: #ff4d4d;
+  border-color: rgba(255,77,77,.6);
+}
+.undoBar {
+  margin-top: 10px;
+  text-align: center;
+}
+/* =========================
+   WATCHLIST BUTTON UNIFORM SIZE
+========================= */
+/* ===== Watchlist button consistency ===== */
+.watchItem .btn,
+.modalTop .btn,
+.undoBar .btn {
+  min-width: 80px;
+  height: 36px;
+  padding: 0 14px;
+  font-size: 14px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-function fmtYear(y) {
-  return y ? `(${esc(y)})` : "";
+/* Keep delete buttons red */
+.btn.delete {
+  border-color: #ff4d4d;
+  color: #ff4d4d;
 }
 
-function pick(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
+.btn.delete:hover {
+  background: rgba(255, 77, 77, 0.12);
 }
 
-function setMeta(msg, isError = false) {
-  if (!els.meta) return;
-  els.meta.textContent = msg;
-  els.meta.classList.toggle("muted", !isError);
-  els.meta.classList.toggle("warn", isError);
+/* Undo button same size but neutral */
+.undoBar .btn {
+  min-width: 80px;
 }
 
-function getFilters() {
-  const minRating = Number(els.minRating?.value || 0) || 0;
-  const genre = String(els.genre?.value || "any").trim().toLowerCase();
-  return { minRating, genre };
+/* Clear + Close alignment */
+.modalTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+/* =========================
+   WATCH PROVIDERS DROPDOWN (CA) — Target + Similar + Watchlist
+   Put this at the VERY BOTTOM of styles.css
+========================= */
+
+.watchDropdown{
+  position: relative;
+  margin-top: 10px;
+  width: 100%;
 }
 
-function clearLists() {
-  if (els.results) els.results.innerHTML = `<div class="muted">No similar titles found (try another title).</div>`;
-  if (els.matches) {
-    els.matches.innerHTML = "";
-    els.matches.classList.add("hidden");
+/* dropdown panel */
+.watchMenu{
+  border: 1px solid rgba(120,170,255,.20);
+  background: rgba(6,10,18,.92);
+  border-radius: 18px;
+  padding: 10px;
+  box-shadow: 0 18px 55px rgba(0,0,0,.45);
+  display: grid;
+  gap: 8px;
+}
+
+/* each provider link */
+.watchItem{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  padding: 12px 14px;
+  border-radius: 16px;
+
+  text-decoration: none;
+  color: var(--text);
+
+  border: 1px solid rgba(120,170,255,.14);
+  background: rgba(255,255,255,.06);
+}
+
+.watchItem:hover{
+  border-color: var(--accentBorder);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/* "not available" message */
+.watchEmpty{
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px dashed rgba(120,170,255,.18);
+  background: rgba(255,255,255,.05);
+  color: var(--muted);
+}
+
+/* keep action rows consistent when adding Watch */
+.targetActions,
+.simActions{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  width: 100%;
+}
+
+.targetActions .btn,
+.simActions .btn{
+  flex: 1 1 160px;
+  max-width: 100%;
+  text-align: center;
+}
+
+/* mobile: stack buttons */
+@media (max-width: 420px){
+  .targetActions .btn,
+  .simActions .btn{
+    flex: 1 1 100%;
+    width: 100%;
   }
 }
-
-/* -----------------------------
-   apiGet with timeout
-------------------------------*/
-async function apiGet(path, params = {}, timeoutMs = 12000) {
-  const url = new URL(`${location.origin}${API_BASE}${path}`);
-  for (const [k, v] of Object.entries(params)) {
-    if (v === undefined || v === null || v === "") continue;
-    url.searchParams.set(k, String(v));
-  }
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-  let res, text;
-  try {
-    res = await fetch(url.toString(), {
-      headers: { Accept: "application/json" },
-      signal: controller.signal
-    });
-    text = await res.text();
-  } finally {
-    clearTimeout(timer);
-  }
-
-  let json;
-  try { json = text ? JSON.parse(text) : {}; }
-  catch { json = { error: text || "Invalid JSON" }; }
-
-  if (!res.ok) {
-    let msg = json?.error ?? json?.message ?? `${res.status} ${res.statusText}`;
-    if (typeof msg === "object") {
-      try { msg = JSON.stringify(msg); } catch { msg = "Server error"; }
-    }
-    const err = new Error(String(msg));
-    err.status = res.status;
-    err.body = json;
-    throw err;
-  }
-
-  return json;
-}
-
-/* -----------------------------------------------------------
-   SECTION A: Helpers (place right after apiGet())
------------------------------------------------------------*/
-
-async function fetchWatchProviders(id, type) {
-  try {
-    const r = await apiGet("/api/providers", { id, type: asType(type) });
-    if (!r) return { providers: [], link: null };
-
-    const all = [
-  ...(r.flatrate || []), // streaming first
-  ...(r.free || []),
-  ...(r.ads || []),
-  ...(r.rent || []),
-  ...(r.buy || [])
-];
-
-    const seen = new Set();
-    const providers = all.filter(p => {
-      const pid = p?.provider_id ?? p?.provider_name;
-      if (!pid || seen.has(pid)) return false;
-      seen.add(pid);
-      return true;
-    });
-
-    return { providers, link: r.link || null };
-  } catch {
-    return { providers: [], link: null };
-  }
-}
-function closeAllWatchDropdowns(root = document) {
-  root.querySelectorAll(".watchDropdown").forEach((d) => d.remove());
-}
-
-function renderWatchMenu(data) {
-  const { providers, link } = data || {};
-
-  if (!Array.isArray(providers) || providers.length === 0) {
-    return `<div class="watchEmpty">Not streaming in Canada</div>`;
-  }
-
-  const safeLink = link ? esc(link) : "#";
-
-  return `
-    <div class="watchMenu">
-      ${providers.map(p => `
-        <a href="${safeLink}"
-           target="_blank"
-           rel="noopener"
-           class="watchItem">
-          ${esc(p.provider_name)}
-        </a>
-      `).join("")}
-    </div>
-  `;
-}
-
-function toggleWatchDropdown(anchorBtn, html) {
-  if (!anchorBtn) return;
-
-  const scope = anchorBtn.closest(".simCard, .watchItem, .targetActions") || document.body;
-
-  // Remove existing dropdowns in this scope
-  scope.querySelectorAll(".watchDropdown").forEach((d) => d.remove());
-
-  const box = document.createElement("div");
-  box.className = "watchDropdown";
-  box.innerHTML = html;
-
-  anchorBtn.after(box);
-
-  // click outside closes
-  const onDoc = (e) => {
-    if (box.contains(e.target) || anchorBtn.contains(e.target)) return;
-    box.remove();
-    document.removeEventListener("click", onDoc, true);
-  };
-  document.addEventListener("click", onDoc, true);
-}
-
-/* -----------------------------
-   Trailer helpers
-------------------------------*/
-function renderTrailerEmbed(key) {
-  if (!els.trailer) return;
-  if (!key) {
-    els.trailer.classList.add("hidden");
-    els.trailer.innerHTML = "";
-    return;
-  }
-  const src = `https://www.youtube.com/embed/${encodeURIComponent(key)}`;
-  els.trailer.innerHTML =
-    `<iframe loading="lazy" src="${src}" title="Trailer" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-  els.trailer.classList.remove("hidden");
-}
-
-async function fetchTrailerKey(id, type) {
-  const data = await apiGet("/api/videos", { id, type: asType(type) });
-  return data?.key || "";
-}
-
-/* -----------------------------
-   Read-more toggle
-------------------------------*/
-function makeReadMoreHTML(fullText = "", clampLines = 4) {
-  const t = String(fullText || "").trim();
-  if (!t) return { html: `<div class="overviewText muted">No description available.</div>`, hasToggle: false };
-
-  const safe = esc(t);
-  return {
-    html: `
-      <div class="overviewText clamp" style="--clamp:${clampLines}" data-full="${safe}">${safe}</div>
-      <button class="btn linkBtn readMoreBtn" type="button">Read more</button>
-    `,
-    hasToggle: true
-  };
-}
-
-function wireReadMore(rootEl) {
-  if (!rootEl) return;
-  rootEl.querySelectorAll(".readMoreBtn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const box = btn.closest(".overviewBlock");
-      const textEl = box?.querySelector(".overviewText");
-      if (!textEl) return;
-
-      const expanded = textEl.classList.toggle("expanded");
-      btn.textContent = expanded ? "Show less" : "Read more";
-    });
-  });
-}
-
-/* -----------------------------------------------------------
-   SECTION B: renderTarget() (FULL REPLACE)
------------------------------------------------------------*/
-
-function renderTarget(m) {
-  if (!els.target) return;
-  renderTrailerEmbed("");
-
-  if (!m) {
-    els.target.innerHTML = `<div class="muted">No selection yet.</div>`;
-    els.targetActions?.classList.add("hidden");
-    setMeta("Ready.", false);
-    return;
-  }
-
-  const type = asType(m.type, "movie");
-
-  const poster = m.poster
-    ? `<img class="poster" src="${esc(m.poster)}" alt="${esc(m.title)} poster" />`
-    : `<div class="poster placeholder"></div>`;
-
-  const genres = Array.isArray(m.genres)
-    ? m.genres.map((g) => genreNameById.get(Number(g)) || "").filter(Boolean).join(", ")
-    : "";
-
-  const overviewBits = makeReadMoreHTML(m.overview || "", 5);
-
-  els.target.innerHTML = `
-    <div class="targetGrid">
-      ${poster}
-
-      <div class="targetInfo">
-        <div class="titleRow">
-          <div class="title">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
-          <div class="pill">⭐ ${esc(fmtRating(m.rating))}</div>
-        </div>
-      </div>
-
-      <div class="metaRow">
-        <div class="genresText">${esc(genres || "—")}</div>
-        <div class="typeText muted">${esc(safeUpper(type))}</div>
-      </div>
-
-      <div class="overviewBlock">
-        ${overviewBits.html}
-
-        <div class="targetActions">
-          <button id="addWatch" class="btn sm" type="button">Add</button>
-          <button id="watchNow" class="btn sm" type="button">Watch</button>
-          <button id="copyLink" class="btn sm" type="button">Share</button>
-          <button id="openImdb" class="btn sm" type="button">TMDb</button>
-        </div>
-      </div>
-    </div>
-  `;
-
-  wireReadMore(els.target);
-
-  // wire target action buttons
-  const btnAdd = document.getElementById("addWatch");
-  const btnWatch = document.getElementById("watchNow");
-  const btnShare = document.getElementById("copyLink");
-  const btnTmdb = document.getElementById("openImdb");
-
-  if (btnTmdb) {
-    btnTmdb.onclick = () => {
-      window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(m.id)}`, "_blank");
-    };
-  }
-
-  if (btnShare) {
-    btnShare.onclick = async () => {
-      try {
-        const u = new URL(location.href);
-        u.searchParams.set("id", String(m.id));
-        u.searchParams.set("type", type);
-        await navigator.clipboard.writeText(u.toString());
-        alert("Link copied ✅");
-      } catch {
-        alert("Copy failed (browser blocked clipboard).");
-      }
-    };
-  }
-
-  if (btnAdd) {
-    btnAdd.onclick = () => addToWatchlist({ ...m, type });
-  }
-
-  if (btnWatch) {
-    btnWatch.onclick = async (e) => {
-      e.preventDefault();
-      closeAllWatchDropdowns(document);
-
-      const { providers, link } = await fetchWatchProviders(m.id, type);
-      toggleWatchDropdown(btnWatch, renderWatchMenu({ providers, link }));
-    };
-  }
-
-  // trailer
-  (async () => {
-    try {
-      const key = m.trailerKey || (await fetchTrailerKey(m.id, type));
-      renderTrailerEmbed(key);
-    } catch {
-      renderTrailerEmbed("");
-    }
-  })();
-
-  setMeta(`Selected: ${m.title}`, false);
-}
-
-/* -----------------------------------------------------------
-   SECTION C: renderSimilar() (FULL REPLACE)
------------------------------------------------------------*/
-
-function renderSimilar(items) {
-  const list = (items || []).filter(Boolean).slice(0, 20);
-  if (!els.results) return;
-
-  if (!list.length) {
-    els.results.innerHTML = `<div class="muted">No similar titles found (try another title).</div>`;
-    return;
-  }
-
-  els.results.innerHTML = list
-    .map((m) => {
-      const type = asType(m.type, "movie");
-
-      const poster = m.poster
-        ? `<img class="poster" src="${esc(m.poster)}" loading="lazy" alt="${esc(m.title)} poster" />`
-        : `<div class="poster placeholder"></div>`;
-
-      const genres = Array.isArray(m.genres)
-        ? m.genres
-            .map((g) => genreNameById.get(Number(g)) || "")
-            .filter(Boolean)
-            .slice(0, 4)
-            .join(", ")
-        : "";
-
-      const overviewBits = makeReadMoreHTML(m.overview || "", 4);
-
-      return `
-        <div class="simCard" data-id="${esc(m.id)}" data-type="${esc(type)}">
-          <div class="targetGrid">
-            ${poster}
-
-            <div class="targetInfo">
-              <div class="titleRow">
-                <div class="title">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
-                <div class="pill">⭐ ${esc(fmtRating(m.rating))}</div>
-              </div>
-            </div>
-
-            <div class="metaRow">
-              <div class="genresText">${esc(genres || "—")}</div>
-              <div class="typeText muted">${esc(safeUpper(type))}</div>
-            </div>
-
-            <div class="overviewBlock">
-              ${overviewBits.html}
-
-              <div class="simActions">
-                <button class="btn sm openBtn" type="button">Open</button>
-                <button class="btn sm watchBtn" type="button">Watch</button>
-                <button class="btn sm trailerBtn" type="button">Trailer</button>
-                <button class="btn sm tmdbBtn" type="button">TMDb</button>
-              </div>
-
-              <div class="miniTrailer hidden"></div>
-            </div>
-          </div>
-        </div>
-      `;
-    })
-    .join("");
-
-  wireReadMore(els.results);
-
-  els.results.querySelectorAll(".simCard").forEach((card) => {
-    const id = card.getAttribute("data-id");
-    const type = asType(card.getAttribute("data-type") || "movie", "movie");
-
-    const openBtn = card.querySelector(".openBtn");
-    const watchBtn = card.querySelector(".watchBtn");
-    const trailerBtn = card.querySelector(".trailerBtn");
-    const tmdbBtn = card.querySelector(".tmdbBtn");
-    const mini = card.querySelector(".miniTrailer");
-
-    openBtn?.addEventListener("click", () => loadById(id, type));
-
-    tmdbBtn?.addEventListener("click", () =>
-      window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(id)}`, "_blank")
-    );
-
-    watchBtn?.addEventListener("click", async (e) => {
-      e.preventDefault();
-      const { providers, link } = await fetchWatchProviders(id, type);
-      toggleWatchDropdown(watchBtn, renderWatchMenu({ providers, link }));
-    });
-
-    trailerBtn?.addEventListener("click", async () => {
-      try {
-        trailerBtn.disabled = true;
-        const showing = !mini.classList.contains("hidden");
-
-        if (showing) {
-          mini.classList.add("hidden");
-          mini.innerHTML = "";
-          trailerBtn.textContent = "Trailer";
-          return;
-        }
-
-        trailerBtn.textContent = "Loading…";
-        const key = await fetchTrailerKey(id, type);
-
-        if (!key) {
-          alert("No trailer found.");
-          trailerBtn.textContent = "Trailer";
-          return;
-        }
-
-        mini.innerHTML = `<iframe loading="lazy" src="https://www.youtube.com/embed/${encodeURIComponent(
-          key
-        )}" title="Trailer" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-        mini.classList.remove("hidden");
-        trailerBtn.textContent = "Hide trailer";
-      } catch (e) {
-        alert(`Trailer failed: ${e.message}`);
-        trailerBtn.textContent = "Trailer";
-      } finally {
-        trailerBtn.disabled = false;
-      }
-    });
-  });
-}
-
-/* -----------------------------
-   Suggestions
-------------------------------*/
-function renderSuggestions(items) {
-  const list = (items || []).slice(0, 10);
-  if (!els.suggest) return;
-
-  if (!list.length) {
-    els.suggest.innerHTML = "";
-    els.suggest.classList.add("hidden");
-    return;
-  }
-
-  els.suggest.classList.remove("hidden");
-  els.suggest.innerHTML = list.map((m) => {
-    const type = asType(m.type, "movie");
-    return `
-      <button class="suggestItem" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">
-        <span>${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></span>
-        <span class="muted">${esc(safeUpper(type))}</span>
-      </button>
-    `;
-  }).join("");
-
-  els.suggest.querySelectorAll(".suggestItem").forEach((b) => {
-    b.addEventListener("click", async () => {
-      const id = b.getAttribute("data-id");
-      const type = asType(b.getAttribute("data-type") || "movie", "movie");
-      els.suggest.classList.add("hidden");
-      if (id) await loadById(id, type);
-    });
-  });
-}
-
-/* -----------------------------
-   Search matches (chips)
-------------------------------*/
-function renderMatches(items) {
-  if (!els.matches) return;
-
-  const filtered = (items || []).filter(Boolean).filter((m) => {
-    if (mediaFilter === "any") return true;
-    return asType(m.type, "movie") === mediaFilter;
-  });
-
-  const list = filtered.slice(0, 10);
-
-  if (!list.length) {
-    els.matches.innerHTML = "";
-    els.matches.classList.add("hidden");
-    return;
-  }
-
-  els.matches.classList.remove("hidden");
-  els.matches.innerHTML = list.map((m) => {
-    const type = asType(m.type, "movie");
-    return `
-      <button class="chip" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">
-        <span class="chipTitle">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></span>
-        <span class="chipMeta">${esc(safeUpper(type))} • ⭐ ${esc(fmtRating(m.rating))}</span>
-      </button>
-    `;
-  }).join("");
-
-  els.matches.querySelectorAll(".chip").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-id");
-      const type = asType(btn.getAttribute("data-type") || "movie", "movie");
-      if (id) loadById(id, type);
-    });
-  });
-}
-
-/* -----------------------------
-   Suggest input handler
-------------------------------*/
-let suggestTimer = null;
-function onSuggestInput() {
-  clearTimeout(suggestTimer);
-  const q = (els.q?.value || "").trim();
-
-  if (q.length < 2) {
-    renderSuggestions([]);
-    return;
-  }
-
-  suggestTimer = setTimeout(async () => {
-    try {
-      const data = await apiGet("/api/suggest", { q });
-      const raw = data.results || data.items || [];
-      const filtered = raw.filter((m) => {
-        if (mediaFilter === "any") return true;
-        return asType(m.type, "movie") === mediaFilter;
-      });
-      renderSuggestions(filtered);
-    } catch {
-      renderSuggestions([]);
-    }
-  }, 160);
-}
-
-/* -----------------------------
-   Core: Load by id
-------------------------------*/
-async function loadById(id, type = "movie") {
-  clearLists();
-  setMeta("Loading…", false);
-
-  try {
-    const t = asType(type, "movie");
-    const r = await apiGet("/api/resolve", { id, type: t });
-    const target = r.target || r;
-    if (!target?.id) throw new Error("Resolve did not return a target id.");
-
-    const targetType = asType(target.type || t, t);
-    renderTarget({ ...target, type: targetType });
-
-    const f = getFilters();
-    const sim = await apiGet("/api/similar", {
-      id: target.id,
-      type: targetType,
-      minRating: f.minRating,
-      genre: f.genre,
-      yearMin: YEAR_MIN
-    });
-
-    renderSimilar(sim.similar || sim.results || []);
-  } catch (e) {
-    renderTarget(null);
-    clearLists();
-    setMeta(`Failed. (API ${e.status || "?"} – ${e.message})`, true);
-  }
-}
-
-/* -----------------------------
-   Search
-------------------------------*/
-async function doSearch() {
-  const q = (els.q?.value || "").trim();
-  if (!q) return;
-
-  clearLists();
-  setMeta("Searching…", false);
-
-  try {
-    const data = await apiGet("/api/search", { q });
-    const items = data.items || data.results || [];
-
-    renderMatches(items);
-
-    const filtered = items.filter((m) => {
-      if (mediaFilter === "any") return true;
-      return asType(m.type, "movie") === mediaFilter;
-    });
-
-    const first = data.target || filtered[0] || null;
-    if (!first?.id) {
-      renderTarget(null);
-      setMeta("No match found.", true);
-      return;
-    }
-
-    await loadById(first.id, asType(first.type, "movie"));
-  } catch (e) {
-    renderTarget(null);
-    clearLists();
-    setMeta(`Search failed. (API ${e.status || "?"} – ${e.message})`, true);
-  }
-}
-
-/* -----------------------------
-   Watchlist Logic
-------------------------------*/
-const WL_KEY = "filmmatrix_watchlist_v2";
-let lastDeletedWatchItem = null;
-
-function loadWatchlist() {
-  try { return JSON.parse(localStorage.getItem(WL_KEY) || "[]"); }
-  catch { return []; }
-}
-
-function saveWatchlist(items) {
-  localStorage.setItem(WL_KEY, JSON.stringify(items.slice(0, 200)));
-}
-
-function addToWatchlist(m) {
-  if (!m) return;
-  const type = asType(m.type, "movie");
-  const list = loadWatchlist();
-  if (list.some((x) => String(x.id) === String(m.id) && asType(x.type, "movie") === type)) return;
-  list.unshift({ id: m.id, type, title: m.title, year: m.year, rating: m.rating, poster: m.poster });
-  saveWatchlist(list);
-  alert("Added to Watchlist ✅");
-}
-
-/* -----------------------------------------------------------
-   SECTION D: openWatchlist() (FULL REPLACE)
------------------------------------------------------------*/
-
-function openWatchlist() {
-  const list = loadWatchlist();
-  if (!els.watchlist) return;
-
-  els.watchlist.innerHTML = list.length
-    ? list
-        .map((m) => {
-          const type = asType(m.type, "movie");
-          return `
-            <div class="watchItem">
-              ${m.poster ? `<img class="watchPoster" src="${esc(m.poster)}" alt="" />` : ""}
-              <div>
-                <div>
-                  <strong>${esc(m.title || "")}</strong>
-                  <span class="muted"> ${fmtYear(m.year)}</span>
-                  <span class="muted"> (${esc(safeUpper(type))})</span>
-                </div>
-                <div class="watchMeta">⭐ ${esc(fmtRating(m.rating))}</div>
-
-                <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
-                  <button class="btn sm" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">Open</button>
-
-                  <button class="btn sm watchBtn" type="button" data-watch-id="${esc(m.id)}" data-watch-type="${esc(
-            type
-          )}">Watch</button>
-
-                  <button class="btn sm delete" type="button" data-del-id="${esc(m.id)}" data-del-type="${esc(
-            type
-          )}">Delete</button>
-                </div>
-              </div>
-            </div>
-          `;
-        })
-        .join("")
-    : `<div class="muted">No watchlist items yet.</div>`;
-
-  // Open
-  els.watchlist.querySelectorAll("button[data-id]").forEach((b) => {
-    b.addEventListener("click", () => {
-      const id = b.getAttribute("data-id");
-      const type = asType(b.getAttribute("data-type") || "movie", "movie");
-      closeWatchlist();
-      loadById(id, type);
-    });
-  });
-
-  // Delete
-  els.watchlist.querySelectorAll("button[data-del-id]").forEach((b) => {
-    b.addEventListener("click", () => {
-      const id = b.getAttribute("data-del-id");
-      const type = asType(b.getAttribute("data-del-type") || "movie", "movie");
-      deleteFromWatchlist(id, type);
-    });
-  });
-
-  // Watch
-  els.watchlist.querySelectorAll("button[data-watch-id]").forEach((b) => {
-    b.addEventListener("click", async (e) => {
-      e.preventDefault();
-      const id = b.getAttribute("data-watch-id");
-      const type = asType(b.getAttribute("data-watch-type") || "movie", "movie");
-      const { providers, link } = await fetchWatchProviders(id, type);
-      toggleWatchDropdown(b, renderWatchMenu({ providers, link }));
-    });
-  });
-
-  els.modal?.classList.remove("hidden");
-}
-
-/* -----------------------------
-   Popular Feed (50 + 50)
-------------------------------*/
-let popularCache = { movies: [], tv: [] };
-let popularLoadedOnce = false;
-
-async function fetchPopularPagesTo50() {
-  const moviesOut = [];
-  const tvOut = [];
-
-  for (let page = 1; page <= 4; page++) {
-    const data = await apiGet("/api/popular", { page });
-
-    const m = Array.isArray(data.movies) ? data.movies : [];
-    const t = Array.isArray(data.tv) ? data.tv : [];
-
-    moviesOut.push(...m.map(x => ({ ...x, type: "movie" })));
-    tvOut.push(...t.map(x => ({ ...x, type: "tv" })));
-
-    if (moviesOut.length >= POPULAR_COUNT && tvOut.length >= POPULAR_COUNT) break;
-  }
-
-  return {
-    movies: moviesOut.filter(x => x && x.id).slice(0, POPULAR_COUNT),
-    tv: tvOut.filter(x => x && x.id).slice(0, POPULAR_COUNT),
-  };
-}
-
-function renderPopularGrid(container, items) {
-  if (!container) return;
-
-  const list = (items || []).filter(Boolean).slice(0, POPULAR_COUNT);
-  if (!list.length) {
-    container.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
-    return;
-  }
-
-  container.innerHTML = `
-    <div class="popGrid">
-      ${list.map((m) => {
-        const type = asType(m.type || m.media_type, "movie");
-        const poster = m.poster
-          ? `<img class="popPoster" src="${esc(m.poster)}" loading="lazy" alt="${esc(m.title)} poster" />`
-          : `<div class="popPoster placeholder"></div>`;
-
-        return `
-          <button class="popCard" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">
-            ${poster}
-            <div class="popTitle">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
-          </button>
-        `;
-      }).join("")}
-    </div>
-  `;
-
-  container.querySelectorAll(".popCard").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-id");
-      const type = asType(btn.getAttribute("data-type") || "movie", "movie");
-      if (id) loadById(id, type);
-    });
-  });
-}
-
-async function loadPopularNow() {
-  if (!els.popularMovies && !els.popularTv) return;
-
-  if (els.popularMovies) els.popularMovies.innerHTML = `<div class="muted">Loading…</div>`;
-  if (els.popularTv) els.popularTv.innerHTML = `<div class="muted">Loading…</div>`;
-
-  try {
-    const { movies, tv } = await fetchPopularPagesTo50();
-
-    renderPopularGrid(els.popularMovies, movies);
-    renderPopularGrid(els.popularTv, tv);
-
-    popularCache.movies = movies.slice();
-    popularCache.tv = tv.slice();
-    popularLoadedOnce = true;
-
-  } catch (e) {
-    if (els.popularMovies) els.popularMovies.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
-    if (els.popularTv) els.popularTv.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
-  }
-}
-
-/* -----------------------------
-   Random (CLIENT-SIDE)
-------------------------------*/
-async function doRandom() {
-  clearLists();
-  setMeta("Picking random…", false);
-
-  try {
-    if (!popularLoadedOnce) {
-      const { movies, tv } = await fetchPopularPagesTo50();
-      popularCache.movies = movies;
-      popularCache.tv = tv;
-      popularLoadedOnce = true;
-    }
-
-    let pool = [];
-    if (mediaFilter === "movie") pool = popularCache.movies.slice();
-    else if (mediaFilter === "tv") pool = popularCache.tv.slice();
-    else pool = [...popularCache.movies, ...popularCache.tv];
-
-    pool = pool.filter(x => x && x.id);
-
-    if (!pool.length) throw new Error("Popular feed unavailable, cannot pick random.");
-
-    const chosen = pick(pool);
-    const chosenType = asType(chosen.type || chosen.media_type, "movie");
-
-    await loadById(chosen.id, chosenType);
-    setMeta("Random picked ✅", false);
-  } catch (e) {
-    renderTarget(null);
-    clearLists();
-    setMeta(`Random failed. (${e.message})`, true);
-  }
-}
-
-/* -----------------------------
-   Init UI
-------------------------------*/
-function initUI() {
-  if (els.genre) {
-    els.genre.innerHTML = GENRES.map(([val, name]) => `<option value="${esc(val)}">${esc(name)}</option>`).join("");
-  }
-
-  if (els.minRating && els.minRatingVal) {
-    const sync = () => (els.minRatingVal.textContent = `${Number(els.minRating.value || 0)}/10`);
-    els.minRating.addEventListener("input", sync);
-    sync();
-  }
-
-  els.q?.addEventListener("input", onSuggestInput);
-  els.q?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      setActiveMode("none");
-      doSearch();
-    }
-  });
-
-  els.searchBtn?.addEventListener("click", () => {
-    setActiveMode("none");
-    doSearch();
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!els.suggest?.contains(e.target) && e.target !== els.q) {
-      els.suggest?.classList.add("hidden");
-    }
-  });
-
-  els.watchlistBtn?.addEventListener("click", () => {
-    setActiveMode("watchlist");
-    openWatchlist();
-  });
-
-  els.closeModal?.addEventListener("click", () => {
-    closeWatchlist();
-    setActiveMode("none");
-  });
-
-  els.modal?.addEventListener("click", (e) => {
-    if (e.target === els.modal) {
-      closeWatchlist();
-      setActiveMode("none");
-    }
-  });
-
-  els.randomBtn?.addEventListener("click", () => {
-    setActiveMode("random");
-    doRandom();
-  });
-
-  els.tvOnlyBtn?.addEventListener("click", () => {
-    setActiveMode("tv");
-    mediaFilter = "tv";
-    if ((els.q?.value || "").trim()) doSearch();
-  });
-
-  els.movieOnlyBtn?.addEventListener("click", () => {
-    setActiveMode("movie");
-    mediaFilter = "movie";
-    if ((els.q?.value || "").trim()) doSearch();
-  });
-
-  const url = new URL(location.href);
-  const id = url.searchParams.get("id");
-  const type = asType(url.searchParams.get("type") || "movie", "movie");
-  if (id) loadById(id, type);
-
-  loadPopularNow();
-  initThemePicker();
-  setActiveMode("none");
-}
-
-/* -----------------------------
-   Theme Picker
-------------------------------*/
-const THEME_KEY = "filmmatrix_theme_v1";
-const THEME_LABELS = {
-  blue: "Blue Stock",
-  red: "Red",
-  green: "Green",
-  purple: "Purple",
-};
-
-function applyTheme(theme) {
-  const t = (theme && THEME_LABELS[theme]) ? theme : "blue";
-  document.body.classList.remove("theme-blue","theme-red","theme-green","theme-purple");
-  document.body.classList.add(`theme-${t}`);
-
-  const labelEl = document.getElementById("themeBtnLabel");
-  if (labelEl) labelEl.textContent = THEME_LABELS[t];
-
-  try { localStorage.setItem(THEME_KEY, t); } catch {}
-}
-
-function initThemePicker() {
-  const wrap = document.getElementById("themeWrap");
-  const btn = document.getElementById("themeBtn");
-  const menu = document.getElementById("themeMenu");
-  if (!wrap || !btn || !menu) return;
-
-  btn.addEventListener("click", (e) => {
-    e.preventDefault(); e.stopPropagation();
-    menu.classList.toggle("hidden");
-  });
-
-  menu.querySelectorAll("[data-theme]").forEach((item) => {
-    item.addEventListener("click", () => {
-      applyTheme(item.getAttribute("data-theme"));
-      menu.classList.add("hidden");
-    });
-  });
-
-  document.addEventListener("click", (e) => { if (!wrap.contains(e.target)) menu.classList.add("hidden"); });
-
-  let saved = "blue";
-  try { saved = localStorage.getItem(THEME_KEY) || "blue"; } catch {}
-  applyTheme(saved);
-}
-
-/* -----------------------------------------------------------
-   SECTION E: Bottom Enhancements (FULL REPLACE)
------------------------------------------------------------*/
-
-function lockScroll(lock = true) {
-  document.body.style.overflow = lock ? "hidden" : "";
-}
-
-function deleteFromWatchlist(id, type) {
-  const list = loadWatchlist();
-  const idx = list.findIndex(
-    x => String(x.id) === String(id) && x.type === type
-  );
-  if (idx === -1) return;
-
-  lastDeletedWatchItem = list[idx];
-  list.splice(idx, 1);
-  saveWatchlist(list);
-  openWatchlist(); // re-render
-  showUndoDelete();
-}
-
-function showUndoDelete() {
-  if (!els.watchlist || !lastDeletedWatchItem) return;
-
-  const bar = document.createElement("div");
-  bar.className = "undoBar";
-  bar.innerHTML = `<button class="btn sm">Undo delete</button>`;
-
-  bar.querySelector("button").onclick = () => {
-    const list = loadWatchlist();
-    list.unshift(lastDeletedWatchItem);
-    saveWatchlist(list);
-    lastDeletedWatchItem = null;
-    openWatchlist();
-  };
-
-  els.watchlist.prepend(bar);
-
-  setTimeout(() => { if (bar.parentNode) bar.remove(); }, 6000);
-}
-
-const oldOpenWatchlist = openWatchlist;
-openWatchlist = function () {
-  oldOpenWatchlist();
-  lockScroll(true);
-};
-
-function closeWatchlist() {
-  els.modal?.classList.add("hidden");
-  lockScroll(false);
-  closeAllWatchDropdowns(document);
-}
-
-// Clear button logic
-const clearBtn = document.createElement("button");
-clearBtn.className = "btn sm delete";
-clearBtn.id = "clearBtn";
-clearBtn.textContent = "Clear";
-clearBtn.onclick = () => {
-  if (confirm("Clear entire watchlist?")) {
-    saveWatchlist([]);
-    openWatchlist();
-  }
-};
-
-document.addEventListener("DOMContentLoaded", () => {
-  const top = document.querySelector(".modalTop");
-  if (top && !document.getElementById("clearBtn")) {
-    top.insertBefore(clearBtn, els.closeModal);
-  }
-});
-
-// Final execution
-initUI();
-renderTarget(null);
-clearLists();
-setMeta("Ready.", false);
