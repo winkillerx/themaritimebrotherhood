@@ -173,27 +173,23 @@ async function apiGet(path, params = {}, timeoutMs = 12000) {
 
 async function fetchWatchProviders(id, type) {
   try {
-    const r = await apiGet("/api/providers", { id, type: asType(type) });
-    if (!r) return { providers: [], link: null };
-
-    const all = [
-  ...(r.flatrate || []), // streaming first
-  ...(r.free || []),
-  ...(r.ads || []),
-  ...(r.rent || []),
-  ...(r.buy || [])
-];
-
-    const seen = new Set();
-    const providers = all.filter(p => {
-      const pid = p?.provider_id ?? p?.provider_name;
-      if (!pid || seen.has(pid)) return false;
-      seen.add(pid);
-      return true;
+    const r = await apiGet("/api/providers", {
+      id,
+      type: asType(type)
     });
 
-    return { providers, link: r.link || null };
-  } catch {
+    // ✅ API already returns final shape
+    if (Array.isArray(r?.providers)) {
+      return {
+        providers: r.providers,
+        link: r.link || null
+      };
+    }
+
+    // Fallback safety
+    return { providers: [], link: null };
+  } catch (e) {
+    console.error("Watch providers failed:", e);
     return { providers: [], link: null };
   }
 }
