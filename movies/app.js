@@ -918,7 +918,10 @@ const list = sortByFranchise(baseTitle, cleaned).slice(0, 20);
    Suggestions
 ------------------------------*/
 function renderSuggestions(items) {
-  const list = (items || []).slice(0, 10);
+const list = (items || [])
+  .filter(m => m && m.title)
+  .filter(m => !/^untitled$/i.test(m.title.trim()))
+  .slice(0, 10);
   if (!els.suggest) return;
 
   if (!list.length) {
