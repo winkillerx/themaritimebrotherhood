@@ -166,6 +166,63 @@ function safeUpper(x) {
 /* -----------------------------
    Helpers
 ------------------------------*/
+function normalizeTitle(t = "") {
+  return t
+    .toLowerCase()
+    .replace(/[:\-–—]/g, " ")
+    .replace(/\b(the|a|an)\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function classifyRelation(baseTitle, itemTitle) {
+  const base = normalizeTitle(baseTitle);
+  const t = normalizeTitle(itemTitle);
+
+  if (!t || !base) return "other";
+  if (t === base) return "same";
+
+  // Sequels
+  if (
+    t.startsWith(base + " ") &&
+    /\b(2|ii|3|iii|4|iv|v)\b/.test(t)
+  ) {
+    return "sequel";
+  }
+
+  // Prequels
+  if (t.includes(base) && /(origins|beginning|rise|before)/.test(t)) {
+    return "prequel";
+  }
+
+  // Remakes / reboots
+  if (t === base && /\(\d{4}\)/.test(itemTitle)) {
+    return "remake";
+  }
+
+  return "other";
+}
+
+function sortByFranchise(baseTitle, items) {
+  const priority = {
+    sequel: 1,
+    prequel: 2,
+    remake: 3,
+    other: 4
+  };
+
+  return items
+    .map(m => ({
+      ...m,
+      _relation: classifyRelation(baseTitle, m.title)
+    }))
+    .sort((a, b) => {
+      const pa = priority[a._relation] || 9;
+      const pb = priority[b._relation] || 9;
+      return pa - pb;
+    });
+}
+
 function esc(s = "") {
   return String(s).replace(/[&<>"']/g, (c) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -727,7 +784,14 @@ function renderTarget(m) {
 -----------------------------------------------------------*/
 
 function renderSimilar(items) {
-  const list = (items || []).filter(Boolean).slice(0, 20);
+  const cleaned = (items || [])
+  .filter(m => m && m.title)
+  .filter(m => !/^untitled$/i.test(m.title.trim()));
+
+const baseTitle =
+  els.target?.querySelector(".title")?.textContent || "";
+
+const list = sortByFranchise(baseTitle, cleaned).slice(0, 20);
   if (!els.results) return;
 
   if (!list.length) {
@@ -890,10 +954,10 @@ function renderSuggestions(items) {
 function renderMatches(items) {
   if (!els.matches) return;
 
-  const filtered = (items || []).filter(Boolean).filter((m) => {
-    if (mediaFilter === "any") return true;
-    return asType(m.type, "movie") === mediaFilter;
-  });
+  const filtered = (items || [])
+  .filter(m => m && m.title)
+  .filter(m => !/^untitled$/i.test(m.title.trim()));
+	
 
   const list = filtered.slice(0, 10);
 
