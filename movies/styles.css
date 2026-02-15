@@ -227,6 +227,20 @@ h2{
   line-height: 1.5;
   opacity: .75;
 }
+/* Jump-to links in the Search card */
+.inlineLink{
+  color:#ffffff !important;
+  font-weight:800;
+  text-decoration:none !important;
+  -webkit-text-decoration:none;
+}
+
+/* Optional hover */
+.inlineLink:hover,
+.inlineLink:focus{
+  opacity:.85;
+  text-decoration:none !important;
+}
 
 /* Section navigation links: Popular Movies / TV / Genres */
 .jump-links {
