@@ -1109,15 +1109,41 @@ function openWatchlist() {
   });
 
   // Watch
-  els.watchlist.querySelectorAll("button[data-watch-id]").forEach((b) => {
-    b.addEventListener("click", async (e) => {
-      e.preventDefault();
-      const id = b.getAttribute("data-watch-id");
-      const type = asType(b.getAttribute("data-watch-type") || "movie", "movie");
-      const { providers, link } = await fetchWatchProviders(id, type);
-      toggleWatchDropdown(b, renderWatchMenu({ providers, link }));
-    });
+  // Watch (WATCHLIST ONLY — scoped + auto-close)
+els.watchlist.querySelectorAll("button[data-watch-id]").forEach((btn) => {
+  btn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const id = btn.dataset.watchId;
+    const type = asType(btn.dataset.watchType || "movie", "movie");
+    const row = btn.closest(".watchItem");
+    if (!row) return;
+
+    // 🔑 Close any existing watch dropdowns (watchlist only)
+    els.watchlist.querySelectorAll(".watchDropdown").forEach(d => d.remove());
+
+    const data = await fetchWatchProviders(id, type);
+
+    const dropdown = document.createElement("div");
+    dropdown.className = "watchDropdown";
+    dropdown.innerHTML = renderWatchMenu(data);
+
+    row.appendChild(dropdown);
+
+    // 🔑 Auto-close when tapping anywhere else
+    const closeOnOutside = (ev) => {
+      if (row.contains(ev.target)) return;
+      dropdown.remove();
+      document.removeEventListener("click", closeOnOutside, true);
+    };
+
+    // delay prevents immediate self-close
+    setTimeout(() => {
+      document.addEventListener("click", closeOnOutside, true);
+    }, 0);
   });
+});
 
   els.modal?.classList.remove("hidden");
 }
