@@ -176,26 +176,44 @@ function normalizeTitle(t = "") {
 }
 
 function classifyRelation(baseTitle, item) {
-  const base = normalizeTitle(baseTitle);
-  const title = normalizeTitle(item.title || "");
+  const baseTokens = normalizeTitle(baseTitle)
+    .split(" ")
+    .filter(w => w.length > 2 && isNaN(w));
 
-  if (!base || !title) return "other";
+  const titleTokens = normalizeTitle(item.title || "")
+    .split(" ")
+    .filter(w => w.length > 2 && isNaN(w));
 
-  // Original (exact title match)
-  if (title === base) return "original";
+  if (!baseTokens.length || !titleTokens.length) return "other";
 
-  // Franchise member (same root words)
-  if (title.includes(base)) {
-    // Prequel heuristics
-    if (item.year && item.year < item.baseYear) return "prequel";
+  // Count shared franchise words
+  const shared = baseTokens.filter(w => titleTokens.includes(w)).length;
 
-    // Remake / reboot (same title, different year)
-    if (title === base && item.year !== item.baseYear) return "remake";
+  // Require at least 2 shared core words (FAST + FURIOUS)
+  const isSameFranchise = shared >= Math.min(2, baseTokens.length);
 
-    return "sequel";
+  if (!isSameFranchise) return "other";
+
+  // Original
+  if (normalizeTitle(item.title) === normalizeTitle(baseTitle)) {
+    return "original";
   }
 
-  return "other";
+  // Prequel
+  if (item.year && item.baseYear && item.year < item.baseYear) {
+    return "prequel";
+  }
+
+  // Remake / reboot (same title, different year)
+  if (
+    normalizeTitle(item.title) === normalizeTitle(baseTitle) &&
+    item.year !== item.baseYear
+  ) {
+    return "remake";
+  }
+
+  // Otherwise: sequel
+  return "sequel";
 }
 
 function sortByFranchise(baseTitle, items, baseYear) {
