@@ -22,20 +22,20 @@ const GENRES = [
 const GENRE_PRESETS = [
   // Crime / True Crime
   { name: "Serial Killers", keywords: "serial killer,true crime,murder", genres: "80,99", type: "both" },
-  { name: "True Crime Docs", keywords: "true crime,investigation,case", genres: "99,80", type: "both" },
+  { name: "True Crime", keywords: "true crime,investigation,case", genres: "99,80", type: "both" },
   { name: "Cold Cases", keywords: "cold case,unsolved", genres: "80,99,9648", type: "both" },
   { name: "Detectives & расследование", keywords: "detective,investigation", genres: "80,9648", type: "both" },
-  { name: "Mafia & Gangsters", keywords: "mafia,gangster,organized crime", genres: "80,18", type: "both" },
-  { name: "Heists & Robberies", keywords: "heist,robbery,bank job", genres: "80,53", type: "both" },
+  { name: "Gangsters", keywords: "mafia,gangster,organized crime", genres: "80,18", type: "both" },
+  { name: "Heists", keywords: "heist,robbery,bank job", genres: "80,53", type: "both" },
   { name: "Courtroom & Trials", keywords: "courtroom,trial,lawyer", genres: "18,80", type: "both" },
   { name: "Prison Stories", keywords: "prison,inmate,escape", genres: "18,80", type: "both" },
 
   // Thrillers / Mystery
-  { name: "Psychological Thrillers", keywords: "psychological thriller,mind games", genres: "53,9648", type: "both" },
-  { name: "Mind-Bending Twists", keywords: "twist ending,mind bending", genres: "9648,53,878", type: "both" },
-  { name: "Conspiracy & Coverups", keywords: "conspiracy,cover up,whistleblower", genres: "53,9648", type: "both" },
+  { name: "Psy Thrillers", keywords: "psychological thriller,mind games", genres: "53,9648", type: "both" },
+  { name: "Mind-Bending", keywords: "twist ending,mind bending", genres: "9648,53,878", type: "both" },
+  { name: "Conspiracy", keywords: "conspiracy,cover up,whistleblower", genres: "53,9648", type: "both" },
   { name: "Whodunits", keywords: "whodunit,mystery", genres: "9648", type: "both" },
-  { name: "Espionage & Spies", keywords: "spy,espionage,agent", genres: "53,28", type: "both" },
+  { name: "Spies", keywords: "spy,espionage,agent", genres: "53,28", type: "both" },
   { name: "Political Thrillers", keywords: "political thriller,election,corruption", genres: "53,18", type: "both" },
 
   // Action
@@ -53,22 +53,22 @@ const GENRE_PRESETS = [
 
   // Horror
   { name: "Horror Must-Watch", keywords: "horror", genres: "27", type: "both" },
-  { name: "Psychological Horror", keywords: "psychological horror", genres: "27,53", type: "both" },
+  { name: "Psy Horror", keywords: "psychological horror", genres: "27,53", type: "both" },
   { name: "Found Footage", keywords: "found footage", genres: "27", type: "both" },
-  { name: "Paranormal & Ghosts", keywords: "paranormal,ghost,haunted", genres: "27", type: "both" },
+  { name: "Ghosts", keywords: "paranormal,ghost,haunted", genres: "27", type: "both" },
   { name: "Slashers", keywords: "slasher,killer", genres: "27", type: "both" },
   { name: "Zombies", keywords: "zombie,undead", genres: "27,28", type: "both" },
 
   // Sci-Fi
-  { name: "Sci-Fi Essentials", keywords: "science fiction,futuristic", genres: "878", type: "both" },
+  { name: "Sci-Fi", keywords: "science fiction,futuristic", genres: "878", type: "both" },
   { name: "Time Travel", keywords: "time travel,time loop", genres: "878,53,9648", type: "both" },
   { name: "AI & Robots", keywords: "artificial intelligence,robots", genres: "878,53", type: "both" },
   { name: "Cyberpunk", keywords: "cyberpunk,hacker,dystopia", genres: "878", type: "both" },
   { name: "Space & Aliens", keywords: "space,alien", genres: "878,12", type: "both" },
-  { name: "Post-Apocalyptic", keywords: "post apocalyptic,dystopian", genres: "878,28,53", type: "both" },
+  { name: "Post-Apoc", keywords: "post apocalyptic,dystopian", genres: "878,28,53", type: "both" },
 
   // Fantasy
-  { name: "Fantasy Adventure", keywords: "fantasy adventure", genres: "14,12", type: "both" },
+  { name: "Fantasy", keywords: "fantasy adventure", genres: "14,12", type: "both" },
   { name: "Magic & Wizards", keywords: "magic,wizard", genres: "14,12", type: "both" },
   { name: "Mythology", keywords: "mythology,gods,legend", genres: "14,12", type: "both" },
 
@@ -79,13 +79,13 @@ const GENRE_PRESETS = [
   { name: "Dark Comedy", keywords: "dark comedy", genres: "35,80", type: "both" },
 
   // Business / Tech
-  { name: "Financial & Wall Street", keywords: "finance,wall street,stock market", genres: "18", type: "both" },
+  { name: "Wall Street", keywords: "finance,wall street,stock market", genres: "18", type: "both" },
   { name: "Tech & Startups", keywords: "startup,tech company,hacker", genres: "18", type: "both" },
 
   // Documentary / Reality / History
   { name: "Documentaries", keywords: "documentary", genres: "99", type: "both" },
   { name: "Nature Docs", keywords: "nature,wildlife", genres: "99", type: "both" },
-  { name: "History & War Docs", keywords: "history,war documentary", genres: "99,36,10752", type: "both" },
+  { name: "History Docs", keywords: "history,war documentary", genres: "99,36,10752", type: "both" },
   { name: "Sports Docs", keywords: "sports documentary", genres: "99", type: "both" },
 
   // TV-special
