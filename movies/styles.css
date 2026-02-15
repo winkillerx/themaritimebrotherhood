@@ -893,12 +893,6 @@ body.theme-purple{
   min-width: 80px;
 }
 
-/* Clear + Close alignment */
-.modalTop {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
 /* =========================
    WATCH PROVIDERS DROPDOWN (CA) — Target + Similar + Watchlist
    Put this at the VERY BOTTOM of styles.css
@@ -1037,8 +1031,8 @@ body.modal-open{
   flex-direction: column;
   overflow: hidden;
   border-radius: 22px;
+	background: rgba(6, 10, 18, 0.95);
   border: 1px solid var(--line);
-  background: rgba(6,10,18,.82);
   box-shadow: var(--shadow2);
 }
 
@@ -1048,14 +1042,39 @@ body.modal-open{
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+display: flex;
+  flex-direction: column;
   padding: 12px;
 }
 
 /* Anchor dropdown to item */
 .watchItem{
   position: relative;
+	padding: 16px;
+}
+/* Watchlist header layout */
+.modalTop{
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
 }
 
+/* Watchlist title */
+.modalTop h2,
+.modalTop .watchTitle{
+  justify-self: start;
+}
+
+/* Clear button centered */
+.modalTop .warn,
+.modalTop .clearBtn{
+  justify-self: center;
+}
+
+/* Close button right */
+.modalTop .closeBtn{
+  justify-self: end;
+}
 /* Watch providers dropdown */
 .watchDropdown{
   position: absolute;
