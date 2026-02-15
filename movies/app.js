@@ -1109,29 +1109,15 @@ function openWatchlist() {
   });
 
   // Watch
-  // Watch (FIXED: dropdown stays under selected movie)
-els.watchlist.querySelectorAll("button[data-watch-id]").forEach((b) => {
-  b.addEventListener("click", async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const id = b.getAttribute("data-watch-id");
-    const type = asType(b.getAttribute("data-watch-type") || "movie", "movie");
-
-    const row = b.closest(".watchItem");
-    if (!row) return;
-
-    document.querySelectorAll(".watchDropdown").forEach(el => el.remove());
-
-    const data = await fetchWatchProviders(id, type);
-
-    const box = document.createElement("div");
-    box.className = "watchDropdown";
-    box.innerHTML = renderWatchMenu(data);
-
-    row.appendChild(box);
+  els.watchlist.querySelectorAll("button[data-watch-id]").forEach((b) => {
+    b.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const id = b.getAttribute("data-watch-id");
+      const type = asType(b.getAttribute("data-watch-type") || "movie", "movie");
+      const { providers, link } = await fetchWatchProviders(id, type);
+      toggleWatchDropdown(b, renderWatchMenu({ providers, link }));
+    });
   });
-});
 
   els.modal?.classList.remove("hidden");
 }
