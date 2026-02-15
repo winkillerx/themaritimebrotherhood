@@ -1109,15 +1109,31 @@ function openWatchlist() {
   });
 
   // Watch
-  els.watchlist.querySelectorAll("button[data-watch-id]").forEach((b) => {
-    b.addEventListener("click", async (e) => {
-      e.preventDefault();
-      const id = b.getAttribute("data-watch-id");
-      const type = asType(b.getAttribute("data-watch-type") || "movie", "movie");
-      const { providers, link } = await fetchWatchProviders(id, type);
-      toggleWatchDropdown(b, renderWatchMenu({ providers, link }));
-    });
+  // Watch (FIXED: dropdown stays under selected movie)
+els.watchlist.querySelectorAll("button[data-watch-id]").forEach((b) => {
+  b.addEventListener("click", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const id = b.getAttribute("data-watch-id");
+    const type = asType(b.getAttribute("data-watch-type") || "movie", "movie");
+
+    // 🔑 Anchor to the movie row, not the button
+    const row = b.closest(".watchItem");
+    if (!row) return;
+
+    closeAllWatchDropdowns(row);
+
+    const data = await fetchWatchProviders(id, type);
+
+    // 🔑 Attach dropdown INSIDE this movie row
+    const box = document.createElement("div");
+    box.className = "watchDropdown";
+    box.innerHTML = renderWatchMenu(data);
+
+    row.appendChild(box);
   });
+});
 
   els.modal?.classList.remove("hidden");
 }
