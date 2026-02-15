@@ -1160,53 +1160,25 @@ function renderPopularGrid(container, items) {
   }
 
   container.innerHTML = `
-  <div class="popGrid">
-    ${genres.map((g, idx) => `
-      <button
-        class="popCard genreCard"
-        type="button"
-        data-idx="${idx}"
-      >
-        <div class="popPoster placeholder"></div>
-        <div class="popTitle">${esc(g.name)}</div>
-      </button>
-    `).join("")}
-  </div>
-`;
-// 🔥 Poster hydration using discoverCategory (FIXED)
-(async () => {
-  const cards = container.querySelectorAll(".genreCard");
+    <div class="popGrid">
+      ${list.map((m) => `
+        <button
+          class="popCard"
+          type="button"
+          data-id="${esc(m.id)}"
+          data-type="${esc(asType(m.type || m.media_type, "movie"))}"
+        >
+          ${
+            m.poster
+              ? `<img class="popPoster" src="${esc(m.poster)}" loading="lazy" alt="${esc(m.title)} poster" />`
+              : `<div class="popPoster placeholder"></div>`
+          }
+          <div class="popTitle">${esc(m.title)}</div>
+        </button>
+      `).join("")}
+    </div>
+  `;
 
-  for (let i = 0; i < cards.length; i++) {
-    const card = cards[i];
-    const g = genres[i];
-    if (!g) continue;
-
-    try {
-      const items = await discoverCategory({
-        type: g.type || "both",
-        keywords: g.keywords || "",
-        genres: g.genres || ""
-      });
-
-      const first = items[0];
-      if (!first?.poster) continue;
-
-      const img = document.createElement("img");
-      img.className = "popPoster";
-      img.loading = "lazy";
-      img.src = first.poster;
-      img.alt = g.name;
-
-      // replace placeholder
-      const placeholder = card.querySelector(".popPoster");
-      placeholder?.replaceWith(img);
-
-    } catch (e) {
-      console.warn("Genre poster failed:", g.name);
-    }
-  }
-})();
   container.querySelectorAll(".popCard").forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = btn.getAttribute("data-id");
@@ -1491,8 +1463,9 @@ function renderGenreGrid() {
   `;
 
   
-// Final execution
-initUI();
-renderTarget(null);
-clearLists();
-setMeta("Ready.", false);
+document.addEventListener("DOMContentLoaded", () => {
+  initUI();
+  renderTarget(null);
+  clearLists();
+  setMeta("Ready.", false);
+});
