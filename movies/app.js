@@ -520,7 +520,7 @@ function enableMobileAutoHideHeader() {
   if (!isTouch) return;
 
   let hideTimer = null;
-  const IDLE_DELAY = 1100; // ms before hiding
+  const IDLE_DELAY = 600; // ms before hiding
 
   const showHeader = () => {
     header.classList.remove("auto-hidden");
