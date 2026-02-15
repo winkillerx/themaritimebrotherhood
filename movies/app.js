@@ -1125,11 +1125,12 @@ els.watchlist.querySelectorAll("button[data-watch-id]").forEach((btn) => {
 
     const data = await fetchWatchProviders(id, type);
 
-    const dropdown = document.createElement("div");
-    dropdown.className = "watchDropdown";
-    dropdown.innerHTML = renderWatchMenu(data);
+const dropdown = document.createElement("div");
+dropdown.className = "watchDropdown";
+dropdown.innerHTML = renderWatchMenu(data);
 
-    row.appendChild(dropdown);
+// 🔑 insert directly AFTER the button row
+btn.closest("div").after(dropdown);
 
     // 🔑 Auto-close when tapping anywhere else
     const closeOnOutside = (ev) => {
