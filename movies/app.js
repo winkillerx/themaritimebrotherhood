@@ -175,52 +175,60 @@ function normalizeTitle(t = "") {
     .trim();
 }
 
-function classifyRelation(baseTitle, itemTitle) {
+function classifyRelation(baseTitle, item) {
   const base = normalizeTitle(baseTitle);
-  const t = normalizeTitle(itemTitle);
+  const title = normalizeTitle(item.title || "");
 
-  if (!t || !base) return "other";
-  if (t === base) return "same";
+  if (!base || !title) return "other";
 
-  // Sequels
-  if (
-    t.startsWith(base + " ") &&
-    /\b(2|ii|3|iii|4|iv|v)\b/.test(t)
-  ) {
+  // Original (exact title match)
+  if (title === base) return "original";
+
+  // Franchise member (same root words)
+  if (title.includes(base)) {
+    // Prequel heuristics
+    if (item.year && item.year < item.baseYear) return "prequel";
+
+    // Remake / reboot (same title, different year)
+    if (title === base && item.year !== item.baseYear) return "remake";
+
     return "sequel";
-  }
-
-  // Prequels
-  if (t.includes(base) && /(origins|beginning|rise|before)/.test(t)) {
-    return "prequel";
-  }
-
-  // Remakes / reboots
-  if (t === base && /\(\d{4}\)/.test(itemTitle)) {
-    return "remake";
   }
 
   return "other";
 }
 
-function sortByFranchise(baseTitle, items) {
-  const priority = {
-    sequel: 1,
-    prequel: 2,
-    remake: 3,
-    other: 4
+function sortByFranchise(baseTitle, items, baseYear) {
+  const enriched = items.map(m => ({
+    ...m,
+    baseYear,
+    _relation: classifyRelation(baseTitle, { ...m, baseYear })
+  }));
+
+  const bucket = {
+    original: [],
+    sequel: [],
+    prequel: [],
+    remake: [],
+    other: []
   };
 
-  return items
-    .map(m => ({
-      ...m,
-      _relation: classifyRelation(baseTitle, m.title)
-    }))
-    .sort((a, b) => {
-      const pa = priority[a._relation] || 9;
-      const pb = priority[b._relation] || 9;
-      return pa - pb;
-    });
+  enriched.forEach(m => {
+    (bucket[m._relation] || bucket.other).push(m);
+  });
+
+  // Chronological order inside buckets
+  bucket.sequel.sort((a, b) => (a.year || 9999) - (b.year || 9999));
+  bucket.prequel.sort((a, b) => (a.year || 9999) - (b.year || 9999));
+  bucket.remake.sort((a, b) => (a.year || 9999) - (b.year || 9999));
+
+  return [
+    ...bucket.original,
+    ...bucket.sequel,
+    ...bucket.prequel,
+    ...bucket.remake,
+    ...bucket.other
+  ];
 }
 
 function esc(s = "") {
@@ -791,7 +799,10 @@ function renderSimilar(items) {
 const baseTitle =
   els.target?.querySelector(".title")?.textContent || "";
 
-const list = sortByFranchise(baseTitle, cleaned).slice(0, 20);
+const baseYear =
+  Number(els.target?.querySelector(".title span")?.textContent?.replace(/\D/g, "")) || null;
+
+const list = sortByFranchise(baseTitle, cleaned, baseYear).slice(0, 20);
   if (!els.results) return;
 
   if (!list.length) {
