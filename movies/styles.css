@@ -997,8 +997,8 @@ body.theme-purple{
 .watchItem{
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 10px;
+  gap: 12px;
+  padding: 10px 12px;
   border-radius: 12px;
   text-decoration: none;
   border: 1px solid rgba(255,255,255,.08);
