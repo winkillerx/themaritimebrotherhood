@@ -695,26 +695,7 @@ input[type="range"]{
 /* Footer */
 .foot{ padding: 14px 4px 0; text-align:center; }
 
-/* Modal */
-.modal{
-  position:fixed;
-  inset:0;
-  background: rgba(0,0,0,.55);
-  display:grid;
-  place-items:center;
-  padding: 16px;
-  z-index: 100;
-}
-.modalCard{
-  width:min(760px, 100%);
-  border-radius: 22px;
-  border: 1px solid var(--line);
-  background: rgba(6,10,18,.82);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-  box-shadow: var(--shadow2);
-  padding: 16px;
-}
+
 .modalTop{
   display:flex;
   align-items:center;
@@ -722,11 +703,7 @@ input[type="range"]{
   gap: 12px;
   margin-bottom: 10px;
 }
-.watchlist{
-  display:flex;
-  flex-direction:column;
-  gap: 12px;
-}
+
 .watchItem{
   display:flex;
   gap: 12px;
@@ -876,14 +853,6 @@ body.theme-purple{
   --card: rgba(14, 8, 20, .62);
 }
 
-
-/* ===== Watchlist Modal Fixes ===== */
-.modal { overscroll-behavior: contain; }
-.watchlist {
-  max-height: 70vh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
 .btn.delete {
   color: #ff4d4d;
   border-color: rgba(255,77,77,.6);
@@ -935,18 +904,6 @@ body.theme-purple{
    Put this at the VERY BOTTOM of styles.css
 ========================= */
 
-.watchDropdown{
-  position: relative;
-  width: min(360px, 92vw);
-  margin-top: 10px;
-  background: rgba(10,12,18,.98);
-  border: 1px solid rgba(255,255,255,.10);
-  border-radius: 16px;
-  box-shadow: 0 20px 50px rgba(0,0,0,.55);
-  overflow: hidden;
-  backdrop-filter: blur(10px);
-  z-index: 9999;
-}
 
 .watchMenu{ padding: 12px; }
 
@@ -958,12 +915,7 @@ body.theme-purple{
 .watchTitle{ font-weight: 800; letter-spacing: .2px; }
 .watchSub{ margin-top: 2px; opacity: .75; font-size: 13px; }
 
-.watchList{
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px 6px 10px;
-}
+
 
 .watchItem{
   display: flex;
@@ -1037,14 +989,6 @@ body.theme-purple{
     max-height: 220px;
   }
 }
-/* ===== Force Watch Provider links to white ===== */
-.watchDropdown a,
-.watchDropdown a:visited,
-.watchDropdown a:hover,
-.watchDropdown a:active {
-  color: var(--text);
-  text-decoration: none;
-}
 /* Genre stock poster used until hydration swaps it */
 #genreGrid .popPoster.placeholder{
   background-image: url("./stock.jpg");
@@ -1058,4 +1002,77 @@ body.theme-purple{
 #genreGrid .popTitle{
   text-align: center !important;
   font-weight: 800 !important;
+}
+/* =========================
+   WATCHLIST VIEWPORT FIX (FINAL)
+========================= */
+
+/* Lock body when modal is open */
+body.modal-open{
+  position: fixed;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Modal fills viewport safely */
+.modal{
+  position: fixed;
+  inset: 0;
+  height: 100svh;
+  max-height: 100svh;
+  background: rgba(0,0,0,.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+  overflow: hidden;
+}
+
+/* Modal content container */
+.modalCard{
+  width: min(760px, 100%);
+  max-height: calc(100svh - 32px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: rgba(6,10,18,.82);
+  box-shadow: var(--shadow2);
+}
+
+/* Scroll only inside watchlist */
+.watchlist{
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 12px;
+}
+
+/* Anchor dropdown to item */
+.watchItem{
+  position: relative;
+}
+
+/* Watch providers dropdown */
+.watchDropdown{
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 100%;
+  margin-top: 8px;
+
+  width: min(360px, 92vw);
+  max-height: 60svh;
+  overflow-y: auto;
+
+  background: rgba(10,12,18,.98);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0,0,0,.55);
+  backdrop-filter: blur(10px);
+
+  z-index: 200;
 }
