@@ -918,9 +918,33 @@ const list = sortByFranchise(baseTitle, cleaned).slice(0, 20);
    Suggestions
 ------------------------------*/
 function renderSuggestions(items) {
+const query = (els.q?.value || "").toLowerCase().trim();
+
 const list = (items || [])
   .filter(m => m && m.title)
   .filter(m => !/^untitled$/i.test(m.title.trim()))
+  .map(m => {
+    const title = m.title.toLowerCase();
+
+    let score = 0;
+
+    // 1️⃣ exact match
+    if (title === query) score += 1000;
+
+    // 2️⃣ starts with query
+    else if (title.startsWith(query)) score += 800;
+
+    // 3️⃣ contains full query
+    else if (title.includes(query)) score += 600;
+
+    // 4️⃣ word-based relevance (blade + 2)
+    query.split(" ").forEach(word => {
+      if (title.includes(word)) score += 100;
+    });
+
+    return { ...m, _score: score };
+  })
+  .sort((a, b) => b._score - a._score)
   .slice(0, 10);
   if (!els.suggest) return;
 
