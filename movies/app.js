@@ -1110,7 +1110,6 @@ function openWatchlist() {
 
   // Watch
   // Watch (FIXED: dropdown stays under selected movie)
-// Watch (auto-close previous dropdowns)
 els.watchlist.querySelectorAll("button[data-watch-id]").forEach((b) => {
   b.addEventListener("click", async (e) => {
     e.preventDefault();
@@ -1122,7 +1121,6 @@ els.watchlist.querySelectorAll("button[data-watch-id]").forEach((b) => {
     const row = b.closest(".watchItem");
     if (!row) return;
 
-    // 🔑 CLOSE ALL OTHER WATCH DROPDOWNS FIRST
     document.querySelectorAll(".watchDropdown").forEach(el => el.remove());
 
     const data = await fetchWatchProviders(id, type);
@@ -1131,7 +1129,6 @@ els.watchlist.querySelectorAll("button[data-watch-id]").forEach((b) => {
     box.className = "watchDropdown";
     box.innerHTML = renderWatchMenu(data);
 
-    // 🔑 ATTACH UNDER THIS MOVIE ONLY
     row.appendChild(box);
   });
 });
