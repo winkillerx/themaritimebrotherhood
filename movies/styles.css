@@ -1045,12 +1045,13 @@ body.modal-open{
 display: flex;
   flex-direction: column;
   padding: 12px;
+	gap: 18px;
 }
 
 /* Anchor dropdown to item */
 .watchItem{
   position: relative;
-	padding: 16px;
+	padding: 18px;
 }
 /* Watchlist header layout */
 .modalTop{
@@ -1072,8 +1073,15 @@ display: flex;
 }
 
 /* Close button right */
+/* Make Close button same size as Clear */
 .modalTop .closeBtn{
-  justify-self: end;
+  min-width: 80px;
+  height: 36px;
+  padding: 0 14px;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 /* Watch providers dropdown */
 .watchDropdown{
