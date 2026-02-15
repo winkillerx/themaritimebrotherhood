@@ -1025,7 +1025,15 @@ body.theme-purple{
 .genreCard {
   cursor: pointer;
 }
-
+/* ===== Watchlist modal viewport safety ===== */
+.modal{
+  position: fixed;
+  inset: 0;
+  height: 100svh;              /* iOS-safe viewport unit */
+  max-height: 100svh;
+  overflow: hidden;            /* prevent body spill */
+  overscroll-behavior: contain;
+}
 .genreCard .popTitle {
   text-align: center;
   font-weight: 800;
