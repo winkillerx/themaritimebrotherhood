@@ -958,11 +958,14 @@ body.theme-purple{
 .watchTitle{ font-weight: 800; letter-spacing: .2px; }
 .watchSub{ margin-top: 2px; opacity: .75; font-size: 13px; }
 
-.watchList{
+.watchlist {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px 6px 10px;
+  gap: 16px;
 }
 
 .watchItem{
@@ -971,6 +974,7 @@ body.theme-purple{
   gap: 10px;
   padding: 10px 10px;
   border-radius: 12px;
+	position: relative;
   text-decoration: none;
   border: 1px solid rgba(255,255,255,.08);
   background: rgba(255,255,255,.03);
