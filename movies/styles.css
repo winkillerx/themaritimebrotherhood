@@ -706,23 +706,23 @@ input[type="range"]{
   z-index: 100;
 }
 .modalCard{
-  width:min(760px, 100%);
+  width: min(760px, 100%);
   max-height: calc(100svh - 32px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+
+  /* 🔑 VISUAL LAYER (this is what you lost) */
+  background: rgba(8, 12, 24, 0.92);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--r) + 6px);
+  box-shadow: var(--shadow2);
+
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
 /* ===== Watchlist visual skin (restores old look) ===== */
-.modalCard{
-  background:
-    radial-gradient(900px 420px at 15% 10%, var(--glowA), transparent 55%),
-    radial-gradient(700px 380px at 85% 20%, var(--glowB), transparent 55%),
-    radial-gradient(900px 520px at 50% 100%, var(--glowC), transparent 60%),
-    linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 45%, var(--bg2) 100%);
-  border: 1px solid var(--line);
-  border-radius: 28px;
-  box-shadow: var(--shadow2);
-}
+
 .modalTop{
   display:flex;
   align-items:center;
