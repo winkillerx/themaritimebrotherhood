@@ -506,7 +506,50 @@ function scrollToTarget() {
 /* -----------------------------------------------------------
    SECTION A.6: Genre Grid (Discover Mode)
 ----------------------------------------------------------- */
+/* -----------------------------------------------------------
+   Mobile: Auto-hide top header when idle
+----------------------------------------------------------- */
+function enableMobileAutoHideHeader() {
+  const header = document.querySelector(".top");
+  if (!header) return;
 
+  // Only activate on touch devices
+  const isTouch =
+    window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+
+  if (!isTouch) return;
+
+  let hideTimer = null;
+  const IDLE_DELAY = 2500; // ms before hiding
+
+  const showHeader = () => {
+    header.classList.remove("auto-hidden");
+    resetTimer();
+  };
+
+  const hideHeader = () => {
+    header.classList.add("auto-hidden");
+  };
+
+  const resetTimer = () => {
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(hideHeader, IDLE_DELAY);
+  };
+
+  // Show on any interaction
+  ["touchstart", "scroll", "click"].forEach(evt => {
+    document.addEventListener(evt, showHeader, { passive: true });
+  });
+
+  // Don’t hide while typing
+  document.addEventListener("focusin", (e) => {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
+      showHeader();
+    }
+  });
+
+  resetTimer();
+}
 /* -----------------------------------------------------------
    SECTION A.6: Genres Grid (Discover Mode) — Popular-style w/ posters
 ----------------------------------------------------------- */
@@ -1468,6 +1511,7 @@ function initUI() {
 		renderGenres(GENRE_PRESETS);
   initThemePicker();
   setActiveMode("none");
+	  enableMobileAutoHideHeader();
 }
 
 /* -----------------------------
