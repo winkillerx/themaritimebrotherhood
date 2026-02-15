@@ -1060,3 +1060,13 @@ body.theme-purple{
   text-align: center !important;
   font-weight: 800 !important;
 }
+/* ===== FIX: Watchlist modal background ===== */
+.modalCard{
+  background:
+    radial-gradient(800px 400px at 15% 10%, var(--glowA), transparent 55%),
+    radial-gradient(600px 360px at 85% 20%, var(--glowB), transparent 55%),
+    linear-gradient(180deg, var(--bg1), var(--bg0));
+  border: 1px solid var(--line);
+  border-radius: calc(var(--r) + 6px);
+  box-shadow: var(--shadow2);
+}
