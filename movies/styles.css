@@ -707,13 +707,10 @@ input[type="range"]{
 }
 .modalCard{
   width:min(760px, 100%);
-  border-radius: 22px;
-  border: 1px solid var(--line);
-  background: rgba(6,10,18,.82);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-  box-shadow: var(--shadow2);
-  padding: 16px;
+  max-height: calc(100svh - 32px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 .modalTop{
   display:flex;
@@ -723,6 +720,10 @@ input[type="range"]{
   margin-bottom: 10px;
 }
 .watchlist{
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   display:flex;
   flex-direction:column;
   gap: 12px;
