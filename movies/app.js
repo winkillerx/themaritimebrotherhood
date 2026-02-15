@@ -322,9 +322,7 @@ function renderWatchMenu(data) {
               ${logo}
               <div class="watchItemText">
                 <div class="watchName">${name}</div>
-                <div class="watchHint">Open availability</div>
-              </div>
-              <div class="watchArrow">›</div>
+								</div>
             </a>
           `;
         }).join("")}
