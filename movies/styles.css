@@ -712,6 +712,17 @@ input[type="range"]{
   flex-direction: column;
   overflow: hidden;
 }
+/* ===== Watchlist visual skin (restores old look) ===== */
+.modalCard{
+  background:
+    radial-gradient(900px 420px at 15% 10%, var(--glowA), transparent 55%),
+    radial-gradient(700px 380px at 85% 20%, var(--glowB), transparent 55%),
+    radial-gradient(900px 520px at 50% 100%, var(--glowC), transparent 60%),
+    linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 45%, var(--bg2) 100%);
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  box-shadow: var(--shadow2);
+}
 .modalTop{
   display:flex;
   align-items:center;
@@ -1061,12 +1072,3 @@ body.theme-purple{
   font-weight: 800 !important;
 }
 /* ===== FIX: Watchlist modal background ===== */
-.modalCard{
-  background:
-    radial-gradient(800px 400px at 15% 10%, var(--glowA), transparent 55%),
-    radial-gradient(600px 360px at 85% 20%, var(--glowB), transparent 55%),
-    linear-gradient(180deg, var(--bg1), var(--bg0));
-  border: 1px solid var(--line);
-  border-radius: calc(var(--r) + 6px);
-  box-shadow: var(--shadow2);
-}
