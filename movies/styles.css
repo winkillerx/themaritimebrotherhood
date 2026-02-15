@@ -229,14 +229,14 @@ h2{
 }
 
 /* Section navigation links: Popular Movies / TV / Genres */
-.section-links {
+.jump-links {
   display: flex;
   justify-content: center;
   gap: 24px;
   margin: 24px 0;
 }
 
-.section-links a {
+.jump-links a {
   color: #ffffff;
   font-weight: 700;
   text-align: center;
@@ -248,8 +248,8 @@ h2{
 }
 
 /* Hover / tap feedback */
-.section-links a:hover,
-.section-links a:focus {
+.jump-links a:hover,
+.jump-links a:focus {
   opacity: 0.85;
   text-decoration: none;
  text-shadow: 0 0 8px rgba(255,255,255,0.35);
