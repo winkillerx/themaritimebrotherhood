@@ -994,3 +994,10 @@ body.theme-purple{
   color: var(--text);
   text-decoration: none;
 }
+/* Genre stock poster used until hydration swaps it */
+#genreGrid .popPoster.placeholder{
+  background-image: url("./stock.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
