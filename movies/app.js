@@ -1444,24 +1444,6 @@ document.addEventListener("DOMContentLoaded", () => {
     top.insertBefore(clearBtn, els.closeModal);
   }
 });
-
-
-function renderGenreGrid() {
-  const grid = document.getElementById("genreGrid");
-  if (!grid) return;
-
-  grid.innerHTML = `
-    <div class="popGrid">
-      ${GENRE_SEEDS.map((g) => `
-        <button class="popCard genreCard" type="button"
-          data-q="${esc(g.q)}"
-          data-type="${esc(g.type)}">
-          <div class="popTitle">${esc(g.label)}</div>
-        </button>
-      `).join("")}
-    </div>
-  `;
-
   
 document.addEventListener("DOMContentLoaded", () => {
   initUI();
