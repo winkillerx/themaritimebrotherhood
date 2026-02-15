@@ -1100,7 +1100,25 @@ body.theme-purple{
 .modal .modalCard .modalTop strong{
   margin-left: 6px;
 }
+/* =========================
+   MOBILE AUTO-HIDE TOP BAR
+========================= */
 
+/* Only on touch devices (phones + tablets) */
+@media (hover: none) and (pointer: coarse) {
+  .top {
+    transition:
+      transform 0.35s ease,
+      opacity 0.25s ease;
+    will-change: transform, opacity;
+  }
+
+  .top.auto-hidden {
+    transform: translateY(-110%);
+    opacity: 0;
+    pointer-events: none;
+  }
+}
 /* Close button: pull slightly inward */
 .modal .modalCard .modalTop .btn:last-child{
   margin-right: 6px;
