@@ -711,7 +711,7 @@ input[type="range"]{
 
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+overflow: visible; /* 🔑 allow content growth */
 
   /* ✅ SPACE FROM SCREEN EDGE */
   margin: 16px;
@@ -905,10 +905,11 @@ body.theme-purple{
 
 /* ===== Watchlist Modal Fixes ===== */
 .modal { overscroll-behavior: contain; }
-.watchlist {
-  max-height: 70vh;
+.watchlist{
+  flex: 1 1 auto;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 .btn.delete {
   color: #ff4d4d;
