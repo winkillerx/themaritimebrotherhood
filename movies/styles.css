@@ -708,20 +708,31 @@ input[type="range"]{
 .modalCard{
   width: min(760px, 100%);
   max-height: calc(100svh - 32px);
+
   display: flex;
   flex-direction: column;
   overflow: hidden;
 
-  /* 🔑 VISUAL LAYER (this is what you lost) */
-  background: rgba(8, 12, 24, 0.92);
+  /* ✅ SPACE FROM SCREEN EDGE */
+  margin: 16px;
+
+  /* ✅ INNER SPACE (THIS WAS MISSING) */
+  padding: 14px;
+
+  /* ✅ CORRECT GLASS BACKGROUND */
+  background:
+    radial-gradient(900px 420px at 15% 10%, var(--glowA), transparent 55%),
+    radial-gradient(700px 380px at 85% 20%, var(--glowB), transparent 55%),
+    radial-gradient(900px 520px at 50% 100%, var(--glowC), transparent 60%),
+    linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 45%, var(--bg2) 100%);
+
   border: 1px solid var(--line);
-  border-radius: calc(var(--r) + 6px);
+  border-radius: 28px;
   box-shadow: var(--shadow2);
 
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
 }
-/* ===== Watchlist visual skin (restores old look) ===== */
 
 .modalTop{
   display:flex;
@@ -1072,3 +1083,19 @@ body.theme-purple{
   font-weight: 800 !important;
 }
 /* ===== FIX: Watchlist modal background ===== */
+/* ===== WATCHLIST HEADER SPACING ONLY ===== */
+.modal .modalCard .modalTop{
+  padding: 8px 12px 12px;   /* space inside header */
+  margin-bottom: 12px;     /* space below header */
+}
+
+/* Watchlist title: nudge right */
+.modal .modalCard .modalTop h2,
+.modal .modalCard .modalTop strong{
+  margin-left: 6px;
+}
+
+/* Close button: pull slightly inward */
+.modal .modalCard .modalTop .btn:last-child{
+  margin-right: 6px;
+}
