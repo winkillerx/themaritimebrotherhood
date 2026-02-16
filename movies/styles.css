@@ -1178,7 +1178,7 @@ body.theme-purple{
 
   /* Creates real vertical space */
   .mobileHeroSpacer{
-    height: 40px;
+    height: 5px;
   }
 
   /* Visual hero (does NOT affect layout) */
