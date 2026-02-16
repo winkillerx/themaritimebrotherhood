@@ -1150,7 +1150,40 @@ body.theme-purple{
       opacity 0.25s ease;
     will-change: transform, opacity;
   }
+/* ===============================
+   MOBILE VIEWPORT HERO (HEADER GAP FILL)
+   =============================== */
 
+/* Default: hidden everywhere */
+.mobileHero{
+  display: none;
+}
+
+/* Mobile + Tablet only */
+@media (max-width: 900px){
+
+  .mobileHero{
+    display: block;
+    width: 100%;
+    height: 32svh; /* fills the gap naturally */
+    max-height: 360px;
+    margin-bottom: -24px; /* visually tucks into Search card */
+
+    background:
+      radial-gradient(
+        circle at center,
+        rgba(0,0,0,0) 45%,
+        rgba(6,10,18,.85) 70%,
+        rgba(6,10,18,.95) 100%
+      ),
+      url("./4k.jpg") center / cover no-repeat;
+
+    border-bottom-left-radius: 28px;
+    border-bottom-right-radius: 28px;
+
+    pointer-events: none; /* purely decorative */
+  }
+}
   .top.auto-hidden {
     transform: translateY(-110%);
     opacity: 0;
