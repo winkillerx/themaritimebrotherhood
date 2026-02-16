@@ -1179,7 +1179,7 @@ body.theme-purple{
   .searchWrap{
     position: relative;
     padding-top: 240px; 
-		margin-top: -80px;    /* 🔥 CLOSES GAP ABOVE IMAGE */
+		margin-top: -20px;    /* 🔥 CLOSES GAP ABOVE IMAGE */
 		/* controls gap ABOVE card */
   }
 
