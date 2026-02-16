@@ -833,38 +833,19 @@ function renderTarget(m) {
     };
   }
 
-  const btnShare = document.getElementById("copyLink");
-
-if (btnShare) {
-  btnShare.onclick = async () => {
-    // 🔑 This is the OG-aware share URL (Vercel route)
-    const shareUrl = `https://filmmatrix.net/api/og/movie?id=${encodeURIComponent(
-      m.imdbId || m.id
-    )}`;
-
-    // ✅ Native share (iOS / Android / modern browsers)
-    if (navigator.share) {
+  if (btnShare) {
+    btnShare.onclick = async () => {
       try {
-        await navigator.share({
-          title: `${m.title} (${m.year})`,
-          text: `Find movies similar to ${m.title}`,
-          url: shareUrl
-        });
-      } catch {
-        // user cancelled share — silently ignore
-      }
-    }
-    // 🖥️ Fallback (desktop)
-    else {
-      try {
-        await navigator.clipboard.writeText(shareUrl);
+        const u = new URL(location.href);
+        u.searchParams.set("id", String(m.id));
+        u.searchParams.set("type", type);
+        await navigator.clipboard.writeText(u.toString());
         alert("Link copied ✅");
       } catch {
-        alert("Sharing not supported on this device.");
+        alert("Copy failed (browser blocked clipboard).");
       }
-    }
-  };
-}
+    };
+  }
 
   if (btnAdd) {
     btnAdd.onclick = () => addToWatchlist({ ...m, type });
