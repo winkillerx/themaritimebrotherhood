@@ -510,30 +510,7 @@ input[type="range"]{
 .linkBtn:hover{
   border-color: var(--accentBorder);
 }
-/* =========================
-   SEARCH VIEWPORT BORDER
-========================= */
-.card.searchCard{
-  position: relative;
-}
 
-/* semi-transparent accent border */
-.card.searchCard::before{
-  content: "";
-  position: absolute;
-  inset: -1px; /* slightly outside the card */
-  border-radius: calc(var(--r) + 6px);
-  pointer-events: none;
-
-  border: 1px solid rgba(120,170,255,.35);
-
-  /* subtle glow */
-  box-shadow:
-    0 0 0 1px rgba(120,170,255,.12),
-    0 0 28px rgba(120,170,255,.08);
-
-  opacity: .85;
-}
 /* Similar card */
 .simCard{
   width: 100%;
