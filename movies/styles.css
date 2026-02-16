@@ -1217,7 +1217,7 @@ body.theme-purple{
 
   /* Push content below the hero */
   .searchWrap{
-    padding-top: 30px;   /* hero height + breathing room */
+    padding-top: 50px;   /* hero height + breathing room */
     position: relative;
     z-index: 2;
   }
