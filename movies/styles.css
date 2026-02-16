@@ -1193,7 +1193,7 @@ body.theme-purple{
     position: absolute;
 
     /* 🔥 THIS controls vertical position (px) */
-    top: -70;           /* change to -20px / 10px if needed */
+    top: 70;           /* change to -20px / 10px if needed */
 
     left: 14px;
     right: 14px;
