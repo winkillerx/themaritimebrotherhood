@@ -1219,7 +1219,7 @@ body.theme-purple{
 
   /* Push content DOWN so it clears the hero */
   .searchWrap{
-    padding-top: 236px; /* hero height + spacing */
+    padding-top: 136px; /* hero height + spacing */
     position: relative;
     z-index: 2;
   }
