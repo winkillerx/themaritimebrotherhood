@@ -1211,7 +1211,16 @@ body.theme-purple{
       inset 0 -90px 120px rgba(8,12,24,1),
       0 30px 80px rgba(0,0,0,.55);
   }
+/* ✅ SEMI-TRANSPARENT BORDER (IMAGE ONLY) */
+.mobileHero::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
 
+  border: 1px solid rgba(120,170,255,.35);}
+	
   .searchWrap{
     padding-top: 45px;
     position: relative;
