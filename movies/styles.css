@@ -161,9 +161,7 @@ body::before{
     rgba(6,10,18,.8);
   box-shadow: 0 0 0 1px rgba(34,211,238,.12), 0 12px 30px rgba(0,0,0,.45);
 }
-.suggestItem{
-  touch-action: manipulation;
-}
+
 .name{
   font-weight: 900;
   letter-spacing: .12em;

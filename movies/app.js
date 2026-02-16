@@ -1064,22 +1064,16 @@ const list = (items || [])
     `;
   }).join("");
 
-  els.suggest.addEventListener("click", async (e) => {
-  const item = e.target.closest(".suggestItem");
-  if (!item) return;
+  els.suggest.querySelectorAll(".suggestItem").forEach((b) => {
+    b.addEventListener("click", async () => {
+      const id = b.getAttribute("data-id");
+      const type = asType(b.getAttribute("data-type") || "movie", "movie");
+      els.suggest.classList.add("hidden");
+      if (id) await loadById(id, type);
+    });
+  });
+}
 
-  e.preventDefault();
-  e.stopPropagation(); // 🔑 stops document click from killing it
-
-  const id = item.getAttribute("data-id");
-  const type = asType(item.getAttribute("data-type") || "movie", "movie");
-
-  els.suggest.classList.add("hidden");
-
-  if (id) {
-    await loadById(id, type);
-  }
-});
 /* -----------------------------
    Search matches (chips)
 ------------------------------*/
@@ -1608,15 +1602,7 @@ function initThemePicker() {
     });
   });
 
-document.addEventListener("click", (e) => {
-  if (
-    els.suggest &&
-    !els.suggest.contains(e.target) &&
-    e.target !== els.q
-  ) {
-    els.suggest.classList.add("hidden");
-  }
-}, { passive: true });
+  document.addEventListener("click", (e) => { if (!wrap.contains(e.target)) menu.classList.add("hidden"); });
 
   let saved = "blue";
   try { saved = localStorage.getItem(THEME_KEY) || "blue"; } catch {}
