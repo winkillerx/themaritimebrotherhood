@@ -1179,7 +1179,7 @@ body.theme-purple{
   /* Wrapper controls spacing */
   .searchWrap{
     position: relative;
-    padding-top: 200px; /* 🔧 adjust THIS to close/open the gap */
+    padding-top: 100px; /* 🔧 adjust THIS to close/open the gap */
   }
 
   /* Hero image */
