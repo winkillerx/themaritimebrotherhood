@@ -1175,10 +1175,6 @@ body.theme-purple{
    MOBILE HERO IMAGE (FROM SCRATCH)
    =============================== */
 @media (max-width: 820px){
-  .card.searchCard{
-    margin-top: 100px;      /* moves entire content down */
-  }
-}
 
   .mobileHero{
     height: 210px;                 /* slightly shorter */
@@ -1207,6 +1203,7 @@ body.theme-purple{
   .card.searchCard{
     position: relative;
     z-index: 2;
+		margin-top: 240px; 
   }
 }
 
