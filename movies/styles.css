@@ -1177,7 +1177,7 @@ body.theme-purple{
 @media (max-width: 820px){
 
   /* Creates real vertical space */
-  .mobileHeroSpacer { height: 200px; }
+  .mobileHeroSpacer { height: 10px; }
 
   /* Visual hero (does NOT affect layout) */
   .mobileHero{
