@@ -1176,21 +1176,19 @@ body.theme-purple{
    =============================== */
 @media (max-width: 820px){
 
-  /* Wrapper */
+  /* Wrapper controls spacing */
   .searchWrap{
     position: relative;
-    padding-top: 260px;   /* EXACTLY image height + gap */
-    margin-top: 0;
+    padding-top: 200px; /* 🔧 adjust THIS to close/open the gap */
   }
 
-  /* HERO IMAGE */
+  /* Hero image */
   .mobileHero{
     position: absolute;
-    top: 14px;            /* ⬆️ equal spacing from top */
+    top: 16px;           /* ✅ MUST have px */
     left: 14px;
     right: 14px;
     height: 220px;
-
     border-radius: 28px;
     z-index: 1;
     pointer-events: none;
@@ -1209,7 +1207,7 @@ body.theme-purple{
       0 30px 80px rgba(0,0,0,.55);
   }
 
-  /* SEARCH CARD */
+  /* Search card */
   .card.searchCard{
     position: relative;
     z-index: 2;
