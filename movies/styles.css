@@ -1176,22 +1176,17 @@ body.theme-purple{
    =============================== */
 @media (max-width: 820px){
 
-  /* Wrapper controls spacing */
   .searchWrap{
     position: relative;
-    padding-top: 100px; /* 🔧 adjust THIS to close/open the gap */
+    margin-top: 16px; /* small, real top spacing */
   }
 
-  /* Hero image */
   .mobileHero{
-    position: absolute;
-    top: 16px;           /* ✅ MUST have px */
-    left: 14px;
-    right: 14px;
+    position: relative;   /* 🚨 NOT absolute */
     height: 220px;
+    margin: 0 14px;
     border-radius: 28px;
     z-index: 1;
-    pointer-events: none;
 
     background:
       radial-gradient(
@@ -1207,10 +1202,10 @@ body.theme-purple{
       0 30px 80px rgba(0,0,0,.55);
   }
 
-  /* Search card */
   .card.searchCard{
     position: relative;
     z-index: 2;
+    margin: -80px 14px 0; /* 🔥 THIS controls the overlap */
   }
 }
 /* ===============================
