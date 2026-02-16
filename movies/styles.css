@@ -1168,17 +1168,17 @@ body.theme-purple{
   }
 @media (max-width: 820px){
 
-  /* Wrapper aligns with cards automatically */
+  /* Wrapper uses same spacing rhythm as cards */
   .searchWrap{
-    margin: 0 0 16px; /* same rhythm as cards */
+    margin: 0 0 16px;
   }
 
-  /* Hero behaves like a card visually */
+  /* HERO = CARD */
   .mobileHero{
     height: 220px;
-    margin: 0 0 16px;        /* 👈 SAME GAP AS CARDS */
-    border-radius: 28px;
-
+    margin: 0 0 16px;        /* ✅ equal bottom gap */
+    border-radius: 28px;    /* ✅ same as card */
+    
     background:
       radial-gradient(
         ellipse at center,
@@ -1193,11 +1193,9 @@ body.theme-purple{
       0 30px 80px rgba(0,0,0,.55);
   }
 
-  /* Search card overlaps hero slightly */
+  /* Search card stays NORMAL */
   .card.searchCard{
-    margin-top: -48px;   /* 👈 TUNE THIS ONLY */
-    position: relative;
-    z-index: 2;
+    margin-top: 0;
   }
 }
   .watchDropdown{
