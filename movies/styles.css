@@ -1176,10 +1176,11 @@ body.theme-purple{
    =============================== */
 @media (max-width: 820px){
 
-  /* Creates real vertical space */
-  .mobileHeroSpacer { height: -10px; }
+  .searchWrap{
+    position: relative;
+    padding-top: 180px; /* controls gap ABOVE card */
+  }
 
-  /* Visual hero (does NOT affect layout) */
   .mobileHero{
     position: absolute;
     top: 0;
@@ -1204,11 +1205,9 @@ body.theme-purple{
       0 30px 80px rgba(0,0,0,.55);
   }
 
-  /* Search card sits exactly below image */
   .card.searchCard{
     position: relative;
     z-index: 2;
-    margin-top: -120px; /* overlap amount */
   }
 }
 
