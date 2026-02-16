@@ -1185,7 +1185,7 @@ body.theme-purple{
 
   .mobileHero{
     position: absolute;
-    top: -100;
+    top: 100;
     left: 14px;
     right: 14px;
     height: 220px;
