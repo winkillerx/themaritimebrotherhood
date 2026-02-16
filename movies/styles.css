@@ -1174,34 +1174,11 @@ body.theme-purple{
 
 @media (max-width: 820px){
 
-  /* 🔥 FIX #1: remove TOP padding that was blocking the hero */
-  .wrap{
-    position: relative;
-    padding-top: 0;   /* ← THIS was the invisible blocker */
-  }
-
-  /* 🔥 FIX #2: kill header margins that create the empty band */
-  .top{
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    margin: 0;        /* ← overrides 10px 0 16px */
-  }
-
-  /* HERO goes BEHIND header */
+  /* REMOVE absolute positioning completely */
   .mobileHero{
-    position: absolute;
-
-    /* 🔥 THIS controls vertical position (px) */
-    top: 0;           /* change to -20px / 10px if needed */
-
-    left: 14px;
-    right: 14px;
     height: 220px;
-
+    margin: 0 0 16px;            /* SAME spacing as cards */
     border-radius: calc(var(--r) + 4px);
-    z-index: 1;
-    pointer-events: none;
 
     background:
       radial-gradient(
@@ -1217,15 +1194,9 @@ body.theme-purple{
       0 30px 80px rgba(0,0,0,.55);
   }
 
-  /* Push content DOWN so it clears the hero */
-  .searchWrap{
-    padding-top: 236px; /* hero height + spacing */
-    position: relative;
-    z-index: 2;
-  }
-
-  /* Card behaves normally */
+  /* Search card sits normally */
   .card.searchCard{
     margin-top: 0;
   }
+
 }
