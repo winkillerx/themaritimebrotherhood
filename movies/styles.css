@@ -1171,15 +1171,23 @@ body.theme-purple{
     margin-left: 0;
   }
 }
+
 @media (max-width: 820px){
 
-  .searchWrap{
-    padding-top: 140px; /* compensates for hero pull */
+  /* REMOVE HEADER GAP (THIS WAS BLOCKING EVERYTHING) */
+  .top{
+    margin-bottom: 0;
   }
 
+  /* Wrapper compensates for hero pull-up */
+  .searchWrap{
+    padding-top: 140px;
+  }
+
+  /* 🔥 HERO MOVES UP */
   .mobileHero{
     height: 220px;
-    margin: -140px 0 16px;   /* 🔥 IMAGE MOVES UP */
+    margin: -140px 0 16px;   /* ← THIS LINE MOVES THE IMAGE UP */
     border-radius: 28px;
 
     background:
