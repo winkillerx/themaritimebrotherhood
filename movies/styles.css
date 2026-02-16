@@ -1190,7 +1190,7 @@ body.theme-purple{
     position: absolute;
 
     /* 🔥 MOVE IMAGE UP (EDIT THIS VALUE ONLY) */
-    top: -40px;           /* try -20px / -60px if needed */
+    top: -100px;           /* try -20px / -60px if needed */
 
     left: 14px;
     right: 14px;
