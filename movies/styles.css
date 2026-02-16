@@ -1190,7 +1190,7 @@ body.theme-purple{
     position: absolute;
 
     /* 🔥 MOVE IMAGE UP (EDIT THIS VALUE ONLY) */
-    top: -200px;           /* try -20px / -60px if needed */
+    top: -190px;           /* try -20px / -60px if needed */
 
     left: 14px;
     right: 14px;
@@ -1217,7 +1217,7 @@ body.theme-purple{
 
   /* Push content below the hero */
   .searchWrap{
-    padding-top: 100px;   /* hero height + breathing room */
+    padding-top: 10px;   /* hero height + breathing room */
     position: relative;
     z-index: 2;
   }
