@@ -1191,7 +1191,7 @@ body.theme-purple{
     top: -193px;
 
     /* 🔑 THIS is the side alignment fix */
-    inset-inline: 114px;   /* 👈 matches .wrap horizontal padding */
+    inset-inline: 4px;   /* 👈 matches .wrap horizontal padding */
 
     height: 220px;
     border-radius: calc(var(--r) + 4px);
