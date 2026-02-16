@@ -1174,25 +1174,26 @@ body.theme-purple{
 
 @media (max-width: 820px){
 
-  /* Make wrap the positioning context */
+  /* 🔥 FIX #1: remove TOP padding that was blocking the hero */
   .wrap{
     position: relative;
+    padding-top: 0;   /* ← THIS was the invisible blocker */
   }
 
-  /* Header floats ABOVE the hero */
+  /* 🔥 FIX #2: kill header margins that create the empty band */
   .top{
     position: sticky;
     top: 0;
     z-index: 50;
-    margin-bottom: 0; /* remove forced gap */
+    margin: 0;        /* ← overrides 10px 0 16px */
   }
 
   /* HERO goes BEHIND header */
   .mobileHero{
     position: absolute;
 
-    /* 🔥 THIS is the line that moves the image UP */
-    top: 0;
+    /* 🔥 THIS controls vertical position (px) */
+    top: 0;           /* change to -20px / 10px if needed */
 
     left: 14px;
     right: 14px;
