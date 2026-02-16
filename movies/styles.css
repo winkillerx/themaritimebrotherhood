@@ -1177,8 +1177,8 @@ body.theme-purple{
 @media (max-width: 820px){
 
   .mobileHero{
-    height: 220px;                 /* slightly shorter */
-    margin: -120px 14px -80px;     /* ⬆️ pulls up WITHOUT adding space */
+    height: 210px;                 /* slightly shorter */
+    margin: -140px 14px -70px;     /* ⬆️ pulls up WITHOUT adding space */
     border-radius: 28px;
 
     background:
