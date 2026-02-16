@@ -1178,14 +1178,14 @@ body.theme-purple{
 
   .searchWrap{
     position: relative;
-    padding-top: 140px; 
+    padding-top: 240px; 
 		margin-top: -20px;    /* 🔥 CLOSES GAP ABOVE IMAGE */
 		/* controls gap ABOVE card */
   }
 
   .mobileHero{
     position: absolute;
-    top: 0;
+    top: -100;
     left: 14px;
     right: 14px;
     height: 220px;
