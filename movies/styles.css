@@ -1174,33 +1174,30 @@ body.theme-purple{
 
 @media (max-width: 820px){
 
-  /* Positioning context */
   .wrap{
     position: relative;
     padding-top: 0;
   }
 
-  /* Remove header-created gap */
   .top{
     margin: 0;
   }
 
-  /* 🎬 MOBILE HERO IMAGE */
+  /* 🎬 MOBILE HERO IMAGE — MATCHES CARD WIDTH */
   .mobileHero{
     position: absolute;
 
-    /* 🔥 MOVE IMAGE UP (EDIT THIS VALUE ONLY) */
-    top: -193px;           /* try -20px / -60px if needed */
+    /* vertical control (YOU already tuned this right) */
+    top: -193px;
 
-    left: 14px;
-    right: 14px;
+    /* 🔑 THIS is the side alignment fix */
+    inset-inline: 14px;   /* 👈 matches .wrap horizontal padding */
+
     height: 220px;
-
     border-radius: calc(var(--r) + 4px);
     z-index: 1;
     pointer-events: none;
 
-    /* ✅ 4K IMAGE IS HERE */
     background:
       radial-gradient(
         ellipse at center,
@@ -1215,14 +1212,12 @@ body.theme-purple{
       0 30px 80px rgba(0,0,0,.55);
   }
 
-  /* Push content below the hero */
   .searchWrap{
-    padding-top: 45px;   /* hero height + breathing room */
+    padding-top: 45px;
     position: relative;
     z-index: 2;
   }
 
-  /* Search card normal flow */
   .card.searchCard{
     margin-top: 0;
   }
