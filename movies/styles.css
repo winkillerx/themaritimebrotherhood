@@ -1189,8 +1189,9 @@ body.theme-purple{
   }
 
   /* HERO goes BEHIND header */
-  .mobileHero{
-    position: absolute;
+.mobileHero{
+  top: -40px;   /* 👈 THIS moves the image up */
+
 
     /* 🔥 THIS controls vertical position (px) */
     top: 0;           /* change to -20px / 10px if needed */
