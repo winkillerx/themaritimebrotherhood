@@ -1688,3 +1688,53 @@ document.addEventListener("DOMContentLoaded", () => {
   clearLists();
   setMeta("Ready.", false);
 });
+/* ============================================================
+   MATRIX RAIN BACKGROUND (Subtle Cyberpunk)
+   ============================================================ */
+
+(function matrixRain(){
+  const canvas = document.getElementById("matrixRain");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+
+  let width, height, columns, drops;
+
+  function resize(){
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+    columns = Math.floor(width / 16);
+    drops = Array(columns).fill(0);
+  }
+
+  resize();
+  window.addEventListener("resize", resize);
+
+  const chars =
+    "アァカサタナハマヤラワ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%";
+
+  function draw(){
+    // fade layer (controls trail length)
+    ctx.fillStyle = "rgba(5, 6, 12, 0.08)";
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = "rgba(34, 211, 238, 0.85)"; // 🔑 matches your accent
+    ctx.font = "14px monospace";
+
+    for (let i = 0; i < drops.length; i++) {
+      const text = chars[Math.floor(Math.random() * chars.length)];
+      const x = i * 16;
+      const y = drops[i] * 16;
+
+      ctx.fillText(text, x, y);
+
+      if (y > height && Math.random() > 0.975) {
+        drops[i] = 0;
+      }
+      drops[i]++;
+    }
+  }
+
+  // 30fps = smooth but cheap
+  setInterval(draw, 33);
+})();
