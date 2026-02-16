@@ -162,7 +162,34 @@ function asType(x, fallback = "movie") {
 function safeUpper(x) {
   return String(x || "").toUpperCase();
 }
+function padToMultiple(items, multiple) {
+  const list = (items || []).slice();
+  const missing = (multiple - (list.length % multiple)) % multiple;
+  for (let i = 0; i < missing; i++) list.push(null);
+  return list;
+}
 
+// Shrink font-size until the title fits inside its fixed-height box
+function fitPopTitles(container) {
+  if (!container) return;
+  const titles = container.querySelectorAll(".popTitle");
+  titles.forEach((el) => {
+    // skip placeholders
+    if (el.closest(".popCard")?.classList.contains("is-placeholder")) return;
+
+    el.style.fontSize = ""; // reset to CSS default
+    const maxLoops = 12;
+    let size = parseFloat(getComputedStyle(el).fontSize) || 13;
+
+    // keep shrinking until it fits the fixed height
+    for (let i = 0; i < maxLoops; i++) {
+      if (el.scrollHeight <= el.clientHeight + 1) break;
+      size = Math.max(9, size - 0.5); // don’t go too tiny
+      el.style.fontSize = `${size}px`;
+      if (size <= 9) break;
+    }
+  });
+}
 /* -----------------------------
    Helpers
 ------------------------------*/
@@ -520,7 +547,7 @@ function enableMobileAutoHideHeader() {
   if (!isTouch) return;
 
   let hideTimer = null;
-  const IDLE_DELAY = 2600; // ms before hiding
+const IDLE_DELAY = 1000; // ms before hiding
 
   const showHeader = () => {
     header.classList.remove("auto-hidden");
@@ -1341,39 +1368,60 @@ async function fetchPopularPagesTo50() {
 function renderPopularGrid(container, items) {
   if (!container) return;
 
-  const list = (items || []).filter(Boolean).slice(0, POPULAR_COUNT);
-  if (!list.length) {
+  // 3 columns is your base layout on mobile → pad to 3 so no “missing” card gaps
+  const baseCols = 3;
+
+  const clean = (items || []).filter(Boolean).slice(0, POPULAR_COUNT);
+  const list = padToMultiple(clean, baseCols);
+
+  if (!clean.length) {
     container.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
     return;
   }
 
   container.innerHTML = `
     <div class="popGrid">
-      ${list.map((m) => `
-        <button
-          class="popCard"
-          type="button"
-          data-id="${esc(m.id)}"
-          data-type="${esc(asType(m.type || m.media_type, "movie"))}"
-        >
-          ${
-            m.poster
-              ? `<img class="popPoster" src="${esc(m.poster)}" loading="lazy" alt="${esc(m.title)} poster" />`
-              : `<div class="popPoster placeholder"></div>`
-          }
-          <div class="popTitle">${esc(m.title)}</div>
-        </button>
-      `).join("")}
+      ${list.map((m) => {
+        // Placeholder to fill the last row cleanly
+        if (!m) {
+          return `
+            <div class="popCard is-placeholder" aria-hidden="true"
+                 style="opacity:0; pointer-events:none;">
+              <div class="popPoster placeholder"></div>
+              <div class="popTitle"></div>
+            </div>
+          `;
+        }
+
+        return `
+          <button
+            class="popCard"
+            type="button"
+            data-id="${esc(m.id)}"
+            data-type="${esc(asType(m.type || m.media_type, "movie"))}"
+          >
+            ${
+              m.poster
+                ? `<img class="popPoster" src="${esc(m.poster)}" loading="lazy" alt="${esc(m.title)} poster" />`
+                : `<div class="popPoster placeholder"></div>`
+            }
+            <div class="popTitle">${esc(m.title)}</div>
+          </button>
+        `;
+      }).join("")}
     </div>
   `;
 
-  container.querySelectorAll(".popCard").forEach((btn) => {
+  container.querySelectorAll(".popCard:not(.is-placeholder)").forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = btn.getAttribute("data-id");
       const type = asType(btn.getAttribute("data-type") || "movie", "movie");
       if (id) loadById(id, type);
     });
   });
+
+  // 🔑 After render, shrink titles to fit their fixed-height box
+  fitPopTitles(container);
 }
 
 async function loadPopularNow() {
