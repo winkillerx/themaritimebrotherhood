@@ -1718,8 +1718,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    columns = Math.floor(width / fontSize);
-    drops = Array(columns).fill(1);
+    const bufferCols = 10; // 5 extra on each side
+
+columns = Math.floor(width / fontSize) + bufferCols;
+drops = Array(columns).fill(1);
   }
 
   function draw() {
