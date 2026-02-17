@@ -3,7 +3,7 @@
    Genre Discover + Boosted Search Integration
    ============================================================ */
 const YEAR_MIN = 1950;
-const POPULAR_COUNT = 51; // ✅ 50 each (Movie/TV)
+const POPULAR_COUNT = 53; // ✅ 50 each (Movie/TV)
 
 const GENRES = [
   ["any", "Any"],
