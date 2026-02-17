@@ -53,23 +53,11 @@
 
 #matrixRain{
   position: fixed;
-  top: 0;
-  left: 0;
-
-  width: 100%;
-  height: 100%;
-
-  min-width: 100vw;
-  min-height: 100svh;
-
+  inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.22;
-
-  /* force iOS to use visual viewport */
-  transform: translate3d(0,0,0);
+  opacity: 0.22; /* 🔑 subtle */
 }
-
 
 /* Make sure your app sits above it */
 .wrap,
@@ -80,21 +68,7 @@
   z-index: 1;
 }
 *{ box-sizing:border-box; }
-
-html{
-  background-color: var(--bg0);
-  overflow-x: hidden;
-}
-
-html, body {
-  width: 100%;
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
-body, .wrap {
-  isolation: isolate;
-}
+html,body{ height:100%; }
 
 body{
   margin:0;
@@ -115,20 +89,19 @@ body::before{
   position:fixed;
   inset:0;
   pointer-events:none;
-
   background:
-    linear-gradient(to right, rgba(255,255,255,.03) 1px, transparent 1px) 0 0 / 48px 48px,
-    linear-gradient(to bottom, rgba(255,255,255,.025) 1px, transparent 1px) 0 0 / 48px 48px;
-
+    linear-gradient(to right, rgba(255,255,255,.035) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(to bottom, rgba(255,255,255,.03) 1px, transparent 1px) 0 0 / 48px 48px,
+    radial-gradient(circle at 50% 40%, transparent 35%, rgba(0,0,0,.55) 78%);
   mix-blend-mode:overlay;
-  opacity:.12;
+  opacity:.22;
 }
 
 /* Layout */
 .wrap{
   max-width: 980px;
   margin: 0 auto;
-  padding: 24px 14px 0;
+  padding: 18px 14px 40px;
 }
 
 /* header */
@@ -237,30 +210,14 @@ a:focus {
 
 /* cards */
 .card{
-  border-radius: calc(var(--r) + 6px);
-
-  /* Seamless glass surface */
-  background:
-    linear-gradient(
-      180deg,
-      rgba(10,14,28,.62),
-      rgba(6,10,18,.56)
-    );
-
-  /* Softer, non-boxy edge */
-  border: 1px solid rgba(120,170,255,.12);
-
-  /* Depth without visible "card edges" */
-  box-shadow:
-    0 0 0 1px rgba(120,170,255,.06),
-    0 18px 60px rgba(0,0,0,.45);
-
-  /* Glass blur */
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-
+  border: 1px solid var(--line);
+  border-radius: calc(var(--r) + 4px);
+  background: var(--card);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow2);
   padding: var(--pad);
-  margin: 0 0 18px;
+  margin: 0 0 16px;
 }
 
 h2{
@@ -743,16 +700,7 @@ input[type="range"]{
 /* Genres grid uses the same look as Popular */
 #genreGrid .popCard { text-align: center; }
 /* Footer */
-.foot{
-  margin: 0;
-  padding: 24px 12px 32px;
-  text-align: center;
-
-  opacity: .75;
-  text-shadow: 0 2px 12px rgba(0,0,0,.65);
-
-  background: transparent;
-}
+.foot{ padding: 14px 4px 0; text-align:center; }
 
 /* Modal */
 .modal{
