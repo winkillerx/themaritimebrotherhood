@@ -1557,58 +1557,9 @@ function initUI() {
 
     loadPopularNow();
 		renderGenres(GENRE_PRESETS);
-  initThemePicker();
   setActiveMode("none");
 	  enableMobileAutoHideHeader();
 }
-
-/* -----------------------------
-   Theme Picker
-------------------------------*/
-const THEME_KEY = "filmmatrix_theme_v1";
-const THEME_LABELS = {
-  blue: "Blue Stock",
-  red: "Red",
-  green: "Green",
-  purple: "Purple",
-};
-
-function applyTheme(theme) {
-  const t = (theme && THEME_LABELS[theme]) ? theme : "blue";
-  document.body.classList.remove("theme-blue","theme-red","theme-green","theme-purple");
-  document.body.classList.add(`theme-${t}`);
-
-  const labelEl = document.getElementById("themeBtnLabel");
-  if (labelEl) labelEl.textContent = THEME_LABELS[t];
-
-  try { localStorage.setItem(THEME_KEY, t); } catch {}
-}
-
-function initThemePicker() {
-  const wrap = document.getElementById("themeWrap");
-  const btn = document.getElementById("themeBtn");
-  const menu = document.getElementById("themeMenu");
-  if (!wrap || !btn || !menu) return;
-
-  btn.addEventListener("click", (e) => {
-    e.preventDefault(); e.stopPropagation();
-    menu.classList.toggle("hidden");
-  });
-
-  menu.querySelectorAll("[data-theme]").forEach((item) => {
-    item.addEventListener("click", () => {
-      applyTheme(item.getAttribute("data-theme"));
-      menu.classList.add("hidden");
-    });
-  });
-
-  document.addEventListener("click", (e) => { if (!wrap.contains(e.target)) menu.classList.add("hidden"); });
-
-  let saved = "blue";
-  try { saved = localStorage.getItem(THEME_KEY) || "blue"; } catch {}
-  applyTheme(saved);
-}
-
 /* -----------------------------------------------------------
    SECTION E: Bottom Enhancements (FULL REPLACE)
 -----------------------------------------------------------*/
