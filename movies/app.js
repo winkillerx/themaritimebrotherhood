@@ -1729,8 +1729,9 @@ drops = Array(columns).fill(1);
     const height = canvas.height / (window.devicePixelRatio || 1);
 
     // fade layer (trail)
-    ctx.fillStyle = "rgba(5, 6, 12, 0.08)";
-    ctx.fillRect(0, 0, width, height);
+    // subtle glass shade to match cards
+ctx.fillStyle = "rgba(10, 14, 28, 0.12)";
+ctx.fillRect(0, 0, width, height);
 
     ctx.fillStyle = "rgba(34, 211, 238, 0.85)";
     ctx.font = `${fontSize}px monospace`;
