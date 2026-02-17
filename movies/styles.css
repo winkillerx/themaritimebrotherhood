@@ -1379,12 +1379,20 @@ body.theme-purple{
   position: relative;
   z-index: 3;
 }
-/* ==================================================
-   DESKTOP FIX: REMOVE HEADER BOTTOM BORDER
-   ================================================== */
+/* ============================================
+   FIX: HIDE MOBILE HERO ON DESKTOP
+   ============================================ */
 
-@media (min-width: 821px){
-  .top{
-    border-bottom: none !important;
+/* 1. Hide it completely on desktop to remove the border line */
+@media (min-width: 821px) {
+  .mobileHero {
+    display: none !important;
+  }
+}
+
+/* 2. Ensure searchWrap doesn't have extra padding on desktop */
+@media (min-width: 821px) {
+  .searchWrap {
+    padding-top: 0 !important;
   }
 }
