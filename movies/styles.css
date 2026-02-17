@@ -1140,7 +1140,7 @@ body.theme-purple{
     position: absolute;
 
     /* vertical control (YOU already tuned this right) */
-    top: -120px;
+    top: -126px;
 
     /* 🔑 THIS is the side alignment fix */
     inset-inline: 2px;   /* 👈 matches .wrap horizontal padding */
@@ -1174,7 +1174,7 @@ body.theme-purple{
   border: 1.5px solid rgba(120,170,255,.28);}
 	
   .searchWrap{
-    padding-top: 70px;
+    padding-top: 90px;
     position: relative;
     z-index: 2;
   }
