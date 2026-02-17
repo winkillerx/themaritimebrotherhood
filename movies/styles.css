@@ -1304,33 +1304,75 @@ body.theme-purple{
     margin-top: 0;
   }
 }
-/* ============================================
-   REMOVE INNER CARD OUTLINE / DOUBLE BORDER
-   ============================================ */
+/* ==================================================
+   FINAL UI NORMALIZATION (MUST BE LAST)
+   ================================================== */
 
+/* ---- HERO IMAGE (remove fake outline ring) ---- */
+.mobileHero,
+.mobileHero::before{
+  border: 1px solid var(--accentBorder) !important;
+  box-shadow: 0 30px 80px rgba(0,0,0,.55) !important;
+  outline: none !important;
+}
+
+/* ---- MAIN CARDS ---- */
+.card,
+.searchCard,
+.simCard,
+.popCard,
+.modalCard,
+.targetBox{
+  border: 1px solid var(--accentBorder) !important;
+}
+
+/* ---- HEADER / MENU / LOGO ---- */
+.top,
+.logo,
+.iconBtn,
+.themeBtn{
+  border-color: var(--accentBorder) !important;
+}
+
+/* ---- INPUTS / SELECTS / BUTTONS ---- */
+.input,
+.select,
+.btn{
+  border-color: var(--accentBorder) !important;
+  box-shadow: none !important;
+}
+
+.input:focus,
+.select:focus{
+  box-shadow: 0 0 0 3px var(--accentSoft) !important;
+}
+
+/* ---- TARGET "NO SELECTION YET" ---- */
+.targetBox,
+.targetBox > div{
+  border-color: var(--accentBorder) !important;
+}
+
+/* ---- REMOVE ALL FAKE INNER BORDERS ---- */
 .card *,
 .searchCard *,
 .simCard *,
 .popCard *,
-.targetBox *,
-.modalCard *{
+.modalCard *,
+.targetBox *{
   outline: none !important;
   box-shadow: none;
 }
 
-/* Restore intentional shadows ONLY on hover */
+/* ---- RESTORE HOVER DEPTH (ONLY) ---- */
 .card:hover,
 .simCard:hover,
 .popCard:hover{
   box-shadow:
-    0 0 0 1px var(--accentSoft),
     0 18px 55px rgba(0,0,0,.4);
 }
 
-/* ============================================
-   FIX LINKS BLEEDING OVER SEARCH CARD
-   ============================================ */
-
+/* ---- FIX SEARCH CARD LINK BLEED ---- */
 .searchCard{
   position: relative;
   z-index: 2;
@@ -1342,72 +1384,4 @@ body.theme-purple{
 .searchCard ul{
   position: relative;
   z-index: 2;
-}
-/* ===============================
-   FORCE HERO / IMAGE CARD THEME
-   =============================== */
-
-.mobileHero::before,
-.mobileHero,
-.heroCard,
-.imageCard{
-  border-color: var(--accentBorder) !important;
-  box-shadow:
-    0 0 0 1px var(--accentSoft),
-    0 30px 80px rgba(0,0,0,.55) !important;
-}
-/* ===============================
-   HEADER + LOGO + ICON BUTTONS
-   =============================== */
-
-.top{
-  border-color: var(--accentBorder) !important;
-}
-
-.logo{
-  border-color: var(--accentBorder) !important;
-  box-shadow:
-    0 0 0 1px var(--accentSoft),
-    0 12px 30px rgba(0,0,0,.45);
-}
-
-.iconBtn,
-.themeBtn{
-  border-color: var(--accentBorder) !important;
-}
-/* ===============================
-   INPUTS & SEARCH BUTTON
-   =============================== */
-
-.input,
-.select,
-.btn{
-  border-color: var(--accentBorder) !important;
-  box-shadow: none !important;
-}
-
-.input:focus,
-.select:focus{
-  border-color: var(--accentBorder) !important;
-  box-shadow: 0 0 0 3px var(--accentSoft) !important;
-}
-/* ===============================
-   TARGET BOX NORMALIZATION
-   =============================== */
-
-.targetBox,
-.targetBox > div{
-  border-color: var(--accentBorder) !important;
-}
-/* ===============================
-   REMOVE INNER DOUBLE BORDERS
-   =============================== */
-
-.card *,
-.searchCard *,
-.simCard *,
-.popCard *,
-.modalCard *,
-.targetBox *{
-  outline: none !important;
 }
