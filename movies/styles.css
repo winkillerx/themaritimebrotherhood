@@ -1379,3 +1379,12 @@ body.theme-purple{
   position: relative;
   z-index: 3;
 }
+	/* ==================================================
+   DESKTOP FIX: REMOVE HERO BOTTOM BORDER
+   ================================================== */
+
+@media (min-width: 900px){
+  .mobileHero{
+    border-bottom: none !important;
+  }
+}
