@@ -1689,54 +1689,68 @@ document.addEventListener("DOMContentLoaded", () => {
   setMeta("Ready.", false);
 });
 /* ============================================================
-   MATRIX RAIN BACKGROUND (Subtle Cyberpunk)
+   MATRIX RAIN BACKGROUND — FULLSCREEN + FIXED
    ============================================================ */
 
 (function matrixRain(){
   const canvas = document.getElementById("matrixRain");
-const ctx = canvas.getContext("2d");
+  if (!canvas) return;
 
-function resizeMatrix() {
-  const dpr = window.devicePixelRatio || 1;
-
-  canvas.width  = Math.floor(window.innerWidth * dpr);
-  canvas.height = Math.floor(window.innerHeight * dpr);
-
-  canvas.style.width  = window.innerWidth + "px";
-  canvas.style.height = window.innerHeight + "px";
-
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-}
-
-resizeMatrix();
-window.addEventListener("resize", resizeMatrix);
-window.addEventListener("orientationchange", resizeMatrix);
+  const ctx = canvas.getContext("2d");
 
   const chars =
     "アァカサタナハマヤラワ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%";
 
-  function draw(){
-    // fade layer (controls trail length)
+  let fontSize = 14;
+  let columns = 0;
+  let drops = [];
+
+  function resizeMatrix() {
+    const dpr = window.devicePixelRatio || 1;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    columns = Math.floor(width / fontSize);
+    drops = Array(columns).fill(1);
+  }
+
+  function draw() {
+    const width = canvas.width / (window.devicePixelRatio || 1);
+    const height = canvas.height / (window.devicePixelRatio || 1);
+
+    // fade layer (trail)
     ctx.fillStyle = "rgba(5, 6, 12, 0.08)";
     ctx.fillRect(0, 0, width, height);
 
-    ctx.fillStyle = "rgba(34, 211, 238, 0.85)"; // 🔑 matches your accent
-    ctx.font = "14px monospace";
+    ctx.fillStyle = "rgba(34, 211, 238, 0.85)";
+    ctx.font = `${fontSize}px monospace`;
 
     for (let i = 0; i < drops.length; i++) {
       const text = chars[Math.floor(Math.random() * chars.length)];
-      const x = i * 16;
-      const y = drops[i] * 16;
+      const x = i * fontSize;
+      const y = drops[i] * fontSize;
 
       ctx.fillText(text, x, y);
 
       if (y > height && Math.random() > 0.975) {
         drops[i] = 0;
       }
+
       drops[i]++;
     }
   }
 
-  // 30fps = smooth but cheap
-  setInterval(draw, 33);
+  resizeMatrix();
+  window.addEventListener("resize", resizeMatrix);
+  window.addEventListener("orientationchange", resizeMatrix);
+
+  setInterval(draw, 33); // ~30 FPS
 })();
