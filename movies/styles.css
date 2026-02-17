@@ -1367,3 +1367,14 @@ body.theme-purple{
   z-index: 2;
   overflow: hidden;
 }
+/* ============================================
+   DESKTOP FIX: HEADER BLEED LINE
+   ============================================ */
+
+.top{
+  overflow: hidden;
+}
+.searchWrap{
+  position: relative;
+  z-index: 3;
+}
