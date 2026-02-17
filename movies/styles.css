@@ -48,15 +48,16 @@
   --shadow2: 0 0 0 1px rgba(120,170,255,.14), 0 16px 60px rgba(0,0,0,.45);
 }
 /* ===============================
-   MATRIX RAIN BACKGROUND
+   MATRIX CANVAS — TRUE FULLSCREEN
    =============================== */
-
 #matrixRain{
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100svh; /* mobile-safe viewport */
   z-index: 0;
   pointer-events: none;
-  opacity: 0.22; /* 🔑 subtle */
 }
 
 /* Make sure your app sits above it */
