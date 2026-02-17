@@ -1380,19 +1380,21 @@ body.theme-purple{
   z-index: 3;
 }
 /* ============================================
-   FIX: HIDE MOBILE HERO ON DESKTOP
+   STRICT DESKTOP CLEANUP (ADD TO BOTTOM)
    ============================================ */
 
-/* 1. Hide it completely on desktop to remove the border line */
 @media (min-width: 821px) {
+  /* This kills the element AND the border completely */
   .mobileHero {
     display: none !important;
+    border: none !important;
+    height: 0 !important;
+    visibility: hidden !important;
   }
-}
 
-/* 2. Ensure searchWrap doesn't have extra padding on desktop */
-@media (min-width: 821px) {
+  /* Ensures the search card doesn't have a gap from the hidden hero */
   .searchWrap {
     padding-top: 0 !important;
+    margin-top: 0 !important;
   }
 }
