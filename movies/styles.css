@@ -98,11 +98,28 @@ body::before{
 }
 
 /* Layout */
-.wrap{
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 18px 14px 40px;
-}
+/* ===============================
+   MOBILE FULL-WIDTH + TOP FIX
+   =============================== */
+@media (max-width: 520px) {
+
+  /* Remove side gutters so cards hit screen edge */
+  .wrap {
+    max-width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+  }
+
+  /* Cards stretch edge-to-edge */
+  .card {
+    border-radius: 0;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  /* Header flush to top */
+
 
 /* header */
 .top{
