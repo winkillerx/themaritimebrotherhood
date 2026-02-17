@@ -53,10 +53,16 @@
 
 #matrixRain{
   position: fixed;
-  inset: 0;
+  top: -2px;
+  left: -2px;
+  width: calc(100vw + 4px);
+  height: calc(100svh + 4px);
+
   z-index: 0;
   pointer-events: none;
-  opacity: 0.22; /* 🔑 subtle */
+  opacity: 0.22;
+
+  transform: translateZ(0);
 }
 
 /* Make sure your app sits above it */
@@ -100,20 +106,20 @@ body::before{
   position:fixed;
   inset:0;
   pointer-events:none;
+
   background:
-    linear-gradient(to right, rgba(255,255,255,.035) 1px, transparent 1px) 0 0 / 48px 48px,
-    linear-gradient(to bottom, rgba(255,255,255,.03) 1px, transparent 1px) 0 0 / 48px 48px,
-radial-gradient(circle at 50% 50%, transparent 20%, rgba(0,0,0,.65) 90%);
+    linear-gradient(to right, rgba(255,255,255,.03) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(to bottom, rgba(255,255,255,.025) 1px, transparent 1px) 0 0 / 48px 48px;
+
   mix-blend-mode:overlay;
-  opacity:.22;
+  opacity:.18;
 }
 
 /* Layout */
 .wrap{
   max-width: 980px;
   margin: 0 auto;
-  padding: 24px 14px 80px;
-  background: transparent; /* 🔑 ensure no layer break */
+  padding: 24px 14px 24px;
 }
 
 /* header */
@@ -730,20 +736,14 @@ input[type="range"]{
 /* Footer */
 .foot{
   position: relative;
-  margin-top: 60px;
-  padding: 60px 12px 120px;
+  margin-top: 24px;
+  padding: 24px 12px 48px;
   text-align: center;
 
-  opacity: .7;
+  opacity: .75;
   text-shadow: 0 2px 12px rgba(0,0,0,.65);
 
-  /* dissolve instead of stop */
-  background: linear-gradient(
-    to bottom,
-    rgba(0,0,0,0),
-    rgba(5,6,12,.55),
-    rgba(5,6,12,.85)
-  );
+  background: transparent;
 }
 .foot::after{
   content:"";
