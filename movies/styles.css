@@ -350,7 +350,7 @@ h2{
   background: rgba(3,6,14,.65);
   color: var(--text);
   outline: none;
- box-shadow: none;o
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
 }
 
 .input:focus, .select:focus{
@@ -1303,6 +1303,45 @@ body.theme-purple{
   .card.searchCard{
     margin-top: 0;
   }
+}
+/* ============================================
+   REMOVE INNER CARD OUTLINE / DOUBLE BORDER
+   ============================================ */
+
+.card *,
+.searchCard *,
+.simCard *,
+.popCard *,
+.targetBox *,
+.modalCard *{
+  outline: none !important;
+  box-shadow: none;
+}
+
+/* Restore intentional shadows ONLY on hover */
+.card:hover,
+.simCard:hover,
+.popCard:hover{
+  box-shadow:
+    0 0 0 1px var(--accentSoft),
+    0 18px 55px rgba(0,0,0,.4);
+}
+
+/* ============================================
+   FIX LINKS BLEEDING OVER SEARCH CARD
+   ============================================ */
+
+.searchCard{
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.searchCard p,
+.searchCard a,
+.searchCard ul{
+  position: relative;
+  z-index: 2;
 }
 /* ===============================
    FORCE HERO / IMAGE CARD THEME
