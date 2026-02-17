@@ -47,6 +47,51 @@
   --shadow: 0 16px 50px rgba(0,0,0,.45);
   --shadow2: 0 0 0 1px rgba(120,170,255,.14), 0 16px 60px rgba(0,0,0,.45);
 }
+body[data-theme="red"]{
+  --accent:#ff4d6d;
+  --accent2:#ff758f;
+
+  --accentSoft: rgba(255,77,109,.18);
+  --accentBorder: rgba(255,77,109,.55);
+  --accent2Soft: rgba(255,117,143,.22);
+
+  --glowA: rgba(255,77,109,.24);
+  --glowB: rgba(255,117,143,.18);
+  --glowC: rgba(255,77,109,.12);
+}
+body[data-theme="purple"]{
+  --accent: #a855f7;
+  --accent2: #7c3aed;
+
+  --accentSoft: rgba(168,85,247,.18);
+  --accentBorder: rgba(168,85,247,.55);
+
+  --glowA: rgba(168,85,247,.24);
+  --glowB: rgba(124,58,237,.18);
+  --glowC: rgba(168,85,247,.12);
+}
+body[data-theme="green"]{
+  --accent: #22c55e;
+  --accent2: #16a34a;
+
+  --accentSoft: rgba(34,197,94,.18);
+  --accentBorder: rgba(34,197,94,.55);
+
+  --glowA: rgba(34,197,94,.22);
+  --glowB: rgba(22,163,74,.18);
+  --glowC: rgba(34,197,94,.12);
+}
+body[data-theme="pink"]{
+  --accent: #ff2bd6;
+  --accent2: #f472b6;
+
+  --accentSoft: rgba(255,43,214,.20);
+  --accentBorder: rgba(255,43,214,.55);
+
+  --glowA: rgba(255,43,214,.26);
+  --glowB: rgba(244,114,182,.18);
+  --glowC: rgba(255,43,214,.14);
+}
 /* ===============================
    MATRIX CANVAS — TRUE FULLSCREEN
    =============================== */
@@ -700,6 +745,38 @@ input[type="range"]{
 }
 /* Genres grid uses the same look as Popular */
 #genreGrid .popCard { text-align: center; }
+.card,
+.simCard,
+.popCard,
+.chip,
+.modalCard,
+.targetBox,
+.poster,
+.popPoster,
+.watchItem{
+  border-color: var(--accentBorder);
+}
+
+.btn:hover,
+.simCard:hover,
+.popCard:hover,
+.chip:hover{
+  border-color: var(--accentBorder);
+  box-shadow:
+    0 0 0 1px var(--accentSoft),
+    0 18px 55px rgba(0,0,0,.4);
+}
+
+.input:focus,
+.select:focus{
+  border-color: var(--accentBorder);
+  box-shadow:
+    0 0 0 3px var(--accentSoft);
+}
+
+input[type="range"]{
+  accent-color: var(--accent);
+}
 /* Footer */
 .foot{ padding: 14px 4px 0; text-align:center; }
 
