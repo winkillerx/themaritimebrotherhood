@@ -745,37 +745,81 @@ input[type="range"]{
 }
 /* Genres grid uses the same look as Popular */
 #genreGrid .popCard { text-align: center; }
+/* ==================================================
+   FINAL THEME BORDER NORMALIZATION (GLOBAL)
+   ================================================== */
+
+/* MAIN CARDS */
 .card,
+.searchCard,
+.targetBox,
 .simCard,
 .popCard,
 .chip,
-.modalCard,
-.targetBox,
-.poster,
-.popPoster,
-.watchItem{
-  border-color: var(--accentBorder);
+.modalCard{
+  border: 1px solid var(--accentBorder) !important;
 }
 
+/* IMAGE / HERO CARD (TOP IMAGE) */
+.mobileHero,
+.heroCard,
+.imageCard{
+  border: 1px solid var(--accentBorder) !important;
+}
+
+/* HEADER / AUTO-HIDE MENU */
+.top{
+  border: 1px solid var(--accentBorder) !important;
+}
+
+/* FM LOGO */
+.logo{
+  border: 1px solid var(--accentBorder) !important;
+  box-shadow:
+    0 0 0 1px var(--accentSoft),
+    0 12px 30px rgba(0,0,0,.45);
+}
+
+/* HEADER ICON BUTTONS (ALL 4) */
+.iconBtn,
+.themeBtn{
+  border: 1px solid var(--accentBorder) !important;
+}
+
+/* INPUTS + SELECTS + SEARCH FIELD */
+.input,
+.select{
+  border: 1px solid var(--accentBorder) !important;
+}
+
+/* TARGET "NO SELECTION YET" BOX */
+.targetBox,
+.targetBox > div{
+  border-color: var(--accentBorder) !important;
+}
+
+/* SEARCH BUTTON */
+.btn{
+  border-color: var(--accentBorder) !important;
+}
+
+/* HOVER / ACTIVE STATES */
 .btn:hover,
+.iconBtn:hover,
 .simCard:hover,
 .popCard:hover,
 .chip:hover{
-  border-color: var(--accentBorder);
+  border-color: var(--accentBorder) !important;
   box-shadow:
     0 0 0 1px var(--accentSoft),
     0 18px 55px rgba(0,0,0,.4);
 }
 
+/* FOCUS STATES */
 .input:focus,
 .select:focus{
-  border-color: var(--accentBorder);
-  box-shadow:
-    0 0 0 3px var(--accentSoft);
-}
-
-input[type="range"]{
-  accent-color: var(--accent);
+  border-color: var(--accentBorder) !important;
+  box-shadow: 0 0 0 3px var(--accentSoft);
 }
 /* Footer */
 .foot{ padding: 14px 4px 0; text-align:center; }
