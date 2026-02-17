@@ -1694,21 +1694,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
 (function matrixRain(){
   const canvas = document.getElementById("matrixRain");
-  if (!canvas) return;
+const ctx = canvas.getContext("2d");
 
-  const ctx = canvas.getContext("2d");
+function resizeMatrix() {
+  const dpr = window.devicePixelRatio || 1;
 
-  let width, height, columns, drops;
+  canvas.width  = Math.floor(window.innerWidth * dpr);
+  canvas.height = Math.floor(window.innerHeight * dpr);
 
-  function resize(){
-    width = canvas.width = window.innerWidth;
-    height = canvas.height = window.innerHeight;
-    columns = Math.floor(width / 16);
-    drops = Array(columns).fill(0);
-  }
+  canvas.style.width  = window.innerWidth + "px";
+  canvas.style.height = window.innerHeight + "px";
 
-  resize();
-  window.addEventListener("resize", resize);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+resizeMatrix();
+window.addEventListener("resize", resizeMatrix);
+window.addEventListener("orientationchange", resizeMatrix);
 
   const chars =
     "アァカサタナハマヤラワ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%";
