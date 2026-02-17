@@ -1140,7 +1140,7 @@ body.theme-purple{
     position: absolute;
 
     /* vertical control (YOU already tuned this right) */
-    top: -135;
+    top: -135px;
 
     /* 🔑 THIS is the side alignment fix */
     inset-inline: 2px;   /* 👈 matches .wrap horizontal padding */
