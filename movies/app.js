@@ -135,7 +135,22 @@ const els = {
   popularMovies: document.getElementById("popularMovies"),
   popularTv: document.getElementById("popularTv") || document.getElementById("popularTV"),
 };
+const themeSelect = document.getElementById("themeSelect");
 
+function applyTheme(theme){
+  document.body.setAttribute("data-theme", theme);
+  localStorage.setItem("filmMatrixTheme", theme);
+}
+
+const savedTheme = localStorage.getItem("filmMatrixTheme") || "blue";
+applyTheme(savedTheme);
+
+if (themeSelect){
+  themeSelect.value = savedTheme;
+  themeSelect.addEventListener("change", e => {
+    applyTheme(e.target.value);
+  });
+}
 const API_BASE = "";
 
 /* -----------------------------
