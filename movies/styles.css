@@ -1284,15 +1284,7 @@ body.theme-purple{
       inset 0 -90px 120px rgba(8,12,24,1),
       0 30px 80px rgba(0,0,0,.55);
   }
-/* ✅ SEMI-TRANSPARENT BORDER (IMAGE ONLY) */
-.mobileHero::before{
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
 
-  border: 1.5px solid rgba(120,170,255,.28);}
 	
   .searchWrap{
     padding-top: 101px;
@@ -1303,12 +1295,10 @@ body.theme-purple{
   .card.searchCard{
     margin-top: 0;
   }
-}
 /* ==================================================
    FINAL UI NORMALIZATION (MUST BE LAST)
    ================================================== */
 
-/* ---- HERO IMAGE (remove fake outline ring) ---- */
 .mobileHero,
 .mobileHero::before{
   border: 1px solid var(--accentBorder) !important;
@@ -1368,8 +1358,7 @@ body.theme-purple{
 .card:hover,
 .simCard:hover,
 .popCard:hover{
-  box-shadow:
-    0 18px 55px rgba(0,0,0,.4);
+  box-shadow: 0 18px 55px rgba(0,0,0,.4);
 }
 
 /* ---- FIX SEARCH CARD LINK BLEED ---- */
@@ -1377,11 +1366,4 @@ body.theme-purple{
   position: relative;
   z-index: 2;
   overflow: hidden;
-}
-
-.searchCard p,
-.searchCard a,
-.searchCard ul{
-  position: relative;
-  z-index: 2;
 }
