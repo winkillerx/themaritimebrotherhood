@@ -1304,3 +1304,42 @@ body.theme-purple{
     margin-top: 0;
   }
 }
+/* ============================================
+   REMOVE INNER CARD OUTLINE / DOUBLE BORDER
+   ============================================ */
+
+.card *,
+.searchCard *,
+.simCard *,
+.popCard *,
+.targetBox *,
+.modalCard *{
+  outline: none !important;
+  box-shadow: none;
+}
+
+/* Restore intentional shadows ONLY on hover */
+.card:hover,
+.simCard:hover,
+.popCard:hover{
+  box-shadow:
+    0 0 0 1px var(--accentSoft),
+    0 18px 55px rgba(0,0,0,.4);
+}
+
+/* ============================================
+   FIX LINKS BLEEDING OVER SEARCH CARD
+   ============================================ */
+
+.searchCard{
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.searchCard p,
+.searchCard a,
+.searchCard ul{
+  position: relative;
+  z-index: 2;
+}
