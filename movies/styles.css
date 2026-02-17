@@ -350,7 +350,7 @@ h2{
   background: rgba(3,6,14,.65);
   color: var(--text);
   outline: none;
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
+ box-shadow: none;o
 }
 
 .input:focus, .select:focus{
@@ -1304,42 +1304,71 @@ body.theme-purple{
     margin-top: 0;
   }
 }
-/* ============================================
-   REMOVE INNER CARD OUTLINE / DOUBLE BORDER
-   ============================================ */
+/* ===============================
+   FORCE HERO / IMAGE CARD THEME
+   =============================== */
+
+.mobileHero::before,
+.mobileHero,
+.heroCard,
+.imageCard{
+  border-color: var(--accentBorder) !important;
+  box-shadow:
+    0 0 0 1px var(--accentSoft),
+    0 30px 80px rgba(0,0,0,.55) !important;
+}
+/* ===============================
+   HEADER + LOGO + ICON BUTTONS
+   =============================== */
+
+.top{
+  border-color: var(--accentBorder) !important;
+}
+
+.logo{
+  border-color: var(--accentBorder) !important;
+  box-shadow:
+    0 0 0 1px var(--accentSoft),
+    0 12px 30px rgba(0,0,0,.45);
+}
+
+.iconBtn,
+.themeBtn{
+  border-color: var(--accentBorder) !important;
+}
+/* ===============================
+   INPUTS & SEARCH BUTTON
+   =============================== */
+
+.input,
+.select,
+.btn{
+  border-color: var(--accentBorder) !important;
+  box-shadow: none !important;
+}
+
+.input:focus,
+.select:focus{
+  border-color: var(--accentBorder) !important;
+  box-shadow: 0 0 0 3px var(--accentSoft) !important;
+}
+/* ===============================
+   TARGET BOX NORMALIZATION
+   =============================== */
+
+.targetBox,
+.targetBox > div{
+  border-color: var(--accentBorder) !important;
+}
+/* ===============================
+   REMOVE INNER DOUBLE BORDERS
+   =============================== */
 
 .card *,
 .searchCard *,
 .simCard *,
 .popCard *,
-.targetBox *,
-.modalCard *{
+.modalCard *,
+.targetBox *{
   outline: none !important;
-  box-shadow: none;
-}
-
-/* Restore intentional shadows ONLY on hover */
-.card:hover,
-.simCard:hover,
-.popCard:hover{
-  box-shadow:
-    0 0 0 1px var(--accentSoft),
-    0 18px 55px rgba(0,0,0,.4);
-}
-
-/* ============================================
-   FIX LINKS BLEEDING OVER SEARCH CARD
-   ============================================ */
-
-.searchCard{
-  position: relative;
-  z-index: 2;
-  overflow: hidden;
-}
-
-.searchCard p,
-.searchCard a,
-.searchCard ul{
-  position: relative;
-  z-index: 2;
 }
