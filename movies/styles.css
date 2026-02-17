@@ -12,51 +12,40 @@
    ✅ Popular grid supports 50 each (frontend)
 */
 
-/* ===============================
-   GLOBAL THEME VARIABLES
-   =============================== */
-
 :root{
   --bg0:#05060c;
   --bg1:#070a14;
   --bg2:#071425;
 
+  --card: rgba(10, 14, 28, .62);
+  --line: rgba(120, 170, 255, .18);
+  --line2: rgba(120, 170, 255, .28);
+
+  --text:#e7ecff;
+  --muted: rgba(231,236,255,.68);
+
   --accent:#22d3ee;
   --accent2:#7c3aed;
+  --hot:#ff2bd6;
+  --warn:#ff4d6d;
 
-  --matrix:#22d3ee;
+  /* Theme-driven accents */
+  --accentSoft: rgba(34,211,238,.18);
+  --accentBorder: rgba(34,211,238,.55);
 
+  --accent2Soft: rgba(124,58,237,.22);
+
+  /* Theme-driven background glows */
   --glowA: rgba(124,58,237,.22);
   --glowB: rgba(34,211,238,.18);
   --glowC: rgba(255,43,214,.10);
-}
 
-/* 🔵 BLUE */
-html[data-theme="blue"]{
-  --accent:#22d3ee;
-  --accent2:#7c3aed;
-  --matrix:#22d3ee;
-}
 
-/* 🔴 RED */
-html[data-theme="red"]{
-  --accent:#ff4d6d;
-  --accent2:#ff2bd6;
-  --matrix:#ff4d6d;
-}
+  --r: 22px;
+  --pad: 18px;
 
-/* 🟢 GREEN (Matrix feel) */
-html[data-theme="green"]{
-  --accent:#22c55e;
-  --accent2:#16a34a;
-  --matrix:#22ff88;
-}
-
-/* 🟣 PURPLE */
-html[data-theme="purple"]{
-  --accent:#a855f7;
-  --accent2:#7c3aed;
-  --matrix:#c084fc;
+  --shadow: 0 16px 50px rgba(0,0,0,.45);
+  --shadow2: 0 0 0 1px rgba(120,170,255,.14), 0 16px 60px rgba(0,0,0,.45);
 }
 /* ===============================
    MATRIX RAIN BACKGROUND
@@ -90,10 +79,9 @@ body{
     radial-gradient(1200px 600px at 15% 10%, var(--glowA), transparent 55%),
     radial-gradient(900px 520px at 85% 20%, var(--glowB), transparent 55%),
     radial-gradient(1200px 700px at 50% 100%, var(--glowC), transparent 60%),
-    linear-gradient(180deg, var(--bg1), var(--bg0) 45%, var(--bg2));
+    linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 45%, var(--bg2) 100%);
 
-  transition: background 600ms ease;
-  overflow-x: hidden;
+  overflow-x:hidden;
 }
 
 body::before{
@@ -222,21 +210,14 @@ a:focus {
 
 /* cards */
 .card{
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--bg1) 85%, transparent),
-      color-mix(in srgb, var(--bg0) 92%, transparent)
-    );
-
-  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  border: 1px solid var(--line);
   border-radius: calc(var(--r) + 4px);
-  backdrop-filter: blur(14px);
+  background: var(--card);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   box-shadow: var(--shadow2);
-
-  transition:
-    background 400ms ease,
-    border-color 300ms ease;
+  padding: var(--pad);
+  margin: 0 0 16px;
 }
 
 h2{
@@ -1249,13 +1230,6 @@ body.theme-purple{
       inset 0 -90px 120px rgba(8,12,24,1),
       0 30px 80px rgba(0,0,0,.55);
   }
-	#matrixRain{
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.12; /* subtle */
-}
 /* ✅ SEMI-TRANSPARENT BORDER (IMAGE ONLY) */
 .mobileHero::before{
   content: "";

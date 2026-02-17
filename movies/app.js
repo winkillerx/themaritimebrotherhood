@@ -1064,22 +1064,16 @@ const list = (items || [])
     `;
   }).join("");
 
-  els.suggest.addEventListener("click", async (e) => {
-  const item = e.target.closest(".suggestItem");
-  if (!item) return;
+  els.suggest.querySelectorAll(".suggestItem").forEach((b) => {
+    b.addEventListener("click", async () => {
+      const id = b.getAttribute("data-id");
+      const type = asType(b.getAttribute("data-type") || "movie", "movie");
+      els.suggest.classList.add("hidden");
+      if (id) await loadById(id, type);
+    });
+  });
+}
 
-  e.preventDefault();
-  e.stopPropagation(); // 🔑 stops document click from killing it
-
-  const id = item.getAttribute("data-id");
-  const type = asType(item.getAttribute("data-type") || "movie", "movie");
-
-  els.suggest.classList.add("hidden");
-
-  if (id) {
-    await loadById(id, type);
-  }
-});
 /* -----------------------------
    Search matches (chips)
 ------------------------------*/
@@ -1581,9 +1575,8 @@ const THEME_LABELS = {
 
 function applyTheme(theme) {
   const t = (theme && THEME_LABELS[theme]) ? theme : "blue";
-
-  // 🔑 NEW SYSTEM
-  document.documentElement.setAttribute("data-theme", t);
+  document.body.classList.remove("theme-blue","theme-red","theme-green","theme-purple");
+  document.body.classList.add(`theme-${t}`);
 
   const labelEl = document.getElementById("themeBtnLabel");
   if (labelEl) labelEl.textContent = THEME_LABELS[t];
@@ -1609,15 +1602,7 @@ function initThemePicker() {
     });
   });
 
-document.addEventListener("click", (e) => {
-  if (
-    els.suggest &&
-    !els.suggest.contains(e.target) &&
-    e.target !== els.q
-  ) {
-    els.suggest.classList.add("hidden");
-  }
-}, { passive: true });
+  document.addEventListener("click", (e) => { if (!wrap.contains(e.target)) menu.classList.add("hidden"); });
 
   let saved = "blue";
   try { saved = localStorage.getItem(THEME_KEY) || "blue"; } catch {}
@@ -1703,46 +1688,53 @@ document.addEventListener("DOMContentLoaded", () => {
   clearLists();
   setMeta("Ready.", false);
 });
+/* ============================================================
+   MATRIX RAIN BACKGROUND (Subtle Cyberpunk)
+   ============================================================ */
 
-/* ===============================
-   MATRIX RAIN BACKGROUND
-   =============================== */
+(function matrixRain(){
+  const canvas = document.getElementById("matrixRain");
+  if (!canvas) return;
 
-const canvas = document.getElementById("matrixRain");
-const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d");
 
-let w, h;
-function resizeMatrix(){
-  w = canvas.width = window.innerWidth;
-  h = canvas.height = window.innerHeight;
-}
-window.addEventListener("resize", resizeMatrix);
-resizeMatrix();
+  let width, height, columns, drops;
 
-const fontSize = 14;
-let columns = Math.floor(w / fontSize);
-let drops = Array(columns).fill(1);
-
-function drawMatrix(){
-  ctx.fillStyle = "rgba(0,0,0,0.05)";
-  ctx.fillRect(0, 0, w, h);
-
-  const color = getComputedStyle(document.documentElement)
-    .getPropertyValue("--matrix");
-
-  ctx.fillStyle = color;
-  ctx.font = `${fontSize}px monospace`;
-
-  for(let i = 0; i < drops.length; i++){
-    const char = String.fromCharCode(0x30A0 + Math.random() * 96);
-    ctx.fillText(char, i * fontSize, drops[i] * fontSize);
-
-    if(drops[i] * fontSize > h && Math.random() > 0.975){
-      drops[i] = 0;
-    }
-    drops[i]++;
+  function resize(){
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+    columns = Math.floor(width / 16);
+    drops = Array(columns).fill(0);
   }
 
-  requestAnimationFrame(drawMatrix);
-}
-drawMatrix();
+  resize();
+  window.addEventListener("resize", resize);
+
+  const chars =
+    "アァカサタナハマヤラワ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%";
+
+  function draw(){
+    // fade layer (controls trail length)
+    ctx.fillStyle = "rgba(5, 6, 12, 0.08)";
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = "rgba(34, 211, 238, 0.85)"; // 🔑 matches your accent
+    ctx.font = "14px monospace";
+
+    for (let i = 0; i < drops.length; i++) {
+      const text = chars[Math.floor(Math.random() * chars.length)];
+      const x = i * 16;
+      const y = drops[i] * 16;
+
+      ctx.fillText(text, x, y);
+
+      if (y > height && Math.random() > 0.975) {
+        drops[i] = 0;
+      }
+      drops[i]++;
+    }
+  }
+
+  // 30fps = smooth but cheap
+  setInterval(draw, 33);
+})();
