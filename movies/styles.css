@@ -1270,7 +1270,8 @@ body.theme-purple{
     border-radius: calc(var(--r) + 4px);
     z-index: 1;
     pointer-events: none;
-
+  /* ✅ THIS IS THE FIX */
+  overflow: hidden;
     background:
       radial-gradient(
         ellipse at center,
