@@ -82,7 +82,9 @@ html{
 }
 
 html, body {
-  min-height: 100%;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body, .wrap {
