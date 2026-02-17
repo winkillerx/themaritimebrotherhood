@@ -1140,7 +1140,7 @@ body.theme-purple{
     position: absolute;
 
     /* vertical control (YOU already tuned this right) */
-    top: -193px;
+    top: -165px;
 
     /* 🔑 THIS is the side alignment fix */
     inset-inline: 2px;   /* 👈 matches .wrap horizontal padding */
@@ -1182,17 +1182,4 @@ body.theme-purple{
   .card.searchCard{
     margin-top: 0;
   }
-}
-/* ===============================
-   MOBILE: PUSH HERO IMAGE DOWN
-   =============================== */
-@media (max-width: 520px) {
-
-  /* hero / top image card */
-  .heroCard,
-  .topImage,
-  .top .card:first-of-type {
-    margin-top: 14px;
-  }
-
 }
