@@ -1401,15 +1401,11 @@ body.theme-purple{
 
 /* ============================================
    DESKTOP FIXES (PUT AT VERY BOTTOM)
-   1) Trailer border + depth ALWAYS visible (desktop too)
-   2) Theme row spans FULL width on desktop
+   - Trailer borders always visible
+   - Theme row FULL width on desktop (no :has)
    ============================================ */
 
-/* ---------------------------
-   1) TRAILER BORDER (ALL SIZES)
-   --------------------------- */
-
-/* Border + radius on the container (not the iframe) */
+/* ----- Trailer border (all sizes) ----- */
 .trailer,
 .miniTrailer{
   border: 1px solid var(--accentBorder) !important;
@@ -1418,46 +1414,46 @@ body.theme-purple{
   background: rgba(6,10,18,.55) !important;
 }
 
-/* Your global rule ".card * { box-shadow:none; }" can kill depth inside cards.
-   Force depth back on trailers specifically. */
 .card .trailer,
 .card .miniTrailer{
   box-shadow: var(--shadow2) !important;
 }
 
-/* iframe should never draw borders or spacing */
 .trailer iframe,
 .miniTrailer iframe{
-  display: block !important;
-  width: 100% !important;
-  border: 0 !important;
+  display:block !important;
+  width:100% !important;
+  border:0 !important;
 }
 
 
-/* -----------------------------------
-   2) THEME = FULL WIDTH (DESKTOP ONLY)
-   ----------------------------------- */
-
+/* ----- Theme FULL width (desktop) ----- */
 @media (min-width: 821px){
 
-  /* If the Theme select exists, force the *wrapper row* to span both columns */
-  .filters > *:has(select#theme),
-  .filters > *:has(select[name="theme"]),
-  .filters > *:has(label[for="theme"]){
+  /* Theme label spans both columns */
+  .filters label[for="theme"],
+  .filters .lbl.themeLbl,
+  .filters .themeLbl{
     grid-column: 1 / -1 !important;
-    width: 100% !important;
-  }
-
-  /* Make the Theme select itself stretch full width */
-  .filters select#theme,
-  .filters select[name="theme"]{
     width: 100% !important;
     display: block !important;
   }
 
-  /* Fallback (if Theme wrapper isn't matched for any reason):
-     force the last row full width */
-  .filters > *:last-child{
+  /* Theme select spans both columns */
+  .filters select#theme,
+  .filters select[name="theme"],
+  .filters .select#theme,
+  .filters .themeSelect{
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    display: block !important;
+  }
+
+  /* If theme is wrapped in its own div/row, force THAT wrapper full width too */
+  .filters .themeRow,
+  .filters .themeField,
+  .filters .themeWrap,
+  .filters .themeGroup{
     grid-column: 1 / -1 !important;
     width: 100% !important;
   }
