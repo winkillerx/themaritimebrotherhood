@@ -1374,13 +1374,13 @@ body.theme-purple{
   position: relative;
   z-index: 3;
 }
-/* 🎯 DESKTOP HORIZONTAL LINE FIX */
 /* ============================================
-   DESKTOP: KILL STICKY HEADER SEAM (FINAL)
+   DESKTOP: MATCH HEADER CORNERS TO SEARCH CARD
    ============================================ */
 
 @media (min-width: 821px){
   .top{
-    border-bottom-color: #000;
+    border-bottom-left-radius: calc(var(--r) + 4px);
+    border-bottom-right-radius: calc(var(--r) + 4px);
   }
 }
