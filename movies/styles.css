@@ -104,7 +104,7 @@ body[data-theme="pink"]{
   /* ✅ tune these 2 numbers only */
   :root{
     --lift: 8px;     /* + = move BOTH DOWN, - = move BOTH UP */
-    --gap: 21px;     /* space BETWEEN hero card and Search card */
+    --gap: 42px;     /* space BETWEEN hero card and Search card */
   }
 
   .wrap{
