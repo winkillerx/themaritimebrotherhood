@@ -1367,7 +1367,6 @@ body.theme-purple{
 
 /* ============================================
    DESKTOP: remove header edge spill above Search
-   (paste at VERY bottom)
    ============================================ */
 @media (min-width: 821px){
   .top{
@@ -1376,11 +1375,10 @@ body.theme-purple{
 
     border-bottom: 1px solid var(--accentBorder) !important;
 
-    /* ✅ round the bottom corners on the desktop button/title bar */
     border-bottom-left-radius: calc(var(--r) + 6px) !important;
     border-bottom-right-radius: calc(var(--r) + 6px) !important;
 
-    overflow: hidden;
+    overflow: hidden !important;
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
     background: rgba(8,12,24,.92) !important;
@@ -1399,26 +1397,26 @@ body.theme-purple{
   .searchWrap{ padding-top: 0 !important; }
 }
 
-/* ============================================
-   DESKTOP FIXES (PUT AT VERY BOTTOM)
-   - Trailer borders always visible
-   - Theme row FULL width on desktop (no :has)
-   ============================================ */
 
-/* ----- Trailer border (all sizes) ----- */
+/* ============================================
+   TRAILERS: force same border as cards (mobile+desktop)
+   NOTE: survives your ".card * { box-shadow:none }" rule
+   ============================================ */
+.card .trailer,
+.card .miniTrailer,
 .trailer,
 .miniTrailer{
   border: 1px solid var(--accentBorder) !important;
   border-radius: calc(var(--r) + 4px) !important;
   overflow: hidden !important;
   background: rgba(6,10,18,.55) !important;
-}
 
-.card .trailer,
-.card .miniTrailer{
+  /* force depth back even inside cards */
   box-shadow: var(--shadow2) !important;
 }
 
+.card .trailer iframe,
+.card .miniTrailer iframe,
 .trailer iframe,
 .miniTrailer iframe{
   display:block !important;
@@ -1427,34 +1425,24 @@ body.theme-purple{
 }
 
 
-/* ----- Theme FULL width (desktop) ----- */
+/* ============================================
+   THEME FIELD: FULL WIDTH ON DESKTOP (GUARANTEED)
+   Assumes Theme label + Theme control are the LAST TWO items in .filters
+   (matches your screenshot layout)
+   ============================================ */
 @media (min-width: 821px){
 
-  /* Theme label spans both columns */
-  .filters label[for="theme"],
-  .filters .lbl.themeLbl,
-  .filters .themeLbl{
+  /* Make the last two children of the grid span both columns */
+  .filters > :nth-last-child(2),
+  .filters > :last-child{
     grid-column: 1 / -1 !important;
     width: 100% !important;
-    display: block !important;
   }
 
-  /* Theme select spans both columns */
-  .filters select#theme,
-  .filters select[name="theme"],
-  .filters .select#theme,
-  .filters .themeSelect{
-    grid-column: 1 / -1 !important;
+  /* Ensure the actual select fills its container */
+  .filters > :last-child select,
+  .filters > :last-child .select{
     width: 100% !important;
     display: block !important;
-  }
-
-  /* If theme is wrapped in its own div/row, force THAT wrapper full width too */
-  .filters .themeRow,
-  .filters .themeField,
-  .filters .themeWrap,
-  .filters .themeGroup{
-    grid-column: 1 / -1 !important;
-    width: 100% !important;
   }
 }
