@@ -105,7 +105,7 @@ body[data-theme="pink"]{
   /* ✅ tune these 2 numbers only */
   :root{
     --lift: -34px;   /* more negative = moves BOTH UP (this will remove the gap above hero) */
-    --gap: 2px;     /* space BETWEEN hero card and Search card */
+    --gap: -12px;     /* space BETWEEN hero card and Search card */
   }
 
   .wrap{
