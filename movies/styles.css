@@ -107,7 +107,7 @@ body[data-theme="pink"]{
 
   /* one knob that moves BOTH the header+buttons AND the hero together */
   :root{
-    --lift: -30px; /* more negative = higher (try -28px / -38px) */
+    --lift: -25px; /* more negative = higher (try -28px / -38px) */
   }
 
   .wrap{
