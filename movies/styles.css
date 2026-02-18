@@ -113,10 +113,10 @@ body[data-theme="pink"]{
   }
 
   /* ✅ move the title/menu button bar UP */
-  .top{
-    margin: 0 0 16px;
-    margin-top: var(--lift);
-  }
+ .top{
+  margin: 0 0 16px;          /* keep your normal bottom spacing */
+  margin-top: var(--lift);   /* negative value lifts it up */
+}
 
   /* ✅ move the hero UP by the SAME amount */
   .mobileHero{
