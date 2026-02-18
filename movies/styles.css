@@ -1363,41 +1363,40 @@ body.theme-purple{
   z-index: 2;
   overflow: hidden;
 }
-/* ============================================
-   DESKTOP FIX: HEADER BLEED LINE
-   ============================================ */
-
+/* Mobile-only: keep header clipping safe */
 .top{
   overflow: hidden;
 }
+
 .searchWrap{
   position: relative;
   z-index: 3;
 }
+
+/* ✅ CLOSE MOBILE MEDIA QUERY */
+}
+
 /* ============================================
-   DESKTOP: MASK STICKY HEADER BOTTOM SEAM
+   DESKTOP: KILL STICKY HEADER SEAM (CHROME)
+   MUST BE AT VERY BOTTOM OF styles.css
    ============================================ */
 
 @media (min-width: 821px){
   .top{
     position: sticky;
+    top: 0;
+    overflow: visible !important;
   }
 
   .top::after{
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -1px;
-    height: 2px;
-
-    /* Match page background to hide seam */
-    background: linear-gradient(
-      to bottom,
-      rgba(8,12,24,0),
-      #05060c
-    );
-
-    pointer-events: none;
+    content:"";
+    position:absolute;
+    left:-3px;
+    right:-3px;
+    bottom:-3px;
+    height:6px;
+    pointer-events:none;
+    z-index:9999;
+    background:#05060c;
   }
 }
