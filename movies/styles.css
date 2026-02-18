@@ -92,6 +92,66 @@ body[data-theme="pink"]{
   --glowB: rgba(244,114,182,.18);
   --glowC: rgba(255,43,214,.14);
 }
+/* =========================================================
+   MOBILE HERO — ONLY ON MOBILE/TABLETS
+   ========================================================= */
+
+/* HERO: OFF by default (prevents desktop hairline) */
+.mobileHero{
+  display: none !important;
+  border: 0 !important;
+  height: 0 !important;
+}
+
+/* Mobile/tablet only */
+@media (max-width: 820px){
+
+  .wrap{
+    position: relative;
+    padding-top: 0;
+  }
+
+  .top{
+    margin: 0;
+  }
+
+  .mobileHero{
+    display: block !important;
+    position: absolute;
+    top: -134px;
+    inset-inline: 2px;
+    height: 220px;
+
+    border: 1px solid var(--accentBorder);
+    border-radius: calc(var(--r) + 4px);
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
+
+    background:
+      radial-gradient(
+        ellipse at center,
+        rgba(0,0,0,0) 40%,
+        rgba(8,12,24,.75) 70%,
+        rgba(8,12,24,1) 100%
+      ),
+      url("./4k.PNG") center 2px / cover no-repeat;
+
+    box-shadow:
+      inset 0 -90px 120px rgba(8,12,24,1),
+      0 30px 80px rgba(0,0,0,.55);
+  }
+
+  .searchWrap{
+    padding-top: 101px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .card.searchCard{
+    margin-top: 0;
+  }
+}
 /* ===============================
    MATRIX CANVAS — TRUE FULLSCREEN
    =============================== */
@@ -749,13 +809,6 @@ input[type="range"]{
   border: 1px solid var(--accentBorder) !important;
 }
 
-/* IMAGE / HERO CARD (TOP IMAGE) */
-.mobileHero,
-.heroCard,
-.imageCard{
-  border: 1px solid var(--accentBorder) !important;
-}
-
 /* HEADER / AUTO-HIDE MENU */
 .top{
   border: 1px solid var(--accentBorder) !important;
@@ -1233,58 +1286,6 @@ body.theme-purple{
     margin-left: 0;
   }
 }
-
-@media (max-width: 820px){
-
-  .wrap{
-    position: relative;
-    padding-top: 0;
-  }
-
-  .top{
-    margin: 0;
-  }
-
-  /* 🎬 MOBILE HERO IMAGE — MATCHES CARD WIDTH */
-  .mobileHero{
-    position: absolute;
-
-    /* vertical control (YOU already tuned this right) */
-    top: -134px;
-
-    /* 🔑 THIS is the side alignment fix */
-    inset-inline: 2px;   /* 👈 matches .wrap horizontal padding */
-
-    height: 220px;
-    border-radius: calc(var(--r) + 4px);
-    z-index: 1;
-    pointer-events: none;
-  /* ✅ THIS IS THE FIX */
-  overflow: hidden;
-    background:
-      radial-gradient(
-        ellipse at center,
-        rgba(0,0,0,0) 40%,
-        rgba(8,12,24,.75) 70%,
-        rgba(8,12,24,1) 100%
-      ),
-      url("./4k.PNG") center 2px / cover no-repeat;
-
-    box-shadow:
-      inset 0 -90px 120px rgba(8,12,24,1),
-      0 30px 80px rgba(0,0,0,.55);
-  }
-
-	
-  .searchWrap{
-    padding-top: 101px;
-    position: relative;
-    z-index: 2;
-  }
-
-  .card.searchCard{
-    margin-top: 0;
-  }
 /* ==================================================
    FINAL UI NORMALIZATION (MUST BE LAST)
    ================================================== */
