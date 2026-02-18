@@ -1358,13 +1358,14 @@ body.theme-purple{
 
   .top{
     box-shadow: none !important;
-    margin-bottom: 0 !important;
+    margin: 10px 0 0 !important;          /* keeps your top spacing, removes bottom gap */
+    border: 1px solid var(--accentBorder) !important;
 
-    /* keep the bottom border */
+    /* ✅ round bottom corners to match top */
+    border-radius: calc(var(--r) + 6px) !important;
+
+    /* ✅ keep divider line between header + search card */
     border-bottom: 1px solid var(--accentBorder) !important;
-
-    border-bottom-left-radius: calc(var(--r) + 6px) !important;
-border-bottom-right-radius: calc(var(--r) + 6px) !important;
 
     overflow: hidden;
     -webkit-backdrop-filter: none !important;
@@ -1373,9 +1374,15 @@ border-bottom-right-radius: calc(var(--r) + 6px) !important;
   }
 
   .card.searchCard{
-    margin-top: -2px !important; /* hides the seam */
+    margin-top: -2px !important;          /* ✅ hides seam between header + card */
+
+    /* ✅ keep bottom corners rounded like before */
     border-bottom-left-radius: calc(var(--r) + 6px) !important;
-border-bottom-right-radius: calc(var(--r) + 6px) !important;
+    border-bottom-right-radius: calc(var(--r) + 6px) !important;
+
+    /* ✅ match the header’s rounding at the join */
+    border-top-left-radius: calc(var(--r) + 6px) !important;
+    border-top-right-radius: calc(var(--r) + 6px) !important;
 
     /* keep border-top so the card still looks clean */
     border-top: 1px solid var(--accentBorder) !important;
@@ -1383,6 +1390,6 @@ border-bottom-right-radius: calc(var(--r) + 6px) !important;
     box-shadow: var(--shadow2) !important;
   }
 
-  .mobileHero{ display:none !important; }
+  .mobileHero{ display: none !important; }
   .searchWrap{ padding-top: 0 !important; }
 }
