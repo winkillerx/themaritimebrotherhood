@@ -1354,28 +1354,31 @@ body.theme-purple{
 }
 
 /* ============================================
-   DESKTOP FIX: HEADER BLEED LINE + SEAM
+   DESKTOP: kill the 1px seam between header + Search
+   (place at VERY bottom of styles.css)
    ============================================ */
-.top{ overflow: hidden; }
-.searchWrap{ position: relative; z-index: 3; }
-
 @media (min-width: 821px){
-  .mobileHero{ display: none !important; }
-  .searchWrap{ padding-top: 0 !important; }
 
+  /* Remove the 1px "ring" shadow that creates the seam */
+  .top,
+  .card.searchCard{
+    box-shadow: 0 16px 60px rgba(0,0,0,.45) !important; /* no 0 0 0 1px */
+  }
+
+  /* Keep your border seam removal */
   .top{
     margin-bottom: 0 !important;
     border-bottom: 0 !important;
     border-bottom-left-radius: 0 !important;
     border-bottom-right-radius: 0 !important;
+    overflow: hidden;
   }
 
-  .searchCard{ border-top: 0 !important; }
-
+  /* Hard guarantee: overlap Search card by 1px */
   .card.searchCard{
-    margin-top: -1px !important; /* 🔑 overlap kills 1px seam */
+    margin-top: -1px !important;
+    border-top: 0 !important;
     border-top-left-radius: 0 !important;
     border-top-right-radius: 0 !important;
   }
 }
-.card.searchCard{ outline: 4px solid red !important; }
