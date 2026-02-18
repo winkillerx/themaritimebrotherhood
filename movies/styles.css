@@ -1365,8 +1365,8 @@ body.theme-purple{
 
   .card.searchCard{
     margin-top: -2px !important; /* hides the seam */
-    border-top-left-radius: 0 !important;
-    border-top-right-radius: 0 !important;
+    border-bottom-left-radius: calc(var(--r) + 6px) !important;
+border-bottom-right-radius: calc(var(--r) + 6px) !important;
 
     /* keep border-top so the card still looks clean */
     border-top: 1px solid var(--accentBorder) !important;
