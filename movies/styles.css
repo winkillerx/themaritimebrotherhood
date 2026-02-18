@@ -1364,12 +1364,22 @@ body.theme-purple{
   z-index: 3;
 }
 /* ============================================
-   DESKTOP: MATCH HEADER CORNERS TO SEARCH CARD
+   DESKTOP FIX: REMOVE MOBILE HERO & SEAM
    ============================================ */
-
 @media (min-width: 821px){
+  .mobileHero{ display:none !important; }
+
+  .searchWrap{ padding-top: 0 !important; }
+
   .top{
-    border-bottom-left-radius: calc(var(--r) + 4px);
-    border-bottom-right-radius: calc(var(--r) + 4px);
+    margin-bottom: 0;                 /* tighten gap */
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .card.searchCard{
+    margin-top: -1px;                 /* overlap borders to kill 1px seam */
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
   }
 }
