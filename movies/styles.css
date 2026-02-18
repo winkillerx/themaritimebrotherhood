@@ -1536,23 +1536,33 @@ input[type="range"]::-moz-focus-outer{
 
 
 /* ============================================
-   THEME FIELD: FULL WIDTH ON DESKTOP (GUARANTEED)
+   THEME + GENRE FIELDS: FULL WIDTH ON DESKTOP (OVERWRITE)
    Assumes Theme label + Theme control are the LAST TWO items in .filters
-   (matches your screenshot layout)
    ============================================ */
 @media (min-width: 821px){
 
-  /* Make the last two children of the grid span both columns */
+  /* ✅ THEME (unchanged) */
   .filters > :nth-last-child(2),
   .filters > :last-child{
     grid-column: 1 / -1 !important;
     width: 100% !important;
   }
 
-  /* Ensure the actual select fills its container */
   .filters > :last-child select,
   .filters > :last-child .select{
     width: 100% !important;
+    display: block !important;
+  }
+
+  /* ✅ GENRE (NEW) — label + select full width */
+  .filters > .lbl[for="genre"],
+  .filters > #genre{
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+  }
+
+  /* If #genre also has class="select", force block */
+  .filters > #genre.select{
     display: block !important;
   }
 }
