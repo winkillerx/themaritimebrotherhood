@@ -109,7 +109,7 @@ body[data-theme="pink"]{
   .mobileHero{
     display: block !important;
     position: absolute;
-    top: -155px;
+    top: -175px;
     inset-inline: 2px;
     height: 220px;
 
