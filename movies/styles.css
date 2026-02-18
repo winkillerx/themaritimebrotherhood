@@ -1375,10 +1375,13 @@ body.theme-purple{
   z-index: 3;
 }
 /* 🎯 DESKTOP HORIZONTAL LINE FIX */
-@media (min-width: 821px) {
-  .top {
-    border-bottom: none !important;  /* removes header bottom border */
-    margin-bottom: 0 !important;     /* pulls cards up tight */
+/* ============================================
+   DESKTOP: KILL STICKY HEADER SEAM (FINAL)
+   ============================================ */
+
+@media (min-width: 821px){
+  .top{
+    border-bottom-color: transparent; /* 🔑 removes the seam */
   }
   
   .searchWrap {
