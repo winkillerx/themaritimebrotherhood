@@ -104,21 +104,16 @@ body[data-theme="pink"]{
 
 @media (max-width: 820px){
   .wrap{ position: relative; padding-top: 0; }
+  .top{ margin: 0; }
 
-  /* 1) Make the floating header match the hero’s edges */
-  .top{
-    margin: 0 2px 0;                 /* ✅ matches mobileHero inset-inline: 2px */
-    border-radius: calc(var(--r) + 4px);
-    overflow: hidden;
-  }
-
-  /* 2) Use a variable so you can dial the hero up/down */
-  :root{ --heroTop: -175px; }        /* 👈 tweak this number */
-
+  /* ✅ Align hero position */
   .mobileHero{
     display: block !important;
     position: absolute;
-    top: var(--heroTop);             /* ✅ now easy to tune */
+
+    /* tweak this number to align the hero top border with the header */
+    top: -155px; /* was -175px */
+
     inset-inline: 2px;
     height: 220px;
 
@@ -142,10 +137,16 @@ body[data-theme="pink"]{
       0 30px 80px rgba(0,0,0,.55);
   }
 
+  /* ✅ Move the search content UP (gap closer to hero) */
   .searchWrap{
-    padding-top: 62px;
+    padding-top: 44px !important; /* was 62px */
     position: relative;
     z-index: 2;
+  }
+
+  /* ✅ Hard pull-up (this is what actually closes the visible gap reliably) */
+  .card.searchCard{
+    margin-top: -18px !important;
   }
 }
 /* ===============================
@@ -1355,17 +1356,15 @@ body.theme-purple{
    (paste at VERY bottom)
    ============================================ */
 @media (min-width: 821px){
-
   .top{
     box-shadow: none !important;
-    margin: 10px 0 0 !important;          /* keeps your top spacing, removes bottom gap */
-    border: 1px solid var(--accentBorder) !important;
+    margin-bottom: 0 !important;
 
-    /* ✅ round bottom corners to match top */
-    border-radius: calc(var(--r) + 6px) !important;
-
-    /* ✅ keep divider line between header + search card */
     border-bottom: 1px solid var(--accentBorder) !important;
+
+    /* ✅ round the bottom corners on the desktop button/title bar */
+    border-bottom-left-radius: calc(var(--r) + 6px) !important;
+    border-bottom-right-radius: calc(var(--r) + 6px) !important;
 
     overflow: hidden;
     -webkit-backdrop-filter: none !important;
@@ -1374,22 +1373,14 @@ body.theme-purple{
   }
 
   .card.searchCard{
-    margin-top: -2px !important;          /* ✅ hides seam between header + card */
-
-    /* ✅ keep bottom corners rounded like before */
+    margin-top: -2px !important; /* hides the seam */
     border-bottom-left-radius: calc(var(--r) + 6px) !important;
     border-bottom-right-radius: calc(var(--r) + 6px) !important;
 
-    /* ✅ match the header’s rounding at the join */
-    border-top-left-radius: calc(var(--r) + 6px) !important;
-    border-top-right-radius: calc(var(--r) + 6px) !important;
-
-    /* keep border-top so the card still looks clean */
     border-top: 1px solid var(--accentBorder) !important;
-
     box-shadow: var(--shadow2) !important;
   }
 
-  .mobileHero{ display: none !important; }
+  .mobileHero{ display:none !important; }
   .searchWrap{ padding-top: 0 !important; }
 }
