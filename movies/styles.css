@@ -96,38 +96,34 @@ body[data-theme="pink"]{
    MOBILE HERO — ONLY ON MOBILE/TABLETS
    ========================================================= */
 
-/* HERO: OFF by default (desktop) */
+/* HERO OFF by default (desktop) */
 .mobileHero{ display:none; }
 
 @media (max-width: 820px){
 
-  /* 🔧 ONE KNOB (moves BOTH header + hero together) */
+  /* ✅ tune these 2 numbers only */
   :root{
-    --lift: 12px;          /* + = down, - = up  (try 8px / 12px / 18px) */
-    --stickyDrop: 10px;    /* ✅ fixes iOS crop while scrolling (try 8px–14px) */
+    --lift: 8px;     /* + = move BOTH DOWN, - = move BOTH UP */
+    --gap: 14px;     /* space BETWEEN hero card and Search card */
   }
 
-  .wrap{ position: relative; padding-top: 0; }
+  .wrap{
+    position: relative;
+    padding-top: 0;
+  }
 
-  /* ✅ MENU/TITLE BAR */
+  /* ✅ title/menu button bar */
   .top{
-    /* normal spacing in flow */
     margin: 0 0 16px;
     margin-top: var(--lift);
-
-    /* ✅ IMPORTANT: when sticky, keep it BELOW iOS safe area + a little drop
-       This prevents the top edge from getting cropped after you scroll. */
-    top: calc(env(safe-area-inset-top, 0px) + var(--stickyDrop));
   }
 
-  /* ✅ HERO (moves with same lift) */
+  /* ✅ hero card */
   .mobileHero{
     display: block !important;
     position: absolute;
 
-    /* base position + same lift */
     top: calc(-155px + var(--lift));
-
     inset-inline: 2px;
     height: 220px;
 
@@ -158,8 +154,10 @@ body[data-theme="pink"]{
     z-index: 2;
   }
 
-  /* keep search card untouched */
-  .card.searchCard{ margin-top: 0 !important; }
+  /* ✅ separate hero + search cards */
+  .card.searchCard{
+    margin-top: var(--gap) !important;
+  }
 }
 /* ===============================
    MATRIX CANVAS — TRUE FULLSCREEN
