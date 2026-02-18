@@ -102,42 +102,39 @@ body[data-theme="pink"]{
   display: none;   /* <-- no !important */
 }
 
-@media (max-width: 820px){
-  .wrap{ position: relative; padding-top: 0; }
-  .top{ margin: 0; }
+@media (min-width: 821px){
 
-  .mobileHero{
-    display: block !important;
-    position: absolute;
-    top: -134px;
-    inset-inline: 2px;
-    height: 220px;
+  /* Header stays fully bordered */
+  .top{
+    box-shadow: none !important;            /* keeps the spill gone */
+    margin-bottom: 0 !important;
+    overflow: hidden;                        /* blur tidy */
 
-    border: 1px solid var(--accentBorder);
-    border-radius: calc(var(--r) + 4px);
-    z-index: 1;
-    pointer-events: none;
-    overflow: hidden;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background: rgba(8,12,24,.92) !important;
 
-    background:
-      radial-gradient(
-        ellipse at center,
-        rgba(0,0,0,0) 40%,
-        rgba(8,12,24,.75) 70%,
-        rgba(8,12,24,1) 100%
-      ),
-      url("./4k.PNG") center 2px / cover no-repeat;
-
-    box-shadow:
-      inset 0 -90px 120px rgba(8,12,24,1),
-      0 30px 80px rgba(0,0,0,.55);
+    border: 1px solid var(--accentBorder) !important;  /* keep border */
+    border-bottom: 1px solid var(--accentBorder) !important; /* ✅ keep bottom */
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
   }
 
-  .searchWrap{
-    padding-top: 101px;
-    position: relative;
-    z-index: 2;
+  /* Search overlaps the seam slightly */
+  .card.searchCard{
+    margin-top: -2px !important;            /* hides the “line” */
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+
+    /* IMPORTANT: don't remove border-top anymore */
+    border-top: 1px solid var(--accentBorder) !important;
+
+    box-shadow: var(--shadow2) !important;
   }
+
+  /* hero off on desktop */
+  .mobileHero{ display:none !important; }
+  .searchWrap{ padding-top: 0 !important; }
 }
 /* ===============================
    MATRIX CANVAS — TRUE FULLSCREEN
