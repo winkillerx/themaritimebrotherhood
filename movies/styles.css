@@ -146,7 +146,7 @@ body[data-theme="pink"]{
 
   /* ✅ Hard pull-up (this is what actually closes the visible gap reliably) */
   .card.searchCard{
-    margin-top: 18px !important;
+    margin-top: 38px !important;
   }
 }
 /* ===============================
