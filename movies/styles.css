@@ -98,13 +98,16 @@ body[data-theme="pink"]{
 
 /* HERO: OFF by default (prevents desktop hairline) */
 /* HERO: OFF by default (desktop) */
+/* HERO: OFF by default (desktop) */
 .mobileHero{
-  display: none;   /* <-- no !important */
+  display: none; /* <-- no !important */
 }
+
 @media (max-width: 820px){
+
   /* one knob that moves BOTH the header+buttons AND the hero together */
   :root{
-    --lift: -24px; /* more negative = higher (try -28px / -38px) */
+    --lift: -38px; /* more negative = higher (try -28px / -38px) */
   }
 
   .wrap{
@@ -112,11 +115,12 @@ body[data-theme="pink"]{
     padding-top: 0;
   }
 
-  /* ✅ move the title/menu button bar UP */
- .top{
-  margin: 0 0 16px;          /* keep your normal bottom spacing */
-  margin-top: var(--lift);   /* negative value lifts it up */
-}
+  /* ✅ move ONLY the floating title/menu button bar UP (no layout shift) */
+  .top{
+    margin: 0 0 16px;              /* keep normal bottom spacing */
+    transform: translateY(var(--lift));
+    will-change: transform;
+  }
 
   /* ✅ move the hero UP by the SAME amount */
   .mobileHero{
