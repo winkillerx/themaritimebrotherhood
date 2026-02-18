@@ -1364,7 +1364,117 @@ body.theme-purple{
   z-index: 2;
   overflow: hidden;
 }
+/* ============================================
+   THEMED RANGE SLIDERS (Min rating)
+   - Track + filled progress + knob themed
+   - Works in Chrome/Edge/Safari + Firefox
+   ============================================ */
 
+/* Base */
+input[type="range"]{
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  height: 34px;           /* gives room for the thumb */
+  cursor: pointer;
+}
+
+/* ---------- WebKit (Chrome/Edge/Safari) ---------- */
+
+/* Track */
+input[type="range"]::-webkit-slider-runnable-track{
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid var(--accentBorder);
+  background: rgba(6,10,18,.55);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
+}
+
+/* Thumb */
+input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,.25), transparent 55%),
+    color-mix(in srgb, var(--accent) 80%, #ffffff 20%);
+  border: 1px solid var(--accentBorder);
+
+  box-shadow:
+    0 0 0 4px var(--accentSoft),
+    0 12px 26px rgba(0,0,0,.55);
+
+  margin-top: -6px; /* centers thumb on 10px track */
+}
+
+/* Filled progress (WebKit trick using box-shadow on thumb)
+   NOTE: uses a big negative shadow to "paint" the left side */
+input[type="range"]::-webkit-slider-thumb{
+  box-shadow:
+    -1000px 0 0 1000px color-mix(in srgb, var(--accent) 55%, transparent),
+    0 0 0 4px var(--accentSoft),
+    0 12px 26px rgba(0,0,0,.55);
+}
+
+/* Hover / focus polish */
+input[type="range"]:hover::-webkit-slider-thumb{
+  box-shadow:
+    -1000px 0 0 1000px color-mix(in srgb, var(--accent) 65%, transparent),
+    0 0 0 5px var(--accentSoft),
+    0 14px 32px rgba(0,0,0,.6);
+}
+input[type="range"]:focus-visible{
+  outline: none;
+}
+input[type="range"]:focus-visible::-webkit-slider-thumb{
+  box-shadow:
+    -1000px 0 0 1000px color-mix(in srgb, var(--accent) 65%, transparent),
+    0 0 0 6px var(--accentSoft),
+    0 14px 32px rgba(0,0,0,.6);
+}
+
+/* ---------- Firefox ---------- */
+
+/* Track */
+input[type="range"]::-moz-range-track{
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid var(--accentBorder);
+  background: rgba(6,10,18,.55);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
+}
+
+/* Filled progress */
+input[type="range"]::-moz-range-progress{
+  height: 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+/* Thumb */
+input[type="range"]::-moz-range-thumb{
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,.25), transparent 55%),
+    color-mix(in srgb, var(--accent) 80%, #ffffff 20%);
+  border: 1px solid var(--accentBorder);
+
+  box-shadow:
+    0 0 0 4px var(--accentSoft),
+    0 12px 26px rgba(0,0,0,.55);
+}
+
+/* Remove Firefox default focus outline glow */
+input[type="range"]::-moz-focus-outer{
+  border: 0;
+}
 /* ============================================
    DESKTOP: remove header edge spill above Search
    ============================================ */
