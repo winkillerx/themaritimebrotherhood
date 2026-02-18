@@ -1354,8 +1354,8 @@ body.theme-purple{
     /* keep the bottom border */
     border-bottom: 1px solid var(--accentBorder) !important;
 
-    border-bottom-left-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
+    border-bottom-left-radius: calc(var(--r) + 6px) !important;
+border-bottom-right-radius: calc(var(--r) + 6px) !important;
 
     overflow: hidden;
     -webkit-backdrop-filter: none !important;
