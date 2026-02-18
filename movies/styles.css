@@ -1536,34 +1536,34 @@ input[type="range"]::-moz-focus-outer{
 
 
 /* ============================================
-   THEME + GENRE FIELDS: FULL WIDTH ON DESKTOP (OVERWRITE)
-   Assumes Theme label + Theme control are the LAST TWO items in .filters
+   DESKTOP FIX: make the RANGE SLIDER (Min rating) full width
+   Put this at the VERY BOTTOM of styles.css
    ============================================ */
 @media (min-width: 821px){
 
-  /* ✅ THEME (unchanged) */
-  .filters > :nth-last-child(2),
-  .filters > :last-child{
+  /* If the slider is directly a grid child */
+  .filters input[type="range"]{
     grid-column: 1 / -1 !important;
-    width: 100% !important;
-  }
-
-  .filters > :last-child select,
-  .filters > :last-child .select{
     width: 100% !important;
     display: block !important;
   }
 
-  /* ✅ GENRE (NEW) — label + select full width */
-  .filters > .lbl[for="genre"],
-  .filters > #genre{
+  /* If the slider is wrapped (common) — make the wrapper span too */
+  .filters .lblRow{
     grid-column: 1 / -1 !important;
     width: 100% !important;
   }
 
-  /* If #genre also has class="select", force block */
-  .filters > #genre.select{
-    display: block !important;
+  /* Modern browsers: any direct child that CONTAINS a range spans full */
+  .filters > *:has(input[type="range"]){
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+  }
+
+  /* If your label is separate from the slider, span the label too */
+  .filters > .lbl:has(+ input[type="range"]),
+  .filters > .lbl + input[type="range"]{
+    grid-column: 1 / -1 !important;
   }
 }
 /* ============================================
