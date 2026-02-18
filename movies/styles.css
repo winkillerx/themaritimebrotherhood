@@ -1400,64 +1400,64 @@ body.theme-purple{
 }
 
 /* ============================================
-   TRAILER BORDER — MATCH ALL OTHER BORDERS
-   Put at VERY BOTTOM of styles.css
+   DESKTOP FIXES (PUT AT VERY BOTTOM)
+   1) Trailer border + depth ALWAYS visible (desktop too)
+   2) Theme row spans FULL width on desktop
    ============================================ */
 
-/* Container gets the border */
+/* ---------------------------
+   1) TRAILER BORDER (ALL SIZES)
+   --------------------------- */
+
+/* Border + radius on the container (not the iframe) */
 .trailer,
 .miniTrailer{
-  border: 1px solid var(--accentBorder) !important;
-  border-radius: calc(var(--r) + 4px) !important; /* same family as .card */
-  overflow: hidden !important;
-  background: rgba(6,10,18,.55); /* optional: keeps the glass look */
-  box-shadow: var(--shadow2) !important;          /* optional depth like cards */
-}
-
-/* Make sure iframe doesn't add its own border/spacing */
-.trailer iframe,
-.miniTrailer iframe{
-  display: block;
-  width: 100%;
-  border: 0 !important;
-}
-/* ============================================
-   DESKTOP FIXES:
-   1) Trailer border + depth must survive ".card * { box-shadow:none; }"
-   2) Theme field full width on desktop
-   Put at VERY BOTTOM
-   ============================================ */
-
-/* 1) Trailer border ALWAYS visible (mobile + desktop) */
-.card .trailer,
-.card .miniTrailer{
   border: 1px solid var(--accentBorder) !important;
   border-radius: calc(var(--r) + 4px) !important;
   overflow: hidden !important;
   background: rgba(6,10,18,.55) !important;
+}
 
-  /* your global rule kills shadows inside cards, so force it back */
+/* Your global rule ".card * { box-shadow:none; }" can kill depth inside cards.
+   Force depth back on trailers specifically. */
+.card .trailer,
+.card .miniTrailer{
   box-shadow: var(--shadow2) !important;
 }
 
-/* keep iframe clean */
-.card .trailer iframe,
-.card .miniTrailer iframe{
-  display:block !important;
-  width:100% !important;
-  border:0 !important;
+/* iframe should never draw borders or spacing */
+.trailer iframe,
+.miniTrailer iframe{
+  display: block !important;
+  width: 100% !important;
+  border: 0 !important;
 }
 
-/* 2) Make THEME span full card width on desktop */
+
+/* -----------------------------------
+   2) THEME = FULL WIDTH (DESKTOP ONLY)
+   ----------------------------------- */
+
 @media (min-width: 821px){
-  /* if Theme lives inside .filters (2-col grid), force it to span both columns */
-  .filters .themeRow,
-  .filters .themeField,
-  .filters .themeWrap,
-  .filters .themeSelect,
-  .filters label[for="theme"],
+
+  /* If the Theme select exists, force the *wrapper row* to span both columns */
+  .filters > *:has(select#theme),
+  .filters > *:has(select[name="theme"]),
+  .filters > *:has(label[for="theme"]){
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+  }
+
+  /* Make the Theme select itself stretch full width */
   .filters select#theme,
   .filters select[name="theme"]{
+    width: 100% !important;
+    display: block !important;
+  }
+
+  /* Fallback (if Theme wrapper isn't matched for any reason):
+     force the last row full width */
+  .filters > *:last-child{
     grid-column: 1 / -1 !important;
     width: 100% !important;
   }
