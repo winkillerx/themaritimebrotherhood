@@ -160,7 +160,7 @@ body[data-theme="pink"]{
 
     /* ✅ separate hero + search cards (SEARCH ONLY) */
   .card.searchCard{
-    margin-top: 20px !important; /* increase = more gap (try 20px / 28px / 36px) */
+    margin-top: 22px !important; /* increase = more gap (try 20px / 28px / 36px) */
   }
 }
 /* ===============================
