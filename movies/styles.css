@@ -112,10 +112,10 @@ body[data-theme="pink"]{
     padding-top: 0;
   }
 
-  /* ✅ title/menu button bar */
+  /* ✅ title/menu button bar (safe-area aware so it never crops on scroll) */
   .top{
     margin: 0 0 16px;
-    margin-top: var(--lift);
+    margin-top: calc(env(safe-area-inset-top, 0px) + var(--lift));
   }
 
   /* ✅ hero card */
@@ -123,6 +123,7 @@ body[data-theme="pink"]{
     display: block !important;
     position: absolute;
 
+    /* base position + same lift */
     top: calc(-155px + var(--lift));
     inset-inline: 2px;
     height: 220px;
