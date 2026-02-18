@@ -101,24 +101,30 @@ body[data-theme="pink"]{
 .mobileHero{
   display: none;   /* <-- no !important */
 }
-
 @media (max-width: 820px){
+  /* one knob that moves BOTH the header+buttons AND the hero together */
+  :root{
+    --lift: -18px; /* more negative = higher (try -28px / -38px) */
+  }
+
   .wrap{
     position: relative;
     padding-top: 0;
   }
 
+  /* ✅ move the title/menu button bar UP */
   .top{
-    margin: 0;
+    margin: 0 0 16px;
+    margin-top: var(--lift);
   }
 
-  /* HERO */
+  /* ✅ move the hero UP by the SAME amount */
   .mobileHero{
     display: block !important;
     position: absolute;
 
-    /* 👇 move hero image up/down */
-    top: -155px;
+    /* base position + same lift */
+    top: calc(-155px + var(--lift));
 
     inset-inline: 2px;
     height: 220px;
@@ -143,16 +149,16 @@ body[data-theme="pink"]{
       0 30px 80px rgba(0,0,0,.55);
   }
 
-  /* content wrapper stays above hero */
+  /* keep content above hero */
   .searchWrap{
-    padding-top: 62px;       /* keep this stable */
+    padding-top: 62px;
     position: relative;
     z-index: 2;
   }
 
-  /* ✅ MOVE ONLY THE SEARCH CARD DOWN */
+  /* IMPORTANT: remove any margin-top tweaks you added earlier */
   .card.searchCard{
-    margin-top: 38px !important; /* increase = lower, decrease = higher */
+    margin-top: 0 !important;
   }
 }
 /* ===============================
