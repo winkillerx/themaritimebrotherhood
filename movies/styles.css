@@ -1557,18 +1557,9 @@ input[type="range"]::-moz-focus-outer{
   }
 }
 /* ============================================
-   KILL THE BLUE BLOB (MOBILE HERO IMAGE LAYER)
-   Put at VERY BOTTOM of styles.css
+   REMOVE GLOW BLOBS EVERYWHERE (PUT LAST)
    ============================================ */
-@media (max-width: 820px){
-  .mobileHero{
-    /* remove the PNG layer that creates the blue half-circle */
-    background:
-      radial-gradient(
-        ellipse at center,
-        rgba(0,0,0,0) 40%,
-        rgba(8,12,24,.75) 70%,
-        rgba(8,12,24,1) 100%
-      ) !important;
-  }
+body{
+  background:
+    linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 45%, var(--bg2) 100%) !important;
 }
