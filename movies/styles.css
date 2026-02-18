@@ -1270,7 +1270,8 @@ body.theme-purple{
     border-radius: calc(var(--r) + 4px);
     z-index: 1;
     pointer-events: none;
-
+  /* ✅ THIS IS THE FIX */
+  overflow: hidden;
     background:
       radial-gradient(
         ellipse at center,
@@ -1284,15 +1285,7 @@ body.theme-purple{
       inset 0 -90px 120px rgba(8,12,24,1),
       0 30px 80px rgba(0,0,0,.55);
   }
-/* ✅ SEMI-TRANSPARENT BORDER (IMAGE ONLY) */
-.mobileHero::before{
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
 
-  border: 1.5px solid rgba(120,170,255,.28);}
 	
   .searchWrap{
     padding-top: 101px;
@@ -1303,43 +1296,91 @@ body.theme-purple{
   .card.searchCard{
     margin-top: 0;
   }
-}
-/* ============================================
-   REMOVE INNER CARD OUTLINE / DOUBLE BORDER
-   ============================================ */
+/* ==================================================
+   FINAL UI NORMALIZATION (MUST BE LAST)
+   ================================================== */
 
+
+
+/* ---- MAIN CARDS ---- */
+.card,
+.searchCard,
+.simCard,
+.popCard,
+.modalCard,
+.targetBox{
+  border: 1px solid var(--accentBorder) !important;
+}
+
+/* ---- HEADER / MENU / LOGO ---- */
+.top,
+.logo,
+.iconBtn,
+.themeBtn{
+  border-color: var(--accentBorder) !important;
+}
+
+/* ---- INPUTS / SELECTS / BUTTONS ---- */
+.input,
+.select,
+.btn{
+  border-color: var(--accentBorder) !important;
+  box-shadow: none !important;
+}
+
+.input:focus,
+.select:focus{
+  box-shadow: 0 0 0 3px var(--accentSoft) !important;
+}
+
+/* ---- TARGET "NO SELECTION YET" ---- */
+.targetBox,
+.targetBox > div{
+  border-color: var(--accentBorder) !important;
+}
+
+/* ---- REMOVE ALL FAKE INNER BORDERS ---- */
 .card *,
 .searchCard *,
 .simCard *,
 .popCard *,
-.targetBox *,
-.modalCard *{
+.modalCard *,
+.targetBox *{
   outline: none !important;
   box-shadow: none;
 }
 
-/* Restore intentional shadows ONLY on hover */
+/* ---- RESTORE HOVER DEPTH (ONLY) ---- */
 .card:hover,
 .simCard:hover,
 .popCard:hover{
-  box-shadow:
-    0 0 0 1px var(--accentSoft),
-    0 18px 55px rgba(0,0,0,.4);
+  box-shadow: 0 18px 55px rgba(0,0,0,.4);
 }
 
-/* ============================================
-   FIX LINKS BLEEDING OVER SEARCH CARD
-   ============================================ */
-
+/* ---- FIX SEARCH CARD LINK BLEED ---- */
 .searchCard{
   position: relative;
   z-index: 2;
   overflow: hidden;
 }
+/* ============================================
+   DESKTOP FIX: HEADER BLEED LINE
+   ============================================ */
 
-.searchCard p,
-.searchCard a,
-.searchCard ul{
+.top{
+  overflow: hidden;
+}
+.searchWrap{
   position: relative;
-  z-index: 2;
+  z-index: 3;
+}
+/* ============================================
+   DESKTOP: MATCH HEADER CORNERS TO SEARCH CARD
+   ============================================ */
+
+@media (min-width: 821px){
+  .top{
+    border-bottom-left-radius: calc(var(--r) + 4px);
+    border-bottom-right-radius: calc(var(--r) + 4px);
+  }
 }
