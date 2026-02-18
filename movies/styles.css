@@ -1367,6 +1367,9 @@ body.theme-purple{
     border-bottom-left-radius: 0 !important;
     border-bottom-right-radius: 0 !important;
     overflow: hidden; /* keeps blur tidy */
+	    -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background: rgba(8,12,24,.92) !important;
   }
 
   /* 2) Pull Search up to cover any leftover 1px gap */
