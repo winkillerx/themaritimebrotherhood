@@ -1381,16 +1381,6 @@ body.theme-purple{
 
 @media (min-width: 821px){
   .top{
-    border-bottom-color: transparent; /* 🔑 removes the seam */
-  }
-  
-  .searchWrap {
-    margin-top: 0 !important;        /* eliminates gap */
-    padding-top: 0 !important;
-  }
-  
-  .card.searchCard {
-    border-top: none !important;     /* removes top border double-dip */
-    margin-top: 0 !important;
+    border-bottom-color: #000;
   }
 }
