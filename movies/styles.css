@@ -97,23 +97,14 @@ body[data-theme="pink"]{
    ========================================================= */
 
 /* HERO: OFF by default (prevents desktop hairline) */
+/* HERO: OFF by default (desktop) */
 .mobileHero{
-  display: none !important;
-  border: 0 !important;
-  height: 0 !important;
+  display: none;   /* <-- no !important */
 }
 
-/* Mobile/tablet only */
 @media (max-width: 820px){
-
-  .wrap{
-    position: relative;
-    padding-top: 0;
-  }
-
-  .top{
-    margin: 0;
-  }
+  .wrap{ position: relative; padding-top: 0; }
+  .top{ margin: 0; }
 
   .mobileHero{
     display: block !important;
@@ -146,10 +137,6 @@ body[data-theme="pink"]{
     padding-top: 101px;
     position: relative;
     z-index: 2;
-  }
-
-  .card.searchCard{
-    margin-top: 0;
   }
 }
 /* ===============================
