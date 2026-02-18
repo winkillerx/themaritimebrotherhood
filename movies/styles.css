@@ -1421,3 +1421,44 @@ body.theme-purple{
   width: 100%;
   border: 0 !important;
 }
+/* ============================================
+   DESKTOP FIXES:
+   1) Trailer border + depth must survive ".card * { box-shadow:none; }"
+   2) Theme field full width on desktop
+   Put at VERY BOTTOM
+   ============================================ */
+
+/* 1) Trailer border ALWAYS visible (mobile + desktop) */
+.card .trailer,
+.card .miniTrailer{
+  border: 1px solid var(--accentBorder) !important;
+  border-radius: calc(var(--r) + 4px) !important;
+  overflow: hidden !important;
+  background: rgba(6,10,18,.55) !important;
+
+  /* your global rule kills shadows inside cards, so force it back */
+  box-shadow: var(--shadow2) !important;
+}
+
+/* keep iframe clean */
+.card .trailer iframe,
+.card .miniTrailer iframe{
+  display:block !important;
+  width:100% !important;
+  border:0 !important;
+}
+
+/* 2) Make THEME span full card width on desktop */
+@media (min-width: 821px){
+  /* if Theme lives inside .filters (2-col grid), force it to span both columns */
+  .filters .themeRow,
+  .filters .themeField,
+  .filters .themeWrap,
+  .filters .themeSelect,
+  .filters label[for="theme"],
+  .filters select#theme,
+  .filters select[name="theme"]{
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+  }
+}
