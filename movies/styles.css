@@ -1398,3 +1398,26 @@ body.theme-purple{
   .mobileHero{ display:none !important; }
   .searchWrap{ padding-top: 0 !important; }
 }
+
+/* ============================================
+   TRAILER BORDER — MATCH ALL OTHER BORDERS
+   Put at VERY BOTTOM of styles.css
+   ============================================ */
+
+/* Container gets the border */
+.trailer,
+.miniTrailer{
+  border: 1px solid var(--accentBorder) !important;
+  border-radius: calc(var(--r) + 4px) !important; /* same family as .card */
+  overflow: hidden !important;
+  background: rgba(6,10,18,.55); /* optional: keeps the glass look */
+  box-shadow: var(--shadow2) !important;          /* optional depth like cards */
+}
+
+/* Make sure iframe doesn't add its own border/spacing */
+.trailer iframe,
+.miniTrailer iframe{
+  display: block;
+  width: 100%;
+  border: 0 !important;
+}
