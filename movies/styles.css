@@ -1557,9 +1557,45 @@ input[type="range"]::-moz-focus-outer{
   }
 }
 /* ============================================
-   REMOVE GLOW BLOBS EVERYWHERE (PUT LAST)
+   FIX: REMOVE LARGE BLUE GLOW FROM SLIDER
    ============================================ */
-body{
-  background:
-    linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 45%, var(--bg2) 100%) !important;
+
+/* 1. Remove the massive shadow from the thumb (Chrome/Safari/Edge) */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.25), transparent 55%),
+              color-mix(in srgb, var(--accent) 80%, #ffffff 20%);
+  border: 1px solid var(--accentBorder);
+  
+  /* Standard shadow only - no 1000px bleed */
+  box-shadow: 0 0 0 4px var(--accentSoft), 
+              0 12px 26px rgba(0,0,0,0.55) !important;
+  margin-top: -6px; 
+}
+
+/* 2. Remove the massive shadow on Hover */
+input[type="range"]:hover::-webkit-slider-thumb {
+  box-shadow: 0 0 0 5px var(--accentSoft), 
+              0 14px 32px rgba(0,0,0,0.6) !important;
+}
+
+/* 3. Remove the massive shadow on Focus */
+input[type="range"]:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 6px var(--accentSoft), 
+              0 14px 32px rgba(0,0,0,0.6) !important;
+}
+
+/* 4. Firefox Clean-up (Standardized) */
+input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 80%, #ffffff 20%);
+  border: 1px solid var(--accentBorder);
+  box-shadow: 0 0 0 4px var(--accentSoft), 
+              0 12px 26px rgba(0,0,0,0.55) !important;
 }
