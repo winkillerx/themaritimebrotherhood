@@ -1356,12 +1356,9 @@ body.theme-purple{
 /* ============================================
    DESKTOP FIX: HEADER BLEED LINE + SEAM
    ============================================ */
-
-/* Fix header bleed line (all sizes) */
 .top{ overflow: hidden; }
 .searchWrap{ position: relative; z-index: 3; }
 
-/* Desktop: remove mobile hero & kill seam between top + search card */
 @media (min-width: 821px){
   .mobileHero{ display: none !important; }
   .searchWrap{ padding-top: 0 !important; }
@@ -1369,14 +1366,16 @@ body.theme-purple{
   .top{
     margin-bottom: 0 !important;
     border-bottom: 0 !important;
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
   }
 
+  .searchCard{ border-top: 0 !important; }
+
   .card.searchCard{
-    margin-top: 0 !important;
-    border-top: 0 !important;
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
+    margin-top: -1px !important; /* 🔑 overlap kills 1px seam */
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
   }
 }
+.card.searchCard{ outline: 4px solid red !important; }
