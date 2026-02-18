@@ -1354,31 +1354,33 @@ body.theme-purple{
 }
 
 /* ============================================
-   DESKTOP: kill the 1px seam between header + Search
-   (place at VERY bottom of styles.css)
+   DESKTOP: remove header edge spill above Search
+   (paste at VERY bottom)
    ============================================ */
 @media (min-width: 821px){
 
-  /* Remove the 1px "ring" shadow that creates the seam */
-  .top,
-  .card.searchCard{
-    box-shadow: 0 16px 60px rgba(0,0,0,.45) !important; /* no 0 0 0 1px */
-  }
-
-  /* Keep your border seam removal */
+  /* 1) Header is the source of the spill — kill its shadow/ring */
   .top{
-    margin-bottom: 0 !important;
+    box-shadow: none !important;
     border-bottom: 0 !important;
+    margin-bottom: 0 !important;
     border-bottom-left-radius: 0 !important;
     border-bottom-right-radius: 0 !important;
-    overflow: hidden;
+    overflow: hidden; /* keeps blur tidy */
   }
 
-  /* Hard guarantee: overlap Search card by 1px */
+  /* 2) Pull Search up to cover any leftover 1px gap */
   .card.searchCard{
-    margin-top: -1px !important;
+    margin-top: -2px !important;  /* was -1px — this hides stubborn seams */
     border-top: 0 !important;
     border-top-left-radius: 0 !important;
     border-top-right-radius: 0 !important;
+
+    /* 3) Search card now owns the top shadow so it looks continuous */
+    box-shadow: var(--shadow2) !important;
   }
+
+  /* keep hero off on desktop */
+  .mobileHero{ display:none !important; }
+  .searchWrap{ padding-top: 0 !important; }
 }
