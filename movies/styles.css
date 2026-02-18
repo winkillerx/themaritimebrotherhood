@@ -130,17 +130,7 @@ body{
   overflow-x:hidden;
 }
 
-body::before{
-  content:"";
-  position:fixed;
-  inset:0;
-  pointer-events:none;
-  background:
-    linear-gradient(to right, rgba(255,255,255,.035) 1px, transparent 1px) 0 0 / 48px 48px,
-    radial-gradient(circle at 50% 40%, transparent 35%, rgba(0,0,0,.55) 78%);
-  mix-blend-mode:overlay;
-  opacity:.22;
-}
+body::before{ content:none !important; display:none !important; }
 
 /* Layout */
 .wrap{
