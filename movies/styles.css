@@ -1374,17 +1374,20 @@ body.theme-purple{
   position: relative;
   z-index: 3;
 }
-/* ============================================
-   STRICT DESKTOP CLEANUP (ADD TO BOTTOM)
-   ============================================ */
-
-@media (min-width: 821px){
-  .mobileHero{
-    display: none;
+/* 🎯 DESKTOP HORIZONTAL LINE FIX */
+@media (min-width: 821px) {
+  .top {
+    border-bottom: none !important;  /* removes header bottom border */
+    margin-bottom: 0 !important;     /* pulls cards up tight */
   }
-
-  .searchWrap{
-    padding-top: 0;
-    margin-top: -1px; /* 🔑 hides the desktop horizontal seam */
+  
+  .searchWrap {
+    margin-top: 0 !important;        /* eliminates gap */
+    padding-top: 0 !important;
+  }
+  
+  .card.searchCard {
+    border-top: none !important;     /* removes top border double-dip */
+    margin-top: 0 !important;
   }
 }
