@@ -1300,12 +1300,7 @@ body.theme-purple{
    FINAL UI NORMALIZATION (MUST BE LAST)
    ================================================== */
 
-.mobileHero,
-.mobileHero::before{
-  border: 1px solid var(--accentBorder) !important;
-  box-shadow: 0 30px 80px rgba(0,0,0,.55) !important;
-  outline: none !important;
-}
+
 
 /* ---- MAIN CARDS ---- */
 .card,
@@ -1383,18 +1378,13 @@ body.theme-purple{
    STRICT DESKTOP CLEANUP (ADD TO BOTTOM)
    ============================================ */
 
-@media (min-width: 821px) {
-  /* This kills the element AND the border completely */
-  .mobileHero {
-    display: none !important;
-    border: none !important;
-    height: 0 !important;
-    visibility: hidden !important;
+@media (min-width: 821px){
+  .mobileHero{
+    display: none;
   }
 
-  /* Ensures the search card doesn't have a gap from the hidden hero */
-  .searchWrap {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
+  .searchWrap{
+    padding-top: 0;
+    margin-top: 0;
   }
 }
