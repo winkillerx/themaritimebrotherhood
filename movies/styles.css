@@ -104,12 +104,21 @@ body[data-theme="pink"]{
 
 @media (max-width: 820px){
   .wrap{ position: relative; padding-top: 0; }
-  .top{ margin: 0; }
+
+  /* 1) Make the floating header match the hero’s edges */
+  .top{
+    margin: 0 2px 0;                 /* ✅ matches mobileHero inset-inline: 2px */
+    border-radius: calc(var(--r) + 4px);
+    overflow: hidden;
+  }
+
+  /* 2) Use a variable so you can dial the hero up/down */
+  :root{ --heroTop: -175px; }        /* 👈 tweak this number */
 
   .mobileHero{
     display: block !important;
     position: absolute;
-    top: -175px;
+    top: var(--heroTop);             /* ✅ now easy to tune */
     inset-inline: 2px;
     height: 220px;
 
