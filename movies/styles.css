@@ -104,7 +104,7 @@ body[data-theme="pink"]{
 @media (max-width: 820px){
   /* one knob that moves BOTH the header+buttons AND the hero together */
   :root{
-    --lift: -18px; /* more negative = higher (try -28px / -38px) */
+    --lift: -24px; /* more negative = higher (try -28px / -38px) */
   }
 
   .wrap{
