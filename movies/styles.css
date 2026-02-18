@@ -96,33 +96,31 @@ body[data-theme="pink"]{
    MOBILE HERO — ONLY ON MOBILE/TABLETS
    ========================================================= */
 
-/* HERO: OFF by default (prevents desktop hairline) */
 /* HERO: OFF by default (desktop) */
-/* HERO: OFF by default (desktop) */
-.mobileHero{
-  display: none; /* <-- no !important */
-}
+.mobileHero{ display:none; }
 
 @media (max-width: 820px){
 
-  /* one knob that moves BOTH the header+buttons AND the hero together */
+  /* 🔧 ONE KNOB (moves BOTH header + hero together) */
   :root{
-    --lift: -20px; /* more negative = higher (try -28px / -38px) */
+    --lift: 12px;          /* + = down, - = up  (try 8px / 12px / 18px) */
+    --stickyDrop: 10px;    /* ✅ fixes iOS crop while scrolling (try 8px–14px) */
   }
 
-  .wrap{
-    position: relative;
-    padding-top: 0;
-  }
+  .wrap{ position: relative; padding-top: 0; }
 
-  /* ✅ move ONLY the floating title/menu button bar UP (no layout shift) */
+  /* ✅ MENU/TITLE BAR */
   .top{
-    margin: 0 0 16px;              /* keep normal bottom spacing */
-    transform: translateY(var(--lift));
-    will-change: transform;
+    /* normal spacing in flow */
+    margin: 0 0 16px;
+    margin-top: var(--lift);
+
+    /* ✅ IMPORTANT: when sticky, keep it BELOW iOS safe area + a little drop
+       This prevents the top edge from getting cropped after you scroll. */
+    top: calc(env(safe-area-inset-top, 0px) + var(--stickyDrop));
   }
 
-  /* ✅ move the hero UP by the SAME amount */
+  /* ✅ HERO (moves with same lift) */
   .mobileHero{
     display: block !important;
     position: absolute;
@@ -153,17 +151,15 @@ body[data-theme="pink"]{
       0 30px 80px rgba(0,0,0,.55);
   }
 
-  /* keep content above hero */
+  /* content above hero */
   .searchWrap{
     padding-top: 62px;
     position: relative;
     z-index: 2;
   }
 
-  /* IMPORTANT: remove any margin-top tweaks you added earlier */
-  .card.searchCard{
-    margin-top: 0 !important;
-  }
+  /* keep search card untouched */
+  .card.searchCard{ margin-top: 0 !important; }
 }
 /* ===============================
    MATRIX CANVAS — TRUE FULLSCREEN
