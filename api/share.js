@@ -2,17 +2,10 @@ export default async function handler(req, res) {
   try {
     const { id, type } = req.query;
 
-    if (!id || !type) {
-      res.status(400).send("Missing id/type");
-      return;
-    }
+    if (!id || !type) return res.status(400).send("Missing id/type");
 
-    // ✅ TMDb key stored in Vercel Env Vars
     const TMDB_KEY = process.env.TMDB_KEY;
-    if (!TMDB_KEY) {
-      res.status(500).send("Missing TMDB_KEY env var");
-      return;
-    }
+    if (!TMDB_KEY) return res.status(500).send("Missing TMDB_KEY env var");
 
     const isMovie = type === "movie";
     const endpoint = isMovie
@@ -22,14 +15,13 @@ export default async function handler(req, res) {
     const tmdbUrl = `${endpoint}?api_key=${TMDB_KEY}&language=en-US`;
     const r = await fetch(tmdbUrl);
     if (!r.ok) throw new Error(`TMDb failed: ${r.status}`);
-
     const data = await r.json();
 
     const title = isMovie ? data.title : data.name;
-    const rating = typeof data.vote_average === "number" ? data.vote_average.toFixed(1) : "";
+    const rating =
+      typeof data.vote_average === "number" ? data.vote_average.toFixed(1) : "";
     const overview = (data.overview || "Find similar movies & TV shows fast.").trim();
 
-    // Use a big poster for social preview
     const posterPath = data.poster_path || "";
     const image = posterPath
       ? `https://image.tmdb.org/t/p/w780${posterPath}`
@@ -37,14 +29,28 @@ export default async function handler(req, res) {
 
     const siteUrl = `https://${req.headers.host}`;
     const ogUrl = `${siteUrl}/t/${encodeURIComponent(type)}/${encodeURIComponent(id)}`;
-
-    // What humans should land on (your SPA target view)
     const appUrl = `${siteUrl}/?id=${encodeURIComponent(id)}&type=${encodeURIComponent(type)}`;
 
     const ogTitle = title ? `Film Matrix — ${title}` : `Film Matrix`;
     const ogDesc = `${rating ? `⭐ ${rating} ` : ""}${overview}`.slice(0, 200);
 
+    // ✅ If this is a social crawler, DO NOT redirect.
+    const ua = (req.headers["user-agent"] || "").toLowerCase();
+    const isBot =
+      ua.includes("facebookexternalhit") ||
+      ua.includes("twitterbot") ||
+      ua.includes("slackbot") ||
+      ua.includes("discordbot") ||
+      ua.includes("whatsapp") ||
+      ua.includes("telegrambot") ||
+      ua.includes("linkedinbot") ||
+      ua.includes("embedly") ||
+      ua.includes("pinterest");
+
     res.setHeader("Content-Type", "text/html; charset=utf-8");
+    // ✅ Prevent Vercel edge/cache from mixing different movies
+    res.setHeader("Cache-Control", "no-store");
+
     res.status(200).send(`<!doctype html>
 <html lang="en">
 <head>
@@ -52,21 +58,21 @@ export default async function handler(req, res) {
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>${escapeHtml(ogTitle)}</title>
 
-  <!-- Open Graph -->
   <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Film Matrix" />
   <meta property="og:title" content="${escapeHtml(ogTitle)}" />
   <meta property="og:description" content="${escapeHtml(ogDesc)}" />
   <meta property="og:image" content="${escapeHtml(image)}" />
+  <meta property="og:image:width" content="780" />
+  <meta property="og:image:height" content="1170" />
   <meta property="og:url" content="${escapeHtml(ogUrl)}" />
 
-  <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${escapeHtml(ogTitle)}" />
   <meta name="twitter:description" content="${escapeHtml(ogDesc)}" />
   <meta name="twitter:image" content="${escapeHtml(image)}" />
 
-  <!-- Redirect real users into the app -->
-  <meta http-equiv="refresh" content="0; url=${escapeHtml(appUrl)}" />
+  ${isBot ? "" : `<script>location.replace(${JSON.stringify(appUrl)});</script>`}
 </head>
 <body></body>
 </html>`);
