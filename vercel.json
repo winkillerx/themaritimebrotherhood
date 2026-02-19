@@ -1,9 +1,6 @@
 {
   "rewrites": [
-    {
-      "source": "/t/:type(movie|tv)/:id",
-      "destination": "/api/share?type=:type&id=:id"
-    },
+    { "source": "/movie/:imdb", "destination": "/api/og?id=:imdb" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
