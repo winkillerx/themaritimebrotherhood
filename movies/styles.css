@@ -1758,34 +1758,46 @@ h2,
   letter-spacing: .10em !important;
 }
 /* ============================================
-   POSTER TITLES: 3 LINES, NEVER CLIP LAST LINE
+   POSTER TITLES — EXACT 3 LINES (UNIFORM)
+   - Always reserves space for 3 lines (even 1-word titles)
+   - Wraps on spaces only (no mid-word cuts)
+   - NO ellipsis, NO dots, NO dashes
    ============================================ */
 
 .popTitle{
-  font-size: 12px !important;
-  line-height: 1.12 !important;
+  /* look */
+  color: var(--accent) !important;
+  text-align: center !important;
+  font-weight: 800 !important;
 
-  /* reserve space for 3 lines + a tiny safety buffer */
-  min-height: calc(3 * 1.12em + 6px) !important;
+  /* sizing (adjust these if you want slightly smaller/larger) */
+  font-size: clamp(11px, 2.2vw, 13px) !important;
+  line-height: 1.15 !important;
 
+  /* ✅ EXACT 3-line box height for ALL cards */
+  height: calc(3 * 1.15em) !important;   /* 3 lines */
+  min-height: calc(3 * 1.15em) !important;
+  max-height: calc(3 * 1.15em) !important;
+
+  /* spacing inside the title box */
+  padding: 6px 6px 2px !important;
+
+  /* ✅ keep it uniform + clean */
   overflow: hidden !important;
+  text-overflow: clip !important;
 
-  /* ✅ no mid-word breaks */
+  /* ✅ wrap only at spaces — no SUPERNATUR/ type cuts */
+  white-space: normal !important;
   word-break: normal !important;
   overflow-wrap: normal !important;
   hyphens: none !important;
 
-  text-align: center !important;
-
-  /* ✅ “move up a tad” effect: more space at bottom, less at top */
-  padding: 4px 6px 8px !important;
-  display: block !important;
+  /* optional: makes multi-word titles wrap nicer when supported */
+  text-wrap: balance;
 }
 
-/* optional: slightly bigger on wider screens */
-@media (min-width: 560px){
-  .popTitle{
-    font-size: 13px !important;
-    min-height: calc(3 * 1.12em + 6px) !important;
-  }
+/* Safety: ensure the title block never stretches the card */
+.popCard .popTitle{
+  width: 100% !important;
+  max-width: 100% !important;
 }
