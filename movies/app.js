@@ -848,15 +848,16 @@ function renderTarget(m) {
     };
   }
 
-  if (btnShare) {
+if (btnShare) {
   btnShare.onclick = async () => {
+    const u = new URL(location.origin);
+    u.pathname = `/t/${type}/${m.id}`;
+    const shareUrl = u.toString();
+
     try {
-      const shareUrl = `${location.origin}/t/${type}/${m.id}`;
       await navigator.clipboard.writeText(shareUrl);
       alert("Link copied ✅");
     } catch {
-      // fallback if clipboard blocked
-      const shareUrl = `${location.origin}/t/${type}/${m.id}`;
       prompt("Copy this link:", shareUrl);
     }
   };
