@@ -24,7 +24,7 @@ const GENRE_PRESETS = [
   { name: "Serial Killers", keywords: "serial killer,true crime,murder", genres: "80,99", type: "both" },
   { name: "True Crime", keywords: "true crime,investigation,case", genres: "99,80", type: "both" },
   { name: "Cold Cases", keywords: "cold case,unsolved", genres: "80,99,9648", type: "both" },
-  { name: "Detectives & расследование", keywords: "detective,investigation", genres: "80,9648", type: "both" },
+  { name: "Detectives", keywords: "detective,investigation", genres: "80,9648", type: "both" },
   { name: "Gangsters", keywords: "mafia,gangster,organized crime", genres: "80,18", type: "both" },
   { name: "Heists", keywords: "heist,robbery,bank job", genres: "80,53", type: "both" },
   { name: "Courtroom & Trials", keywords: "courtroom,trial,lawyer", genres: "18,80", type: "both" },
@@ -52,7 +52,7 @@ const GENRE_PRESETS = [
   { name: "Marvel Vibes", keywords: "marvel", genres: "28,878", type: "both" },
 
   // Horror
-  { name: "Horror Must-Watch", keywords: "horror", genres: "27", type: "both" },
+  { name: "Horror", keywords: "horror", genres: "27", type: "both" },
   { name: "Psy Horror", keywords: "psychological horror", genres: "27,53", type: "both" },
   { name: "Found Footage", keywords: "found footage", genres: "27", type: "both" },
   { name: "Ghosts", keywords: "paranormal,ghost,haunted", genres: "27", type: "both" },
@@ -83,7 +83,7 @@ const GENRE_PRESETS = [
   { name: "Tech & Startups", keywords: "startup,tech company,hacker", genres: "18", type: "both" },
 
   // Documentary / Reality / History
-  { name: "Documentaries", keywords: "documentary", genres: "99", type: "both" },
+  { name: "Docs", keywords: "documentary", genres: "99", type: "both" },
   { name: "Nature Docs", keywords: "nature,wildlife", genres: "99", type: "both" },
   { name: "History Docs", keywords: "history,war documentary", genres: "99,36,10752", type: "both" },
   { name: "Sports Docs", keywords: "sports documentary", genres: "99", type: "both" },
