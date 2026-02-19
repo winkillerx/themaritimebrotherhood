@@ -849,18 +849,18 @@ function renderTarget(m) {
   }
 
   if (btnShare) {
-    btnShare.onclick = async () => {
-      try {
-        const u = new URL(location.href);
-        u.searchParams.set("id", String(m.id));
-        u.searchParams.set("type", type);
-        await navigator.clipboard.writeText(u.toString());
-        alert("Link copied ✅");
-      } catch {
-        alert("Copy failed (browser blocked clipboard).");
-      }
-    };
-  }
+  btnShare.onclick = async () => {
+    try {
+      const shareUrl = `${location.origin}/t/${type}/${m.id}`;
+      await navigator.clipboard.writeText(shareUrl);
+      alert("Link copied ✅");
+    } catch {
+      // fallback if clipboard blocked
+      const shareUrl = `${location.origin}/t/${type}/${m.id}`;
+      prompt("Copy this link:", shareUrl);
+    }
+  };
+}
 
   if (btnAdd) {
     btnAdd.onclick = () => addToWatchlist({ ...m, type });
