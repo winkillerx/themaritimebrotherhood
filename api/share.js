@@ -1,4 +1,5 @@
 // api/share.js
+// Generates OG/Twitter tags for /t/:type/:id preview links (Vercel Serverless Function)
 
 export default async function handler(req, res) {
   try {
@@ -6,26 +7,32 @@ export default async function handler(req, res) {
 
     if (!id || !type) return res.status(400).send("Missing id/type");
 
+    const isMovie = type === "movie";
+    const isTv = type === "tv";
+    if (!isMovie && !isTv) return res.status(400).send("Invalid type");
+
     // ✅ accept either env var name
     const TMDB_KEY = process.env.TMDB_KEY || process.env.TMDB_API_KEY;
     if (!TMDB_KEY) return res.status(500).send("Missing TMDB_KEY env var");
 
-    const isMovie = type === "movie";
     const endpoint = isMovie
       ? `https://api.themoviedb.org/3/movie/${encodeURIComponent(id)}`
       : `https://api.themoviedb.org/3/tv/${encodeURIComponent(id)}`;
 
     const tmdbUrl = `${endpoint}?api_key=${TMDB_KEY}&language=en-US`;
     const r = await fetch(tmdbUrl);
-    if (!r.ok) throw new Error(`TMDb failed: ${r.status}`);
+    if (!r.ok) {
+      // helpful error for debugging (kept short)
+      return res.status(502).send(`TMDb failed: ${r.status}`);
+    }
 
     const data = await r.json();
 
     const title = isMovie ? data.title : data.name;
 
     // ✅ year (movie release_date / tv first_air_date)
-    const year = (isMovie ? data.release_date : data.first_air_date || "")
-      .slice(0, 4);
+    const dateStr = isMovie ? data.release_date : data.first_air_date;
+    const year = (dateStr || "").slice(0, 4);
 
     // ✅ rating (only if valid)
     const rating =
@@ -33,7 +40,9 @@ export default async function handler(req, res) {
         ? data.vote_average.toFixed(1)
         : "";
 
-    const overview = (data.overview || "Find similar movies & TV shows fast.").trim();
+    const overview = (data.overview || "Find similar movies & TV shows fast.")
+      .replace(/\s+/g, " ")
+      .trim();
 
     // Use a big poster for social preview
     const posterPath = data.poster_path || "";
@@ -47,16 +56,21 @@ export default async function handler(req, res) {
     // What humans should land on (your SPA target view)
     const appUrl = `${siteUrl}/?id=${encodeURIComponent(id)}&type=${encodeURIComponent(type)}`;
 
-    // ✅ OG Title includes year
-    const ogTitle = title
-      ? `Film Matrix — ${title}${year ? ` (${year})` : ""}`
-      : `Film Matrix`;
+    // ✅ iMessage often shows ONLY title + image.
+    // Pack year + rating + a short snippet into og:title to increase chance it appears.
+    const shortOverview = overview.slice(0, 90);
+    const ratingBit = rating ? `⭐ ${rating}/10` : "";
+    const yearBit = year ? `(${year})` : "";
 
-    // ✅ OG Desc includes TMDb rating
-    const ogDesc = `${rating ? `TMDb ⭐ ${rating}/10 • ` : ""}${overview}`.slice(0, 200);
+    const ogTitle = title
+      ? `${title} ${yearBit}${ratingBit ? ` • ${ratingBit}` : ""}${shortOverview ? ` — ${shortOverview}` : ""}`
+      : "Film Matrix";
+
+    // Keep og:description too (used by many platforms)
+    const ogDesc = `${ratingBit ? `${ratingBit} • ` : ""}${overview}`.slice(0, 200);
 
     // Detect bots (so we don't auto-redirect them)
-    const ua = (req.headers["user-agent"] || "").toLowerCase();
+    const ua = String(req.headers["user-agent"] || "").toLowerCase();
     const isBot =
       ua.includes("facebookexternalhit") ||
       ua.includes("twitterbot") ||
@@ -66,10 +80,11 @@ export default async function handler(req, res) {
       ua.includes("telegrambot") ||
       ua.includes("linkedinbot") ||
       ua.includes("embedly") ||
-      ua.includes("pinterest");
+      ua.includes("pinterest") ||
+      ua.includes("applebot"); // sometimes helps with Apple previews
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Cache-Control", "no-store, max-age=0");
 
     res.status(200).send(`<!doctype html>
 <html lang="en">
@@ -77,6 +92,9 @@ export default async function handler(req, res) {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>${escapeHtml(ogTitle)}</title>
+
+  <!-- Basic -->
+  <meta name="description" content="${escapeHtml(ogDesc)}" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
@@ -93,11 +111,7 @@ export default async function handler(req, res) {
   <meta name="twitter:image" content="${escapeHtml(image)}" />
 
   <!-- Redirect real users into the app (bots should NOT redirect) -->
-  ${
-    isBot
-      ? ""
-      : `<script>location.replace(${JSON.stringify(appUrl)});</script>`
-  }
+  ${isBot ? "" : `<script>location.replace(${JSON.stringify(appUrl)});</script>`}
 </head>
 <body></body>
 </html>`);
