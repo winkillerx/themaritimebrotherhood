@@ -1757,3 +1757,38 @@ h2,
   font-size: 16px !important;
   letter-spacing: .10em !important;
 }
+/* ============================================
+   POSTER TITLES: ALWAYS 3 LINES TALL (UNIFORM)
+   Applies to Popular + Genre grids (uses .popTitle)
+   ============================================ */
+
+.popTitle{
+  /* sizing */
+  font-size: 12px !important;
+  line-height: 1.15 !important;
+
+  /* ALWAYS reserve space for 3 lines */
+  min-height: 48px !important;  /* 12px * 1.15 * 3 ≈ 41px + padding */
+  height: 48px !important;
+
+  /* clamp to 3 lines */
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 3 !important;
+  overflow: hidden !important;
+
+  /* keep your look */
+  padding: 6px 6px 2px !important;
+  text-align: center !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+}
+
+/* Slightly bigger screens: a touch more breathing room */
+@media (min-width: 560px){
+  .popTitle{
+    font-size: 13px !important;
+    min-height: 54px !important; /* 13px * 1.15 * 3 ≈ 44.8px + padding */
+    height: 54px !important;
+  }
+}
