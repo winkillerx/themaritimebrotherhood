@@ -3,6 +3,7 @@
     {
       "source": "/t/:type(movie|tv)/:id",
       "destination": "/api/share?type=:type&id=:id"
-    }
+    },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
