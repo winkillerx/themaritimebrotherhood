@@ -2,11 +2,8 @@
   "version": 2,
   "routes": [
     { "handle": "filesystem" },
-
-    /* ✅ Dynamic share preview page */
-    { "src": "^/t/(movie|tv)/([^/]+)$", "dest": "/api/share?type=$1&id=$2" },
-
+    { "src": "/t/(movie|tv)/([^/]+)", "dest": "/api/share?type=$1&id=$2" },
     { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "src": "/(.*)", "dest": "/movies/$1" }
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
