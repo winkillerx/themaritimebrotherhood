@@ -1758,56 +1758,31 @@ h2,
   letter-spacing: .10em !important;
 }
 /* ============================================
-   POSTER TITLES: 3 LINES, NO MID-WORD CUT
-   If it overflows: show a dash at the end
+   POSTER TITLES: 3 LINES, NEVER CLIP LAST LINE
    ============================================ */
 
 .popTitle{
-  /* sizing */
   font-size: 12px !important;
   line-height: 1.12 !important;
 
-  /* ✅ fixed 3-line area (uniform cards) */
+  /* reserve space for 3 lines + a tiny safety buffer */
   min-height: calc(3 * 1.12em + 6px) !important;
-  padding: 4px 6px 8px !important;
-
-  /* ✅ clamp to 3 lines */
-  display: -webkit-box !important;
-  -webkit-box-orient: vertical !important;
-  -webkit-line-clamp: 3 !important;
 
   overflow: hidden !important;
 
-  /* ✅ prevent breaking inside words */
-  white-space: normal !important;
-  word-break: keep-all !important;
+  /* ✅ no mid-word breaks */
+  word-break: normal !important;
   overflow-wrap: normal !important;
-  hyphens: manual !important;
+  hyphens: none !important;
 
   text-align: center !important;
+
+  /* ✅ “move up a tad” effect: more space at bottom, less at top */
+  padding: 4px 6px 8px !important;
+  display: block !important;
 }
 
-/* Add a dash at the end when the title is clamped (WebKit) */
-.popTitle::after{
-  content: "–" !important;
-  display: inline-block !important;
-  margin-left: 6px !important;
-
-  /* hidden by default, shown only when clamped via gradient mask */
-  opacity: 0 !important;
-}
-
-/* Show the dash when clamped (mask the last characters a bit) */
-@supports (-webkit-line-clamp: 3){
-  .popTitle{
-    -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 75%, transparent 100%) !important;
-            mask-image: linear-gradient(180deg, #000 0%, #000 75%, transparent 100%) !important;
-  }
-  .popTitle::after{
-    opacity: 1 !important;
-  }
-}
-
+/* optional: slightly bigger on wider screens */
 @media (min-width: 560px){
   .popTitle{
     font-size: 13px !important;
