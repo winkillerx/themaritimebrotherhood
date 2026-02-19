@@ -1696,3 +1696,64 @@ input[type="range"]::-moz-range-thumb{
     transform: translateZ(0);
   }
 }
+/* ============================================
+   TYPE SYSTEM (OVERWRITE) — Orbitron headings + Inter UI
+   Put at VERY BOTTOM of styles.css
+   ============================================ */
+
+:root{
+  --font-ui: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  --font-display: "Orbitron", system-ui, sans-serif;
+}
+
+/* Body defaults to Inter (way easier on the eyes) */
+body{
+  font-family: var(--font-ui) !important;
+  letter-spacing: 0 !important;
+}
+
+/* Big headings keep the futuristic Orbitron vibe */
+h2,
+.laneTitle,
+.name,
+.sectionTitle h2{
+  font-family: var(--font-display) !important;
+  letter-spacing: .08em !important;
+}
+
+/* --- Poster title under images (Popular + Genres) --- */
+/* This is what’s currently too big/blocky */
+.popTitle{
+  font-family: var(--font-ui) !important;   /* ✅ readable */
+  font-weight: 700 !important;
+  font-size: 11px !important;               /* ✅ smaller */
+  line-height: 1.15 !important;
+  letter-spacing: .04em !important;         /* subtle tech feel */
+  text-transform: uppercase !important;
+  min-height: 34px !important;              /* ✅ less tall than 44px */
+  padding: 6px 6px 2px !important;
+}
+
+/* Slight bump on larger screens */
+@media (min-width: 560px){
+  .popTitle{
+    font-size: 12px !important;
+    min-height: 36px !important;
+  }
+}
+
+/* --- Genre card titles (if your genre label isn't .popTitle) --- */
+/* Safe: applies only to common genre name patterns */
+#genreGrid .popTitle,
+#genreGrid .genreTitle,
+.genreCard .popTitle{
+  font-family: var(--font-ui) !important;
+  font-size: 11px !important;
+  letter-spacing: .04em !important;
+}
+
+/* Optional: make section headers like "POPULAR MOVIES" slightly smaller */
+.laneTitle{
+  font-size: 16px !important;
+  letter-spacing: .10em !important;
+}
