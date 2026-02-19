@@ -134,7 +134,7 @@ body[data-theme="pink"]{
     position: absolute;
 
     /* 🔑 push hero higher to kill the empty space above it */
-    top: calc(-155px + var(--lift)) !important;
+    top: calc(-165px + var(--lift)) !important;
 
     inset-inline: 2px;
     height: 220px;
