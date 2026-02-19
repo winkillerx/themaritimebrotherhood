@@ -1,55 +1,59 @@
-import { NextRequest } from "next/server";
+export default async function handler(req, res) {
+  try {
+    const { id } = req.query; // IMDb id like tt0133093
+    if (!id) return res.status(400).send("Missing id");
 
-export const runtime = "edge";
+    const TMDB_API_KEY = process.env.TMDB_API_KEY;
+    if (!TMDB_API_KEY) return res.status(500).send("Missing TMDB_API_KEY env var");
 
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const imdb = searchParams.get("id");
+    const tmdbRes = await fetch(
+      `https://api.themoviedb.org/3/find/${encodeURIComponent(id)}?external_source=imdb_id&api_key=${TMDB_API_KEY}`
+    );
+    if (!tmdbRes.ok) return res.status(502).send("TMDb error");
 
-  if (!imdb) {
-    return new Response("Missing id", { status: 400 });
-  }
+    const data = await tmdbRes.json();
+    const movie = (data.movie_results && data.movie_results[0]) || (data.tv_results && data.tv_results[0]);
 
-  // 🔑 Fetch from TMDb (via IMDb ID)
-  const tmdbRes = await fetch(
-    `https://api.themoviedb.org/3/find/${imdb}?external_source=imdb_id&api_key=${process.env.TMDB_API_KEY}`
-  );
+    if (!movie) return res.status(404).send("Not found");
 
-  const data = await tmdbRes.json();
-  const movie = data.movie_results?.[0] || data.tv_results?.[0];
+    const title = movie.title || movie.name || "Film Matrix";
+    const year = (movie.release_date || movie.first_air_date || "").slice(0, 4);
+    const poster = movie.poster_path
+      ? `https://image.tmdb.org/t/p/w780${movie.poster_path}`
+      : `https://${req.headers.host}/og.jpg`;
 
-  if (!movie) {
-    return new Response("Not found", { status: 404 });
-  }
+    const type = movie.title ? "movie" : "tv";
+    const redirectUrl = `https://${req.headers.host}/?id=${encodeURIComponent(movie.id)}&type=${type}`;
+    const ogUrl = `https://${req.headers.host}/movie/${encodeURIComponent(id)}`;
 
-  const title = movie.title || movie.name;
-  const year = (movie.release_date || movie.first_air_date || "").slice(0, 4);
-  const poster = movie.poster_path
-    ? `https://image.tmdb.org/t/p/w780${movie.poster_path}`
-    : "https://filmmatrix.net/og.jpg";
-
-  const redirectUrl = `https://filmmatrix.net/?id=${movie.id}&type=${movie.title ? "movie" : "tv"}`;
-
-  return new Response(
-    `<!doctype html>
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.status(200).send(`<!doctype html>
 <html>
 <head>
 <meta charset="utf-8">
-<meta property="og:type" content="video.movie">
-<meta property="og:title" content="${title} (${year})">
-<meta property="og:description" content="Find movies similar to ${title}">
-<meta property="og:image" content="${poster}">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta property="og:url" content="https://filmmatrix.net/movie/${imdb}">
-<meta http-equiv="refresh" content="0;url=${redirectUrl}">
+<meta property="og:type" content="website">
+<meta property="og:title" content="${escapeHtml(title)}${year ? ` (${escapeHtml(year)})` : ""}">
+<meta property="og:description" content="${escapeHtml(`Find movies similar to ${title}`)}">
+<meta property="og:image" content="${escapeHtml(poster)}">
+<meta property="og:url" content="${escapeHtml(ogUrl)}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${escapeHtml(title)}${year ? ` (${escapeHtml(year)})` : ""}">
+<meta name="twitter:description" content="${escapeHtml(`Find movies similar to ${title}`)}">
+<meta name="twitter:image" content="${escapeHtml(poster)}">
+<meta http-equiv="refresh" content="0;url=${escapeHtml(redirectUrl)}">
 </head>
 <body></body>
-</html>`,
-    {
-      headers: {
-        "Content-Type": "text/html; charset=utf-8"
-      }
-    }
-  );
+</html>`);
+  } catch {
+    res.status(500).send("OG error");
+  }
+}
+
+function escapeHtml(s = "") {
+  return String(s)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
