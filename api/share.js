@@ -4,7 +4,7 @@ export default async function handler(req, res) {
 
     if (!id || !type) return res.status(400).send("Missing id/type");
 
-    const TMDB_KEY = process.env.TMDB_KEY;
+const TMDB_KEY = process.env.TMDB_KEY || process.env.TMDB_API_KEY;
     if (!TMDB_KEY) return res.status(500).send("Missing TMDB_KEY env var");
 
     const isMovie = type === "movie";
