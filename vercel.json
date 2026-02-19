@@ -1,9 +1,8 @@
 {
-  "version": 2,
-  "routes": [
-    { "handle": "filesystem" },
-    { "src": "/t/(movie|tv)/([^/]+)", "dest": "/api/share?type=$1&id=$2" },
-    { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "src": "/(.*)", "dest": "/index.html" }
+  "rewrites": [
+    {
+      "source": "/t/:type(movie|tv)/:id",
+      "destination": "/api/share?type=:type&id=:id"
+    }
   ]
 }
