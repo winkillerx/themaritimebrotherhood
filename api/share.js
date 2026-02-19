@@ -18,7 +18,8 @@ export default async function handler(req, res) {
     const data = await r.json();
 
     const title = isMovie ? data.title : data.name;
-    const rating = typeof data.vote_average === "number" ? data.vote_average.toFixed(1) : "";
+    const rating =
+      typeof data.vote_average === "number" ? data.vote_average.toFixed(1) : "";
     const overview = (data.overview || "Find similar movies & TV shows fast.").trim();
 
     const posterPath = data.poster_path || "";
@@ -33,7 +34,21 @@ export default async function handler(req, res) {
     const ogTitle = title ? `Film Matrix — ${title}` : `Film Matrix`;
     const ogDesc = `${rating ? `⭐ ${rating} ` : ""}${overview}`.slice(0, 200);
 
+    const ua = (req.headers["user-agent"] || "").toLowerCase();
+    const isBot =
+      ua.includes("facebookexternalhit") ||
+      ua.includes("twitterbot") ||
+      ua.includes("slackbot") ||
+      ua.includes("discordbot") ||
+      ua.includes("whatsapp") ||
+      ua.includes("telegrambot") ||
+      ua.includes("linkedinbot") ||
+      ua.includes("embedly") ||
+      ua.includes("pinterest");
+
     res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "no-store");
+
     res.status(200).send(`<!doctype html>
 <html lang="en">
 <head>
@@ -42,6 +57,7 @@ export default async function handler(req, res) {
   <title>${escapeHtml(ogTitle)}</title>
 
   <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Film Matrix" />
   <meta property="og:title" content="${escapeHtml(ogTitle)}" />
   <meta property="og:description" content="${escapeHtml(ogDesc)}" />
   <meta property="og:image" content="${escapeHtml(image)}" />
@@ -52,7 +68,7 @@ export default async function handler(req, res) {
   <meta name="twitter:description" content="${escapeHtml(ogDesc)}" />
   <meta name="twitter:image" content="${escapeHtml(image)}" />
 
-  <meta http-equiv="refresh" content="0; url=${escapeHtml(appUrl)}" />
+  ${isBot ? "" : `<script>location.replace(${JSON.stringify(appUrl)});</script>`}
 </head>
 <body></body>
 </html>`);
