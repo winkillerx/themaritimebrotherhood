@@ -11,7 +11,7 @@
    ✅ Buttons centered (target + similar)
    ✅ Popular grid supports 50 each (frontend)
 */
-
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@500;600;700&display=swap");
 :root{
   --bg0:#05060c;
   --bg1:#070a14;
@@ -91,6 +91,14 @@ body[data-theme="pink"]{
   --glowA: rgba(255,43,214,.26);
   --glowB: rgba(244,114,182,.18);
   --glowC: rgba(255,43,214,.14);
+}
+:root{
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-ui: "Orbitron", system-ui, sans-serif;
+
+  /* optional: global “future UI” spacing */
+  --ui-letter: .08em;
+  --ui-upper: uppercase;
 }
 /* =========================================================
    MOBILE HERO — ONLY ON MOBILE/TABLETS
@@ -190,7 +198,13 @@ html,body{ height:100%; }
 body{
   margin:0;
   color:var(--text);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  font-family: var(--font-body);
+  font-weight: 450;
+  line-height: 1.65;
+
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 
   background:
     radial-gradient(1200px 600px at 15% 10%, var(--glowA), transparent 55%),
@@ -331,7 +345,44 @@ h2{
   font-size: 34px;
   letter-spacing: .04em;
 }
+/* ===== FUTURISTIC UI TYPE ===== */
+.name,
+h1,h2,
+.sectionTitle h2,
+.laneTitle,
+.lbl,
+.btn,
+.pill,
+.chipTitle,
+.popTitle,
+.watchTitle{
+  font-family: var(--font-ui);
+  letter-spacing: var(--ui-letter);
+  text-transform: var(--ui-upper);
+}
 
+/* Keep normal paragraphs readable */
+.sub,
+.muted,
+.overviewText,
+.sectionTitle .muted,
+.jump-links a,
+.watchHint,
+.watchSub,
+.chipMeta{
+  font-family: var(--font-body);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* ===== Optional: tighten body text a touch ===== */
+.overviewText,
+.sectionTitle .muted,
+.muted{
+  font-size: 16px;
+}
+
+h2{ letter-spacing: .06em; }
 .sectionTitle{
   display:flex;
   flex-direction:column;
