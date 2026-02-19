@@ -1758,32 +1758,59 @@ h2,
   letter-spacing: .10em !important;
 }
 /* ============================================
-   POSTER TITLES: MAX 3 LINES (NO "HALF WORD", NO "…")
+   POSTER TITLES: 3 LINES, NO MID-WORD CUT
+   If it overflows: show a dash at the end
    ============================================ */
 
 .popTitle{
+  /* sizing */
   font-size: 12px !important;
-  line-height: 1.15 !important;
+  line-height: 1.12 !important;
 
-  /* reserve exactly 3 lines worth of space */
-  height: calc(3 * 1.15em) !important;   /* 3 lines */
+  /* ✅ fixed 3-line area (uniform cards) */
+  min-height: calc(3 * 1.12em + 6px) !important;
+  padding: 4px 6px 8px !important;
+
+  /* ✅ clamp to 3 lines */
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 3 !important;
+
   overflow: hidden !important;
 
-  /* ✅ prevent mid-word breaks */
-  word-break: normal !important;
+  /* ✅ prevent breaking inside words */
+  white-space: normal !important;
+  word-break: keep-all !important;
   overflow-wrap: normal !important;
-  hyphens: none !important;
+  hyphens: manual !important;
 
-  /* keep centered look */
-  display: block !important;
-  padding: 6px 6px 2px !important;
   text-align: center !important;
 }
 
-/* Slightly bigger on larger screens (optional) */
+/* Add a dash at the end when the title is clamped (WebKit) */
+.popTitle::after{
+  content: "–" !important;
+  display: inline-block !important;
+  margin-left: 6px !important;
+
+  /* hidden by default, shown only when clamped via gradient mask */
+  opacity: 0 !important;
+}
+
+/* Show the dash when clamped (mask the last characters a bit) */
+@supports (-webkit-line-clamp: 3){
+  .popTitle{
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 75%, transparent 100%) !important;
+            mask-image: linear-gradient(180deg, #000 0%, #000 75%, transparent 100%) !important;
+  }
+  .popTitle::after{
+    opacity: 1 !important;
+  }
+}
+
 @media (min-width: 560px){
   .popTitle{
     font-size: 13px !important;
-    height: calc(3 * 1.15em) !important;
+    min-height: calc(3 * 1.12em + 6px) !important;
   }
 }
