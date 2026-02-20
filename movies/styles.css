@@ -1934,17 +1934,10 @@ h2,
   }
 }
 /* =========================
-   iOS / Mobile: make taps act like clicks (kills "double tap to activate")
+   MOBILE: eliminate iOS double-tap-to-activate globally
 ========================= */
 @media (hover: none) and (pointer: coarse) {
-  .btn,
-  button,
-  a,
-  .popCard,
-  .chip,
-  .suggestItem,
-  .watchItem,
-  .watchFooterBtn {
+  button, a, .btn, .popCard, .chip, .suggestItem, .genreCard, .watchItem {
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
   }
