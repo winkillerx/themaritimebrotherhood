@@ -152,11 +152,7 @@ if (themeSelect){
   });
 }
 const API_BASE = "";
-/* ============================================================
-   GLOBAL FAST-TAP (iOS): single tap activates everything
-   - pointerup on touch -> dispatch click immediately
-   - suppress "ghost click" that Safari fires after touch
-============================================================ */
+
 /* -----------------------------
    Mode / Highlighting
 ------------------------------*/
@@ -335,153 +331,7 @@ function clearLists() {
     els.matches.classList.add("hidden");
   }
 }
-// ✅ iOS-safe tap handler: fires instantly, avoids "first tap = hover"
-function bindFastTap(el, fn) {
-  if (!el) return;
 
-  let lastTouch = 0;
-
-  // pointerup fires reliably on iOS without the weird "hover-first" behavior
-  el.addEventListener("pointerup", (e) => {
-    if (e.pointerType === "touch") lastTouch = Date.now();
-    fn(e);
-  });
-
-  // fallback click for desktop; ignore "ghost clicks" after touch
-  el.addEventListener("click", (e) => {
-    if (Date.now() - lastTouch < 500) return; // ignore ghost click
-    fn(e);
-  });
-}
-// =========================
-// Film Matrix UI dialogs
-// =========================
-
-let toastTimer = null;
-
-function fmToast(msg, ms = 1600) {
-  const el = document.getElementById("fmToast");
-  if (!el) return;
-
-  el.textContent = msg;
-  el.classList.remove("hidden");
-
-  if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.add("hidden"), ms);
-}
-
-// =========================
-// Film Matrix UI dialogs
-// =========================
-
-function fmConfirm(msg, title = "FILM MATRIX") {
-  return new Promise((resolve) => {
-    const wrap = document.getElementById("fmConfirm");
-    const msgEl = document.getElementById("fmConfirmMsg");
-    const ok = document.getElementById("fmConfirmOk");
-    const cancel = document.getElementById("fmConfirmCancel");
-
-    // Fallback if markup missing
-    if (!wrap || !msgEl || !ok || !cancel) {
-      resolve(window.confirm(msg));
-      return;
-    }
-
-    // Title (optional)
-    const titleEl =
-      wrap.querySelector(".fmConfirmTitle") ||
-      wrap.querySelector("#fmConfirmTitle");
-    if (titleEl) titleEl.textContent = title;
-
-    msgEl.textContent = msg;
-
-    // Ensure both buttons visible + labeled
-    cancel.classList.remove("hidden");
-    ok.textContent = "OK";
-    cancel.textContent = "CANCEL";
-
-    wrap.classList.remove("hidden");
-
-    const cleanup = () => {
-      wrap.classList.add("hidden");
-      ok.onclick = null;
-      cancel.onclick = null;
-      wrap.onclick = null;
-      document.removeEventListener("keydown", onKey);
-    };
-
-    const onKey = (e) => {
-      if (e.key === "Escape") { cleanup(); resolve(false); }
-      if (e.key === "Enter") { cleanup(); resolve(true); }
-    };
-
-    ok.onclick = () => { cleanup(); resolve(true); };
-    cancel.onclick = () => { cleanup(); resolve(false); };
-
-    // Tap outside = cancel (matches your current behavior)
-    wrap.onclick = (e) => {
-      if (e.target === wrap) { cleanup(); resolve(false); }
-    };
-
-    document.addEventListener("keydown", onKey);
-  });
-}
-
-// =========================
-// Film Matrix single-button dialog (OK only)
-// =========================
-function fmAlert(msg, title = "FILM MATRIX") {
-  return new Promise((resolve) => {
-    const wrap = document.getElementById("fmConfirm");
-    const msgEl = document.getElementById("fmConfirmMsg");
-    const ok = document.getElementById("fmConfirmOk");
-    const cancel = document.getElementById("fmConfirmCancel");
-
-    // Fallback if markup missing
-    if (!wrap || !msgEl || !ok) {
-      window.alert(msg);
-      resolve(true);
-      return;
-    }
-
-    // Title (optional)
-    const titleEl =
-      wrap.querySelector(".fmConfirmTitle") ||
-      wrap.querySelector("#fmConfirmTitle");
-    if (titleEl) titleEl.textContent = title;
-
-    msgEl.textContent = msg;
-    wrap.classList.remove("hidden");
-
-    // Hide cancel (OK only)
-    if (cancel) cancel.classList.add("hidden");
-    ok.textContent = "OK";
-
-    const cleanup = () => {
-      wrap.classList.add("hidden");
-      ok.onclick = null;
-      wrap.onclick = null;
-      document.removeEventListener("keydown", onKey);
-      if (cancel) cancel.classList.remove("hidden"); // restore for next confirm()
-    };
-
-    const onKey = (e) => {
-      if (e.key === "Escape" || e.key === "Enter") {
-        cleanup();
-        resolve(true);
-      }
-    };
-
-    ok.onclick = () => { cleanup(); resolve(true); };
-
-    // Tap outside closes (like iOS)
-    wrap.onclick = (e) => {
-      if (e.target === wrap) { cleanup(); resolve(true); }
-    };
-
-    document.addEventListener("keydown", onKey);
-  });
-}
 /* -----------------------------
    apiGet with timeout
 ------------------------------*/
@@ -613,49 +463,24 @@ function renderWatchMenu(data) {
 function toggleWatchDropdown(anchorBtn, html) {
   if (!anchorBtn) return;
 
-  // Toggle off if already open right after this button
-  const next = anchorBtn.nextElementSibling;
-  if (next && next.classList.contains("watchDropdown")) {
-    next.remove();
-    return;
-  }
+  const scope = anchorBtn.closest(".simCard, .watchItem, .targetActions") || document.body;
 
-  // Close any others anywhere
-  closeAllWatchDropdowns(document);
+  // Remove existing dropdowns in this scope
+  scope.querySelectorAll(".watchDropdown").forEach((d) => d.remove());
 
   const box = document.createElement("div");
   box.className = "watchDropdown";
   box.innerHTML = html;
+
   anchorBtn.after(box);
 
-  const cleanup = () => {
-    if (box.parentNode) box.remove();
-    document.removeEventListener("pointerdown", onDoc, true);
-    document.removeEventListener("keydown", onKey, true);
-  };
-
-  const onKey = (e) => {
-    if (e.key === "Escape") cleanup();
-  };
-
-  // Close when clicking a provider (after navigation triggers)
-  box.addEventListener(
-    "click",
-    (e) => {
-      const hit = e.target.closest("a,button");
-      if (hit) setTimeout(cleanup, 0);
-    },
-    true
-  );
-
+  // click outside closes
   const onDoc = (e) => {
-    // Tap inside dropdown or the Watch button = ignore
     if (box.contains(e.target) || anchorBtn.contains(e.target)) return;
-    cleanup();
+    box.remove();
+    document.removeEventListener("click", onDoc, true);
   };
-
-  document.addEventListener("pointerdown", onDoc, true);
-  document.addEventListener("keydown", onKey, true);
+  document.addEventListener("click", onDoc, true);
 }
 
 /* -----------------------------
@@ -920,7 +745,7 @@ function renderGenres(genres = []) {
 
   // Click behavior (your discover logic)
   container.querySelectorAll(".genreCard").forEach((btn) => {
-  bindFastTap(btn, async () => {
+  btn.addEventListener("click", async () => {
     const type = btn.getAttribute("data-type") || "both";
     const keywords = btn.getAttribute("data-keywords") || "";
     const genres = btn.getAttribute("data-genres") || "";
@@ -930,6 +755,7 @@ function renderGenres(genres = []) {
 
     try {
       const items = await discoverCategory({ type, keywords, genres });
+
       renderMatches(items);
 
       const first = items[0];
@@ -1011,38 +837,46 @@ function renderTarget(m) {
   wireReadMore(els.target);
 
   // wire target action buttons
-const btnAdd = document.getElementById("addWatch");
-const btnWatch = document.getElementById("watchNow");
-const btnShare = document.getElementById("copyLink");
-const btnTmdb = document.getElementById("openImdb");
+  const btnAdd = document.getElementById("addWatch");
+  const btnWatch = document.getElementById("watchNow");
+  const btnShare = document.getElementById("copyLink");
+  const btnTmdb = document.getElementById("openImdb");
 
-bindFastTap(btnTmdb, () => {
-  window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(m.id)}`, "_blank");
-});
-
-bindFastTap(btnShare, async () => {
-  const u = new URL(location.origin);
-  u.pathname = `/t/${type}/${m.id}`;
-  const shareUrl = u.toString();
-
-  try {
-    await navigator.clipboard.writeText(shareUrl);
-    await fmAlert("Link copied");
-  } catch {
-    await fmAlert("Copy blocked");
+  if (btnTmdb) {
+    btnTmdb.onclick = () => {
+      window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(m.id)}`, "_blank");
+    };
   }
-});
 
-bindFastTap(btnAdd, () => addToWatchlist({ ...m, type }));
+if (btnShare) {
+  btnShare.onclick = async () => {
+    const u = new URL(location.origin);
+    u.pathname = `/t/${type}/${m.id}`;
+    const shareUrl = u.toString();
 
-bindFastTap(btnWatch, async (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  closeAllWatchDropdowns(document);
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      alert("Link copied ✅");
+    } catch {
+      prompt("Copy this link:", shareUrl);
+    }
+  };
+}
 
-  const data = await fetchWatchProviders(m.id, type);
-  toggleWatchDropdown(btnWatch, renderWatchMenu(data));
-});
+  if (btnAdd) {
+    btnAdd.onclick = () => addToWatchlist({ ...m, type });
+  }
+
+  if (btnWatch) {
+  btnWatch.onclick = async (e) => {
+    e.preventDefault();
+    e.stopPropagation(); // important on mobile
+    closeAllWatchDropdowns(document);
+
+    const data = await fetchWatchProviders(m.id, type);
+    toggleWatchDropdown(btnWatch, renderWatchMenu(data));
+  };
+}
 
   // trailer
   (async () => {
@@ -1145,15 +979,16 @@ const list = sortByFranchise(baseTitle, cleaned, baseYear).slice(0, 20);
     const tmdbBtn = card.querySelector(".tmdbBtn");
     const mini = card.querySelector(".miniTrailer");
 
-    bindFastTap(openBtn, () => loadById(id, type));
+    openBtn?.addEventListener("click", () => loadById(id, type));
 
-bindFastTap(tmdbBtn, () =>
-  window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(id)}`, "_blank")
-);
+    tmdbBtn?.addEventListener("click", () =>
+      window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(id)}`, "_blank")
+    );
 
-bindFastTap(watchBtn, async (e) => {
+    watchBtn?.addEventListener("click", async (e) => {
   e.preventDefault();
   e.stopPropagation();
+
   const data = await fetchWatchProviders(id, type);
   toggleWatchDropdown(watchBtn, renderWatchMenu(data));
 });
@@ -1174,7 +1009,7 @@ bindFastTap(watchBtn, async (e) => {
         const key = await fetchTrailerKey(id, type);
 
         if (!key) {
-          await fmAlert("No trailer found");
+          alert("No trailer found.");
           trailerBtn.textContent = "Trailer";
           return;
         }
@@ -1185,7 +1020,7 @@ bindFastTap(watchBtn, async (e) => {
         mini.classList.remove("hidden");
         trailerBtn.textContent = "Hide trailer";
       } catch (e) {
-        await fmAlert("Trailer failed");
+        alert(`Trailer failed: ${e.message}`);
         trailerBtn.textContent = "Trailer";
       } finally {
         trailerBtn.disabled = false;
@@ -1285,40 +1120,15 @@ function renderMatches(items) {
     `;
   }).join("");
 
-  function renderMatches(items) {
-  if (!els.matches) return;
-
-  const filtered = (items || [])
-    .filter(m => m && m.title)
-    .filter(m => !/^untitled$/i.test(m.title.trim()));
-
-  const list = filtered.slice(0, 10);
-
-  if (!list.length) {
-    els.matches.innerHTML = "";
-    els.matches.classList.add("hidden");
-    return;
-  }
-
-  els.matches.classList.remove("hidden");
-  els.matches.innerHTML = list.map((m) => {
-    const type = asType(m.type, "movie");
-    return `
-      <button class="chip" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">
-        <span class="chipTitle">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></span>
-        <span class="chipMeta">${esc(safeUpper(type))} • ⭐ ${esc(fmtRating(m.rating))}</span>
-      </button>
-    `;
-  }).join("");
-
-  els.matches.querySelectorAll(".chip").forEach((btn) => {
-    bindFastTap(btn, () => {
+  els.matches.querySelectorAll(".chip").forEach(btn => {
+    btn.addEventListener("click", () => {
       const id = btn.getAttribute("data-id");
       const type = asType(btn.getAttribute("data-type") || "movie", "movie");
       if (id) loadById(id, type);
     });
   });
 }
+
 /* -----------------------------
    Suggest input handler
 ------------------------------*/
@@ -1439,7 +1249,7 @@ function addToWatchlist(m) {
   if (list.some((x) => String(x.id) === String(m.id) && asType(x.type, "movie") === type)) return;
   list.unshift({ id: m.id, type, title: m.title, year: m.year, rating: m.rating, poster: m.poster });
   saveWatchlist(list);
-  fmAlert("Added to watchlist");
+  alert("Added to Watchlist ✅");
 }
 
 /* -----------------------------------------------------------
@@ -1820,50 +1630,30 @@ function closeWatchlist() {
   closeAllWatchDropdowns(document);
 }
 
-/* -----------------------------------------------------------
-   Watchlist modal: clear button (styled confirm + toast)
------------------------------------------------------------ */
-
-function ensureClearButton() {
-  const top = document.querySelector(".modalTop");
-  if (!top) return;
-
-  // already added?
-  if (document.getElementById("clearBtn")) return;
-
-  const clearBtn = document.createElement("button");
-  clearBtn.className = "btn sm delete";
-  clearBtn.id = "clearBtn";
-  clearBtn.type = "button";
-  clearBtn.textContent = "Clear";
-
-  clearBtn.onclick = async () => {
-    const ok = await fmConfirm("Clear entire watchlist?");
-    if (!ok) {
-      await fmAlert("Cancelled");
-      return;
-    }
-
+// Clear button logic
+const clearBtn = document.createElement("button");
+clearBtn.className = "btn sm delete";
+clearBtn.id = "clearBtn";
+clearBtn.textContent = "Clear";
+clearBtn.onclick = () => {
+  if (confirm("Clear entire watchlist?")) {
     saveWatchlist([]);
-    openWatchlist(); // re-render
-    await fmAlert("Watchlist cleared");
-  };
+    openWatchlist();
+  }
+};
 
-  // insert before Close
-  top.insertBefore(clearBtn, els.closeModal);
-}
-
-/* -----------------------------------------------------------
-   Init (run once)
------------------------------------------------------------ */
+document.addEventListener("DOMContentLoaded", () => {
+  const top = document.querySelector(".modalTop");
+  if (top && !document.getElementById("clearBtn")) {
+    top.insertBefore(clearBtn, els.closeModal);
+  }
+});
+  
 document.addEventListener("DOMContentLoaded", () => {
   initUI();
   renderTarget(null);
   clearLists();
   setMeta("Ready.", false);
-
-  // add Clear button once the modal header exists
-  ensureClearButton();
 });
 /* ============================================================
    MATRIX RAIN BACKGROUND — FULLSCREEN + FIXED
