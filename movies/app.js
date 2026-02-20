@@ -591,14 +591,14 @@ function renderWatchMenu(data) {
 function toggleWatchDropdown(anchorBtn, html) {
   if (!anchorBtn) return;
 
-  // If a dropdown already exists right after this button, toggle it off
+  // Toggle off if already open right after this button
   const next = anchorBtn.nextElementSibling;
   if (next && next.classList.contains("watchDropdown")) {
     next.remove();
     return;
   }
 
-  // Close any others anywhere (prevents multiple open)
+  // Close any others anywhere
   closeAllWatchDropdowns(document);
 
   const box = document.createElement("div");
@@ -607,7 +607,7 @@ function toggleWatchDropdown(anchorBtn, html) {
   anchorBtn.after(box);
 
   const cleanup = () => {
-    box.remove();
+    if (box.parentNode) box.remove();
     document.removeEventListener("pointerdown", onDoc, true);
     document.removeEventListener("keydown", onKey);
   };
@@ -616,17 +616,39 @@ function toggleWatchDropdown(anchorBtn, html) {
     if (e.key === "Escape") cleanup();
   };
 
+  // ✅ If user taps a provider link/button inside the menu, close menu after tap
+  box.addEventListener(
+    "click",
+    (e) => {
+      const hit = e.target.closest("a,button");
+      if (hit) {
+        // allow the click/navigation to happen, then close
+        setTimeout(cleanup, 0);
+      }
+    },
+    true
+  );
+
   const onDoc = (e) => {
-    // If tap is inside dropdown or on the button, do nothing
+    // If tap is inside dropdown or on the anchor button, do nothing
     if (box.contains(e.target) || anchorBtn.contains(e.target)) return;
+
+    // ✅ Tap outside should CLOSE and ALSO "pass through" to whatever was tapped
+    const target = e.target;
+
     cleanup();
+
+    // Forward the tap as a real click (fixes iOS “first tap only closes”)
+    setTimeout(() => {
+      // Only forward if it's something clickable
+      const clickable = target.closest?.("button,a,[role='button'],input,label,.btn,.chip,.popCard");
+      if (clickable) clickable.click();
+    }, 0);
   };
 
-  // 🔑 Delay binding so the opening tap doesn't instantly close it
-  setTimeout(() => {
-    document.addEventListener("pointerdown", onDoc, true);
-    document.addEventListener("keydown", onKey);
-  }, 0);
+  // 🔑 Bind immediately in capture, but forwarding prevents "lost first tap"
+  document.addEventListener("pointerdown", onDoc, true);
+  document.addEventListener("keydown", onKey);
 }
 
 /* -----------------------------
