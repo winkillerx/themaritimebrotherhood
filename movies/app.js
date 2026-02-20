@@ -1285,14 +1285,40 @@ function renderMatches(items) {
     `;
   }).join("");
 
-  els.matches.querySelectorAll(".chip").forEach((btn) => {
-  bindFastTap(btn, () => {
-    const id = btn.getAttribute("data-id");
-    const type = asType(btn.getAttribute("data-type") || "movie", "movie");
-    if (id) loadById(id, type);
-  });
-});
+  function renderMatches(items) {
+  if (!els.matches) return;
 
+  const filtered = (items || [])
+    .filter(m => m && m.title)
+    .filter(m => !/^untitled$/i.test(m.title.trim()));
+
+  const list = filtered.slice(0, 10);
+
+  if (!list.length) {
+    els.matches.innerHTML = "";
+    els.matches.classList.add("hidden");
+    return;
+  }
+
+  els.matches.classList.remove("hidden");
+  els.matches.innerHTML = list.map((m) => {
+    const type = asType(m.type, "movie");
+    return `
+      <button class="chip" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">
+        <span class="chipTitle">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></span>
+        <span class="chipMeta">${esc(safeUpper(type))} • ⭐ ${esc(fmtRating(m.rating))}</span>
+      </button>
+    `;
+  }).join("");
+
+  els.matches.querySelectorAll(".chip").forEach((btn) => {
+    bindFastTap(btn, () => {
+      const id = btn.getAttribute("data-id");
+      const type = asType(btn.getAttribute("data-type") || "movie", "movie");
+      if (id) loadById(id, type);
+    });
+  });
+}
 /* -----------------------------
    Suggest input handler
 ------------------------------*/
