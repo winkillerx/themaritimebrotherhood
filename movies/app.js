@@ -1776,14 +1776,15 @@ function ensureClearButton() {
   clearBtn.textContent = "Clear";
 
   clearBtn.onclick = async () => {
-  saveWatchlist([]);
-  openWatchlist(); // re-render
-  await fmAlert("Watchlist cleared");
-};
+    const ok = await fmConfirm("Clear entire watchlist?");
+    if (!ok) {
+      await fmAlert("Cancelled");
+      return;
+    }
 
     saveWatchlist([]);
     openWatchlist(); // re-render
-    fmToast("Watchlist cleared");
+    await fmAlert("Watchlist cleared");
   };
 
   // insert before Close
