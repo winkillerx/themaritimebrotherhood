@@ -1544,7 +1544,11 @@ input[type="range"]::-moz-focus-outer{
     backdrop-filter: none !important;
     background: rgba(8,12,24,.92) !important;
   }
-
+/* ✅ lift the icon button row a bit on desktop */
+  .topBtns{
+    position: relative;
+    top: -6px; /* try -4px to -10px */
+	}
   .card.searchCard{
     margin-top: -2px !important; /* hides the seam */
     border-bottom-left-radius: calc(var(--r) + 6px) !important;
