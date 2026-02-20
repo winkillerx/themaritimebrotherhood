@@ -910,7 +910,7 @@ if (btnShare) {
 
     try {
       await navigator.clipboard.writeText(shareUrl);
-      fmToast("Link copied ✅");
+      fmToast("Link copied");
     } catch {
       // no prompt (native UI) — just show toast + select fallback
       fmToast("Copy blocked — tap to copy");
@@ -1697,27 +1697,28 @@ function ensureClearButton() {
   // already added?
   if (document.getElementById("clearBtn")) return;
 
-  const clearBtn = document.createElement("button");
-  clearBtn.className = "btn sm delete";
-  clearBtn.id = "clearBtn";
-  clearBtn.type = "button";
-  clearBtn.textContent = "Clear";
+  // Clear button (Watchlist modal)
+const clearBtn = document.createElement("button");
+clearBtn.className = "btn sm delete";
+clearBtn.id = "clearBtn";
+clearBtn.textContent = "Clear";
 
-  clearBtn.onclick = async () => {
-    const ok = await fmConfirm("Clear entire watchlist?");
-    if (!ok) {
-      fmToast("Cancelled");
-      return;
-    }
+clearBtn.onclick = async () => {
+  const ok = await fmConfirm("Clear entire watchlist?");
+  if (!ok) return;
 
-    saveWatchlist([]);
-    openWatchlist(); // re-render
-    fmToast("Watchlist cleared ✅");
-  };
+  saveWatchlist([]);
+  openWatchlist();            // refresh modal UI
+  fmToast("Watchlist cleared"); // ✅ no emoji / no checkmark
+};
 
-  // insert before Close
-  top.insertBefore(clearBtn, els.closeModal);
-}
+// Insert Clear button into modal header after DOM loads
+document.addEventListener("DOMContentLoaded", () => {
+  const top = document.querySelector(".modalTop");
+  if (top && !document.getElementById("clearBtn")) {
+    top.insertBefore(clearBtn, els.closeModal);
+  }
+});
 
 /* -----------------------------------------------------------
    Init (run once)
