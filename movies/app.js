@@ -348,20 +348,36 @@ function fmToast(msg, ms = 1600) {
   toastTimer = setTimeout(() => el.classList.add("hidden"), ms);
 }
 
-function fmConfirm(msg) {
+// =========================
+// Film Matrix UI dialogs
+// =========================
+
+function fmConfirm(msg, title = "FILM MATRIX") {
   return new Promise((resolve) => {
     const wrap = document.getElementById("fmConfirm");
     const msgEl = document.getElementById("fmConfirmMsg");
     const ok = document.getElementById("fmConfirmOk");
     const cancel = document.getElementById("fmConfirmCancel");
 
+    // Fallback if markup missing
     if (!wrap || !msgEl || !ok || !cancel) {
-      // fallback if markup missing
       resolve(window.confirm(msg));
       return;
     }
 
+    // Title (optional)
+    const titleEl =
+      wrap.querySelector(".fmConfirmTitle") ||
+      wrap.querySelector("#fmConfirmTitle");
+    if (titleEl) titleEl.textContent = title;
+
     msgEl.textContent = msg;
+
+    // Ensure both buttons visible + labeled
+    cancel.classList.remove("hidden");
+    ok.textContent = "OK";
+    cancel.textContent = "CANCEL";
+
     wrap.classList.remove("hidden");
 
     const cleanup = () => {
@@ -379,8 +395,66 @@ function fmConfirm(msg) {
 
     ok.onclick = () => { cleanup(); resolve(true); };
     cancel.onclick = () => { cleanup(); resolve(false); };
+
+    // Tap outside = cancel (matches your current behavior)
     wrap.onclick = (e) => {
       if (e.target === wrap) { cleanup(); resolve(false); }
+    };
+
+    document.addEventListener("keydown", onKey);
+  });
+}
+
+// =========================
+// Film Matrix single-button dialog (OK only)
+// =========================
+function fmAlert(msg, title = "FILM MATRIX") {
+  return new Promise((resolve) => {
+    const wrap = document.getElementById("fmConfirm");
+    const msgEl = document.getElementById("fmConfirmMsg");
+    const ok = document.getElementById("fmConfirmOk");
+    const cancel = document.getElementById("fmConfirmCancel");
+
+    // Fallback if markup missing
+    if (!wrap || !msgEl || !ok) {
+      window.alert(msg);
+      resolve(true);
+      return;
+    }
+
+    // Title (optional)
+    const titleEl =
+      wrap.querySelector(".fmConfirmTitle") ||
+      wrap.querySelector("#fmConfirmTitle");
+    if (titleEl) titleEl.textContent = title;
+
+    msgEl.textContent = msg;
+    wrap.classList.remove("hidden");
+
+    // Hide cancel (OK only)
+    if (cancel) cancel.classList.add("hidden");
+    ok.textContent = "OK";
+
+    const cleanup = () => {
+      wrap.classList.add("hidden");
+      ok.onclick = null;
+      wrap.onclick = null;
+      document.removeEventListener("keydown", onKey);
+      if (cancel) cancel.classList.remove("hidden"); // restore for next confirm()
+    };
+
+    const onKey = (e) => {
+      if (e.key === "Escape" || e.key === "Enter") {
+        cleanup();
+        resolve(true);
+      }
+    };
+
+    ok.onclick = () => { cleanup(); resolve(true); };
+
+    // Tap outside closes (like iOS)
+    wrap.onclick = (e) => {
+      if (e.target === wrap) { cleanup(); resolve(true); }
     };
 
     document.addEventListener("keydown", onKey);
@@ -910,11 +984,9 @@ if (btnShare) {
 
     try {
       await navigator.clipboard.writeText(shareUrl);
-      fmToast("Link copied");
+      await fmAlert("Link copied");
     } catch {
-      // no prompt (native UI) — just show toast + select fallback
-      fmToast("Copy blocked — tap to copy");
-      // optional: open a small modal input later, but keeping it clean for now
+      await fmAlert("Copy blocked");
     }
   };
 }
@@ -1065,7 +1137,7 @@ const list = sortByFranchise(baseTitle, cleaned, baseYear).slice(0, 20);
         const key = await fetchTrailerKey(id, type);
 
         if (!key) {
-          fmToast("No trailer found");
+          await fmAlert("No trailer found");
           trailerBtn.textContent = "Trailer";
           return;
         }
@@ -1076,7 +1148,7 @@ const list = sortByFranchise(baseTitle, cleaned, baseYear).slice(0, 20);
         mini.classList.remove("hidden");
         trailerBtn.textContent = "Hide trailer";
       } catch (e) {
-        fmToast("Trailer failed");
+        await fmAlert("Trailer failed");
         trailerBtn.textContent = "Trailer";
       } finally {
         trailerBtn.disabled = false;
@@ -1305,7 +1377,7 @@ function addToWatchlist(m) {
   if (list.some((x) => String(x.id) === String(m.id) && asType(x.type, "movie") === type)) return;
   list.unshift({ id: m.id, type, title: m.title, year: m.year, rating: m.rating, poster: m.poster });
   saveWatchlist(list);
-  alert("Added to Watchlist ✅");
+  fmAlert("Added to watchlist");
 }
 
 /* -----------------------------------------------------------
@@ -1704,11 +1776,10 @@ function ensureClearButton() {
   clearBtn.textContent = "Clear";
 
   clearBtn.onclick = async () => {
-    const ok = await fmConfirm("Clear entire watchlist?");
-    if (!ok) {
-      fmToast("Cancelled");
-      return;
-    }
+  saveWatchlist([]);
+  openWatchlist(); // re-render
+  await fmAlert("Watchlist cleared");
+};
 
     saveWatchlist([]);
     openWatchlist(); // re-render
@@ -1730,13 +1801,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // add Clear button once the modal header exists
   ensureClearButton();
-});
-  
-document.addEventListener("DOMContentLoaded", () => {
-  initUI();
-  renderTarget(null);
-  clearLists();
-  setMeta("Ready.", false);
 });
 /* ============================================================
    MATRIX RAIN BACKGROUND — FULLSCREEN + FIXED
