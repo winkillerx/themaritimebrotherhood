@@ -591,24 +591,42 @@ function renderWatchMenu(data) {
 function toggleWatchDropdown(anchorBtn, html) {
   if (!anchorBtn) return;
 
-  const scope = anchorBtn.closest(".simCard, .watchItem, .targetActions") || document.body;
+  // If a dropdown already exists right after this button, toggle it off
+  const next = anchorBtn.nextElementSibling;
+  if (next && next.classList.contains("watchDropdown")) {
+    next.remove();
+    return;
+  }
 
-  // Remove existing dropdowns in this scope
-  scope.querySelectorAll(".watchDropdown").forEach((d) => d.remove());
+  // Close any others anywhere (prevents multiple open)
+  closeAllWatchDropdowns(document);
 
   const box = document.createElement("div");
   box.className = "watchDropdown";
   box.innerHTML = html;
-
   anchorBtn.after(box);
 
-  // click outside closes
-  const onDoc = (e) => {
-    if (box.contains(e.target) || anchorBtn.contains(e.target)) return;
+  const cleanup = () => {
     box.remove();
-    document.removeEventListener("click", onDoc, true);
+    document.removeEventListener("pointerdown", onDoc, true);
+    document.removeEventListener("keydown", onKey);
   };
-  document.addEventListener("click", onDoc, true);
+
+  const onKey = (e) => {
+    if (e.key === "Escape") cleanup();
+  };
+
+  const onDoc = (e) => {
+    // If tap is inside dropdown or on the button, do nothing
+    if (box.contains(e.target) || anchorBtn.contains(e.target)) return;
+    cleanup();
+  };
+
+  // 🔑 Delay binding so the opening tap doesn't instantly close it
+  setTimeout(() => {
+    document.addEventListener("pointerdown", onDoc, true);
+    document.addEventListener("keydown", onKey);
+  }, 0);
 }
 
 /* -----------------------------
