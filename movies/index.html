@@ -202,5 +202,18 @@
   </div>
 
   <script src="./app.js"></script>
+	<!-- ✅ Film Matrix UI Dialogs (replaces alert/confirm/prompt) -->
+<div id="fmToast" class="fmToast hidden" role="status" aria-live="polite"></div>
+
+<div id="fmConfirm" class="fmConfirm hidden" role="dialog" aria-modal="true" aria-labelledby="fmConfirmTitle">
+  <div class="fmConfirmCard">
+    <div class="fmConfirmTitle" id="fmConfirmTitle">FILM MATRIX</div>
+    <div class="fmConfirmMsg" id="fmConfirmMsg">Are you sure?</div>
+    <div class="fmConfirmBtns">
+      <button id="fmConfirmOk" class="btn full" type="button">OK</button>
+      <button id="fmConfirmCancel" class="btn full ghost" type="button">Cancel</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
