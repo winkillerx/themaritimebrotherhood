@@ -1807,33 +1807,43 @@ h2,
 
 .hidden { display: none !important; }
 
-/* Toast — make it look like the Film Matrix dialog box */
+/* =========================
+   Film Matrix Toast (LINK COPIED style)
+   ========================= */
 .fmToast{
   position: fixed;
   left: 50%;
-  top: 50%;
+  top: 52%;
   transform: translate(-50%, -50%);
   z-index: 9999;
 
-  width: min(92vw, 520px);
-  padding: 18px;
+  width: min(92vw, 760px);
+  padding: 18px 18px;
   border-radius: 22px;
 
-  font-family: "Orbitron", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  letter-spacing: .08em;
+  text-align: center;
+  font-family: var(--font-display, "Orbitron", system-ui, sans-serif);
+  letter-spacing: .10em;
   text-transform: uppercase;
   font-weight: 800;
-  font-size: 22px;
-  line-height: 1.2;
+  font-size: 24px;
 
   background: rgba(10, 14, 28, .92);
   border: 1px solid var(--accentBorder);
   box-shadow: 0 24px 80px rgba(0,0,0,.65), inset 0 0 0 1px rgba(34, 211, 238, .10);
-
   color: rgba(231,236,255,.96);
-  backdrop-filter: blur(10px);
 
-  text-align: center;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  pointer-events: none;
+}
+
+@media (max-width: 520px){
+  .fmToast{
+    font-size: 20px;
+    padding: 16px;
+  }
 }
 
 /* Confirm overlay */
