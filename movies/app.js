@@ -1065,7 +1065,7 @@ const list = sortByFranchise(baseTitle, cleaned, baseYear).slice(0, 20);
         const key = await fetchTrailerKey(id, type);
 
         if (!key) {
-          alert("No trailer found.");
+          fmToast("No trailer found");
           trailerBtn.textContent = "Trailer";
           return;
         }
@@ -1076,7 +1076,7 @@ const list = sortByFranchise(baseTitle, cleaned, baseYear).slice(0, 20);
         mini.classList.remove("hidden");
         trailerBtn.textContent = "Hide trailer";
       } catch (e) {
-        alert(`Trailer failed: ${e.message}`);
+        fmToast("Trailer failed");
         trailerBtn.textContent = "Trailer";
       } finally {
         trailerBtn.disabled = false;
