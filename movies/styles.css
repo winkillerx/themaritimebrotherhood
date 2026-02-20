@@ -1893,3 +1893,43 @@ h2,
   background: rgba(10, 14, 28, .35);
   border: 1px solid rgba(120, 170, 255, .22);
 }
+/* =========================
+   iOS / touch fix: stop "double tap to click" caused by :hover
+   Keep hover effects only on real hover devices (mouse/trackpad)
+========================= */
+
+/* 1) Only allow hover effects on devices that actually support hover */
+@media (hover: hover) and (pointer: fine) {
+  .watchItem:hover{
+    background: rgba(255,255,255,.06);
+    border-color: rgba(255,255,255,.14);
+  }
+
+  .watchFooterBtn:hover{
+    background: rgba(255,255,255,.10);
+    border-color: rgba(255,255,255,.16);
+  }
+}
+
+/* 2) On touch devices, neutralize hover so taps are clicks */
+@media (hover: none) and (pointer: coarse) {
+  .watchItem:hover{
+    background: rgba(255,255,255,.03) !important;
+    border-color: rgba(255,255,255,.08) !important;
+  }
+
+  .watchFooterBtn:hover{
+    background: rgba(255,255,255,.06) !important;
+    border-color: rgba(255,255,255,.10) !important;
+  }
+
+  /* Optional but helps site-wide if you see it elsewhere */
+  .btn:hover,
+  .popCard:hover,
+  .simCard:hover,
+  .chip:hover,
+  .suggestItem:hover{
+    box-shadow: none !important;
+    border-color: var(--accentBorder) !important;
+  }
+}
