@@ -1801,3 +1801,95 @@ h2,
   width: 100% !important;
   max-width: 100% !important;
 }
+/* =========================
+   Film Matrix Toast + Confirm
+   ========================= */
+
+.hidden { display: none !important; }
+
+/* =========================
+   Film Matrix Toast (LINK COPIED style)
+   ========================= */
+.fmToast{
+  position: fixed;
+  left: 50%;
+  top: 52%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+
+  width: min(92vw, 760px);
+  padding: 18px 18px;
+  border-radius: 22px;
+
+  text-align: center;
+  font-family: var(--font-display, "Orbitron", system-ui, sans-serif);
+  letter-spacing: .10em;
+  text-transform: uppercase;
+  font-weight: 800;
+  font-size: 24px;
+
+  background: rgba(10, 14, 28, .92);
+  border: 1px solid var(--accentBorder);
+  box-shadow: 0 24px 80px rgba(0,0,0,.65), inset 0 0 0 1px rgba(34, 211, 238, .10);
+  color: rgba(231,236,255,.96);
+
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  pointer-events: none;
+}
+
+@media (max-width: 520px){
+  .fmToast{
+    font-size: 20px;
+    padding: 16px;
+  }
+}
+
+/* Confirm overlay */
+.fmConfirm{
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(6px);
+}
+
+.fmConfirmCard{
+  width: min(92vw, 520px);
+  border-radius: 22px;
+  padding: 18px;
+
+  background: rgba(10, 14, 28, .92);
+  border: 1px solid rgba(120, 170, 255, .28);
+  box-shadow: 0 24px 80px rgba(0,0,0,.65), inset 0 0 0 1px rgba(34, 211, 238, .10);
+}
+
+.fmConfirmTitle{
+  font-family: "Orbitron", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-weight: 800;
+  letter-spacing: .08em;
+  color: rgba(231,236,255,.96);
+  margin-bottom: 10px;
+}
+
+.fmConfirmMsg{
+  color: rgba(231,236,255,.78);
+  line-height: 1.35;
+  margin-bottom: 14px;
+}
+
+.fmConfirmBtns{
+  display: grid;
+  gap: 10px;
+}
+
+/* Optional: ghost button variant (if you don't have one) */
+.btn.ghost{
+  background: rgba(10, 14, 28, .35);
+  border: 1px solid rgba(120, 170, 255, .22);
+}

@@ -331,7 +331,135 @@ function clearLists() {
     els.matches.classList.add("hidden");
   }
 }
+// =========================
+// Film Matrix UI dialogs
+// =========================
 
+let toastTimer = null;
+
+function fmToast(msg, ms = 1600) {
+  const el = document.getElementById("fmToast");
+  if (!el) return;
+
+  el.textContent = msg;
+  el.classList.remove("hidden");
+
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.add("hidden"), ms);
+}
+
+// =========================
+// Film Matrix UI dialogs
+// =========================
+
+function fmConfirm(msg, title = "FILM MATRIX") {
+  return new Promise((resolve) => {
+    const wrap = document.getElementById("fmConfirm");
+    const msgEl = document.getElementById("fmConfirmMsg");
+    const ok = document.getElementById("fmConfirmOk");
+    const cancel = document.getElementById("fmConfirmCancel");
+
+    // Fallback if markup missing
+    if (!wrap || !msgEl || !ok || !cancel) {
+      resolve(window.confirm(msg));
+      return;
+    }
+
+    // Title (optional)
+    const titleEl =
+      wrap.querySelector(".fmConfirmTitle") ||
+      wrap.querySelector("#fmConfirmTitle");
+    if (titleEl) titleEl.textContent = title;
+
+    msgEl.textContent = msg;
+
+    // Ensure both buttons visible + labeled
+    cancel.classList.remove("hidden");
+    ok.textContent = "OK";
+    cancel.textContent = "CANCEL";
+
+    wrap.classList.remove("hidden");
+
+    const cleanup = () => {
+      wrap.classList.add("hidden");
+      ok.onclick = null;
+      cancel.onclick = null;
+      wrap.onclick = null;
+      document.removeEventListener("keydown", onKey);
+    };
+
+    const onKey = (e) => {
+      if (e.key === "Escape") { cleanup(); resolve(false); }
+      if (e.key === "Enter") { cleanup(); resolve(true); }
+    };
+
+    ok.onclick = () => { cleanup(); resolve(true); };
+    cancel.onclick = () => { cleanup(); resolve(false); };
+
+    // Tap outside = cancel (matches your current behavior)
+    wrap.onclick = (e) => {
+      if (e.target === wrap) { cleanup(); resolve(false); }
+    };
+
+    document.addEventListener("keydown", onKey);
+  });
+}
+
+// =========================
+// Film Matrix single-button dialog (OK only)
+// =========================
+function fmAlert(msg, title = "FILM MATRIX") {
+  return new Promise((resolve) => {
+    const wrap = document.getElementById("fmConfirm");
+    const msgEl = document.getElementById("fmConfirmMsg");
+    const ok = document.getElementById("fmConfirmOk");
+    const cancel = document.getElementById("fmConfirmCancel");
+
+    // Fallback if markup missing
+    if (!wrap || !msgEl || !ok) {
+      window.alert(msg);
+      resolve(true);
+      return;
+    }
+
+    // Title (optional)
+    const titleEl =
+      wrap.querySelector(".fmConfirmTitle") ||
+      wrap.querySelector("#fmConfirmTitle");
+    if (titleEl) titleEl.textContent = title;
+
+    msgEl.textContent = msg;
+    wrap.classList.remove("hidden");
+
+    // Hide cancel (OK only)
+    if (cancel) cancel.classList.add("hidden");
+    ok.textContent = "OK";
+
+    const cleanup = () => {
+      wrap.classList.add("hidden");
+      ok.onclick = null;
+      wrap.onclick = null;
+      document.removeEventListener("keydown", onKey);
+      if (cancel) cancel.classList.remove("hidden"); // restore for next confirm()
+    };
+
+    const onKey = (e) => {
+      if (e.key === "Escape" || e.key === "Enter") {
+        cleanup();
+        resolve(true);
+      }
+    };
+
+    ok.onclick = () => { cleanup(); resolve(true); };
+
+    // Tap outside closes (like iOS)
+    wrap.onclick = (e) => {
+      if (e.target === wrap) { cleanup(); resolve(true); }
+    };
+
+    document.addEventListener("keydown", onKey);
+  });
+}
 /* -----------------------------
    apiGet with timeout
 ------------------------------*/
@@ -463,24 +591,42 @@ function renderWatchMenu(data) {
 function toggleWatchDropdown(anchorBtn, html) {
   if (!anchorBtn) return;
 
-  const scope = anchorBtn.closest(".simCard, .watchItem, .targetActions") || document.body;
+  // If a dropdown already exists right after this button, toggle it off
+  const next = anchorBtn.nextElementSibling;
+  if (next && next.classList.contains("watchDropdown")) {
+    next.remove();
+    return;
+  }
 
-  // Remove existing dropdowns in this scope
-  scope.querySelectorAll(".watchDropdown").forEach((d) => d.remove());
+  // Close any others anywhere (prevents multiple open)
+  closeAllWatchDropdowns(document);
 
   const box = document.createElement("div");
   box.className = "watchDropdown";
   box.innerHTML = html;
-
   anchorBtn.after(box);
 
-  // click outside closes
-  const onDoc = (e) => {
-    if (box.contains(e.target) || anchorBtn.contains(e.target)) return;
+  const cleanup = () => {
     box.remove();
-    document.removeEventListener("click", onDoc, true);
+    document.removeEventListener("pointerdown", onDoc, true);
+    document.removeEventListener("keydown", onKey);
   };
-  document.addEventListener("click", onDoc, true);
+
+  const onKey = (e) => {
+    if (e.key === "Escape") cleanup();
+  };
+
+  const onDoc = (e) => {
+    // If tap is inside dropdown or on the button, do nothing
+    if (box.contains(e.target) || anchorBtn.contains(e.target)) return;
+    cleanup();
+  };
+
+  // 🔑 Delay binding so the opening tap doesn't instantly close it
+  setTimeout(() => {
+    document.addEventListener("pointerdown", onDoc, true);
+    document.addEventListener("keydown", onKey);
+  }, 0);
 }
 
 /* -----------------------------
@@ -856,9 +1002,9 @@ if (btnShare) {
 
     try {
       await navigator.clipboard.writeText(shareUrl);
-      alert("Link copied ✅");
+      await fmAlert("Link copied");
     } catch {
-      prompt("Copy this link:", shareUrl);
+      await fmAlert("Copy blocked");
     }
   };
 }
@@ -1009,7 +1155,7 @@ const list = sortByFranchise(baseTitle, cleaned, baseYear).slice(0, 20);
         const key = await fetchTrailerKey(id, type);
 
         if (!key) {
-          alert("No trailer found.");
+          await fmAlert("No trailer found");
           trailerBtn.textContent = "Trailer";
           return;
         }
@@ -1020,7 +1166,7 @@ const list = sortByFranchise(baseTitle, cleaned, baseYear).slice(0, 20);
         mini.classList.remove("hidden");
         trailerBtn.textContent = "Hide trailer";
       } catch (e) {
-        alert(`Trailer failed: ${e.message}`);
+        await fmAlert("Trailer failed");
         trailerBtn.textContent = "Trailer";
       } finally {
         trailerBtn.disabled = false;
@@ -1249,7 +1395,7 @@ function addToWatchlist(m) {
   if (list.some((x) => String(x.id) === String(m.id) && asType(x.type, "movie") === type)) return;
   list.unshift({ id: m.id, type, title: m.title, year: m.year, rating: m.rating, poster: m.poster });
   saveWatchlist(list);
-  alert("Added to Watchlist ✅");
+  fmAlert("Added to watchlist");
 }
 
 /* -----------------------------------------------------------
@@ -1630,30 +1776,50 @@ function closeWatchlist() {
   closeAllWatchDropdowns(document);
 }
 
-// Clear button logic
-const clearBtn = document.createElement("button");
-clearBtn.className = "btn sm delete";
-clearBtn.id = "clearBtn";
-clearBtn.textContent = "Clear";
-clearBtn.onclick = () => {
-  if (confirm("Clear entire watchlist?")) {
-    saveWatchlist([]);
-    openWatchlist();
-  }
-};
+/* -----------------------------------------------------------
+   Watchlist modal: clear button (styled confirm + toast)
+----------------------------------------------------------- */
 
-document.addEventListener("DOMContentLoaded", () => {
+function ensureClearButton() {
   const top = document.querySelector(".modalTop");
-  if (top && !document.getElementById("clearBtn")) {
-    top.insertBefore(clearBtn, els.closeModal);
-  }
-});
-  
+  if (!top) return;
+
+  // already added?
+  if (document.getElementById("clearBtn")) return;
+
+  const clearBtn = document.createElement("button");
+  clearBtn.className = "btn sm delete";
+  clearBtn.id = "clearBtn";
+  clearBtn.type = "button";
+  clearBtn.textContent = "Clear";
+
+  clearBtn.onclick = async () => {
+    const ok = await fmConfirm("Clear entire watchlist?");
+    if (!ok) {
+      await fmAlert("Cancelled");
+      return;
+    }
+
+    saveWatchlist([]);
+    openWatchlist(); // re-render
+    await fmAlert("Watchlist cleared");
+  };
+
+  // insert before Close
+  top.insertBefore(clearBtn, els.closeModal);
+}
+
+/* -----------------------------------------------------------
+   Init (run once)
+----------------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", () => {
   initUI();
   renderTarget(null);
   clearLists();
   setMeta("Ready.", false);
+
+  // add Clear button once the modal header exists
+  ensureClearButton();
 });
 /* ============================================================
    MATRIX RAIN BACKGROUND — FULLSCREEN + FIXED
