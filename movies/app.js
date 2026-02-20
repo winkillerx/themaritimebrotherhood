@@ -157,68 +157,6 @@ const API_BASE = "";
    - pointerup on touch -> dispatch click immediately
    - suppress "ghost click" that Safari fires after touch
 ============================================================ */
-
-(function enableGlobalFastTap(){
-  const isTouch =
-    window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-
-  if (!isTouch) return;
-
-  let lastTouchTS = 0;
-  let lastTouchTarget = null;
-
-  const CLICKABLE_SEL = `
-    a[href],
-    button,
-    [role="button"],
-    .btn,
-    .popCard,
-    .chip,
-    .suggestItem,
-    .genreCard
-  `;
-
-  // 1) Convert touch pointerup into an immediate click
-  document.addEventListener("pointerup", (e) => {
-    if (e.pointerType !== "touch") return;
-
-    // ignore multi-touch / weird cases
-    if (!e.isPrimary) return;
-
-    const el = e.target?.closest?.(CLICKABLE_SEL);
-    if (!el) return;
-
-    // Don't interfere with form controls where default behavior matters
-    const tag = (el.tagName || "").toLowerCase();
-    if (tag === "input" || tag === "select" || tag === "textarea") return;
-
-    lastTouchTS = Date.now();
-    lastTouchTarget = el;
-
-    // Prevent iOS from treating first tap as "hover/focus only"
-    // and send a real click immediately.
-    e.preventDefault();
-
-    el.dispatchEvent(
-      new MouseEvent("click", { bubbles: true, cancelable: true, view: window })
-    );
-  }, { capture: true, passive: false });
-
-  // 2) Kill Safari "ghost click" that arrives after the touch click
-  document.addEventListener("click", (e) => {
-    const dt = Date.now() - lastTouchTS;
-    if (dt > 650) return;
-
-    const el = e.target?.closest?.(CLICKABLE_SEL);
-    if (!el) return;
-
-    // if it's the same element (or inside it), block the ghost click
-    if (lastTouchTarget && (el === lastTouchTarget || lastTouchTarget.contains(el))) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  }, true);
-})();
 /* -----------------------------
    Mode / Highlighting
 ------------------------------*/
@@ -693,45 +631,31 @@ function toggleWatchDropdown(anchorBtn, html) {
   const cleanup = () => {
     if (box.parentNode) box.remove();
     document.removeEventListener("pointerdown", onDoc, true);
-    document.removeEventListener("keydown", onKey);
+    document.removeEventListener("keydown", onKey, true);
   };
 
   const onKey = (e) => {
     if (e.key === "Escape") cleanup();
   };
 
-  // ✅ If user taps a provider link/button inside the menu, close menu after tap
+  // Close when clicking a provider (after navigation triggers)
   box.addEventListener(
     "click",
     (e) => {
       const hit = e.target.closest("a,button");
-      if (hit) {
-        // allow the click/navigation to happen, then close
-        setTimeout(cleanup, 0);
-      }
+      if (hit) setTimeout(cleanup, 0);
     },
     true
   );
 
   const onDoc = (e) => {
-    // If tap is inside dropdown or on the anchor button, do nothing
+    // Tap inside dropdown or the Watch button = ignore
     if (box.contains(e.target) || anchorBtn.contains(e.target)) return;
-
-    // ✅ Tap outside should CLOSE and ALSO "pass through" to whatever was tapped
-    const target = e.target;
-
     cleanup();
+  };
 
-    // Forward the tap as a real click (fixes iOS “first tap only closes”)
-    setTimeout(() => {
-     const onDoc = (e) => {
-  if (box.contains(e.target) || anchorBtn.contains(e.target)) return;
-  cleanup();
-};
-
-  // 🔑 Bind immediately in capture, but forwarding prevents "lost first tap"
   document.addEventListener("pointerdown", onDoc, true);
-  document.addEventListener("keydown", onKey);
+  document.addEventListener("keydown", onKey, true);
 }
 
 /* -----------------------------
@@ -996,7 +920,7 @@ function renderGenres(genres = []) {
 
   // Click behavior (your discover logic)
   container.querySelectorAll(".genreCard").forEach((btn) => {
-  btn.addEventListener("click", async () => {
+  bindFastTap(btn, async () => {
     const type = btn.getAttribute("data-type") || "both";
     const keywords = btn.getAttribute("data-keywords") || "";
     const genres = btn.getAttribute("data-genres") || "";
@@ -1006,7 +930,6 @@ function renderGenres(genres = []) {
 
     try {
       const items = await discoverCategory({ type, keywords, genres });
-
       renderMatches(items);
 
       const first = items[0];
@@ -1362,14 +1285,13 @@ function renderMatches(items) {
     `;
   }).join("");
 
-  els.matches.querySelectorAll(".chip").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-id");
-      const type = asType(btn.getAttribute("data-type") || "movie", "movie");
-      if (id) loadById(id, type);
-    });
+  els.matches.querySelectorAll(".chip").forEach((btn) => {
+  bindFastTap(btn, () => {
+    const id = btn.getAttribute("data-id");
+    const type = asType(btn.getAttribute("data-type") || "movie", "movie");
+    if (id) loadById(id, type);
   });
-}
+});
 
 /* -----------------------------
    Suggest input handler
