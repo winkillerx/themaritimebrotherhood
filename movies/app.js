@@ -152,7 +152,73 @@ if (themeSelect){
   });
 }
 const API_BASE = "";
+/* ============================================================
+   GLOBAL FAST-TAP (iOS): single tap activates everything
+   - pointerup on touch -> dispatch click immediately
+   - suppress "ghost click" that Safari fires after touch
+============================================================ */
 
+(function enableGlobalFastTap(){
+  const isTouch =
+    window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+
+  if (!isTouch) return;
+
+  let lastTouchTS = 0;
+  let lastTouchTarget = null;
+
+  const CLICKABLE_SEL = `
+    a[href],
+    button,
+    [role="button"],
+    .btn,
+    .popCard,
+    .chip,
+    .suggestItem,
+    .genreCard
+  `;
+
+  // 1) Convert touch pointerup into an immediate click
+  document.addEventListener("pointerup", (e) => {
+    if (e.pointerType !== "touch") return;
+
+    // ignore multi-touch / weird cases
+    if (!e.isPrimary) return;
+
+    const el = e.target?.closest?.(CLICKABLE_SEL);
+    if (!el) return;
+
+    // Don't interfere with form controls where default behavior matters
+    const tag = (el.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "select" || tag === "textarea") return;
+
+    lastTouchTS = Date.now();
+    lastTouchTarget = el;
+
+    // Prevent iOS from treating first tap as "hover/focus only"
+    // and send a real click immediately.
+    e.preventDefault();
+
+    el.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, cancelable: true, view: window })
+    );
+  }, { capture: true, passive: false });
+
+  // 2) Kill Safari "ghost click" that arrives after the touch click
+  document.addEventListener("click", (e) => {
+    const dt = Date.now() - lastTouchTS;
+    if (dt > 650) return;
+
+    const el = e.target?.closest?.(CLICKABLE_SEL);
+    if (!el) return;
+
+    // if it's the same element (or inside it), block the ghost click
+    if (lastTouchTarget && (el === lastTouchTarget || lastTouchTarget.contains(el))) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, true);
+})();
 /* -----------------------------
    Mode / Highlighting
 ------------------------------*/
@@ -658,11 +724,10 @@ function toggleWatchDropdown(anchorBtn, html) {
 
     // Forward the tap as a real click (fixes iOS “first tap only closes”)
     setTimeout(() => {
-      // Only forward if it's something clickable
-      const clickable = target.closest?.("button,a,[role='button'],input,label,.btn,.chip,.popCard");
-      if (clickable) clickable.click();
-    }, 0);
-  };
+     const onDoc = (e) => {
+  if (box.contains(e.target) || anchorBtn.contains(e.target)) return;
+  cleanup();
+};
 
   // 🔑 Bind immediately in capture, but forwarding prevents "lost first tap"
   document.addEventListener("pointerdown", onDoc, true);
