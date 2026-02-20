@@ -331,6 +331,24 @@ function clearLists() {
     els.matches.classList.add("hidden");
   }
 }
+// ✅ iOS-safe tap handler: fires instantly, avoids "first tap = hover"
+function bindFastTap(el, fn) {
+  if (!el) return;
+
+  let lastTouch = 0;
+
+  // pointerup fires reliably on iOS without the weird "hover-first" behavior
+  el.addEventListener("pointerup", (e) => {
+    if (e.pointerType === "touch") lastTouch = Date.now();
+    fn(e);
+  });
+
+  // fallback click for desktop; ignore "ghost clicks" after touch
+  el.addEventListener("click", (e) => {
+    if (Date.now() - lastTouch < 500) return; // ignore ghost click
+    fn(e);
+  });
+}
 // =========================
 // Film Matrix UI dialogs
 // =========================
@@ -1005,46 +1023,38 @@ function renderTarget(m) {
   wireReadMore(els.target);
 
   // wire target action buttons
-  const btnAdd = document.getElementById("addWatch");
-  const btnWatch = document.getElementById("watchNow");
-  const btnShare = document.getElementById("copyLink");
-  const btnTmdb = document.getElementById("openImdb");
+const btnAdd = document.getElementById("addWatch");
+const btnWatch = document.getElementById("watchNow");
+const btnShare = document.getElementById("copyLink");
+const btnTmdb = document.getElementById("openImdb");
 
-  if (btnTmdb) {
-    btnTmdb.onclick = () => {
-      window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(m.id)}`, "_blank");
-    };
+bindFastTap(btnTmdb, () => {
+  window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(m.id)}`, "_blank");
+});
+
+bindFastTap(btnShare, async () => {
+  const u = new URL(location.origin);
+  u.pathname = `/t/${type}/${m.id}`;
+  const shareUrl = u.toString();
+
+  try {
+    await navigator.clipboard.writeText(shareUrl);
+    await fmAlert("Link copied");
+  } catch {
+    await fmAlert("Copy blocked");
   }
+});
 
-if (btnShare) {
-  btnShare.onclick = async () => {
-    const u = new URL(location.origin);
-    u.pathname = `/t/${type}/${m.id}`;
-    const shareUrl = u.toString();
+bindFastTap(btnAdd, () => addToWatchlist({ ...m, type }));
 
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      await fmAlert("Link copied");
-    } catch {
-      await fmAlert("Copy blocked");
-    }
-  };
-}
+bindFastTap(btnWatch, async (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  closeAllWatchDropdowns(document);
 
-  if (btnAdd) {
-    btnAdd.onclick = () => addToWatchlist({ ...m, type });
-  }
-
-  if (btnWatch) {
-  btnWatch.onclick = async (e) => {
-    e.preventDefault();
-    e.stopPropagation(); // important on mobile
-    closeAllWatchDropdowns(document);
-
-    const data = await fetchWatchProviders(m.id, type);
-    toggleWatchDropdown(btnWatch, renderWatchMenu(data));
-  };
-}
+  const data = await fetchWatchProviders(m.id, type);
+  toggleWatchDropdown(btnWatch, renderWatchMenu(data));
+});
 
   // trailer
   (async () => {
@@ -1147,16 +1157,15 @@ const list = sortByFranchise(baseTitle, cleaned, baseYear).slice(0, 20);
     const tmdbBtn = card.querySelector(".tmdbBtn");
     const mini = card.querySelector(".miniTrailer");
 
-    openBtn?.addEventListener("click", () => loadById(id, type));
+    bindFastTap(openBtn, () => loadById(id, type));
 
-    tmdbBtn?.addEventListener("click", () =>
-      window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(id)}`, "_blank")
-    );
+bindFastTap(tmdbBtn, () =>
+  window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(id)}`, "_blank")
+);
 
-    watchBtn?.addEventListener("click", async (e) => {
+bindFastTap(watchBtn, async (e) => {
   e.preventDefault();
   e.stopPropagation();
-
   const data = await fetchWatchProviders(id, type);
   toggleWatchDropdown(watchBtn, renderWatchMenu(data));
 });
