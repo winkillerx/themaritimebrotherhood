@@ -331,7 +331,61 @@ function clearLists() {
     els.matches.classList.add("hidden");
   }
 }
+// =========================
+// Film Matrix UI dialogs
+// =========================
 
+let toastTimer = null;
+
+function fmToast(msg, ms = 1600) {
+  const el = document.getElementById("fmToast");
+  if (!el) return;
+
+  el.textContent = msg;
+  el.classList.remove("hidden");
+
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.add("hidden"), ms);
+}
+
+function fmConfirm(msg) {
+  return new Promise((resolve) => {
+    const wrap = document.getElementById("fmConfirm");
+    const msgEl = document.getElementById("fmConfirmMsg");
+    const ok = document.getElementById("fmConfirmOk");
+    const cancel = document.getElementById("fmConfirmCancel");
+
+    if (!wrap || !msgEl || !ok || !cancel) {
+      // fallback if markup missing
+      resolve(window.confirm(msg));
+      return;
+    }
+
+    msgEl.textContent = msg;
+    wrap.classList.remove("hidden");
+
+    const cleanup = () => {
+      wrap.classList.add("hidden");
+      ok.onclick = null;
+      cancel.onclick = null;
+      wrap.onclick = null;
+      document.removeEventListener("keydown", onKey);
+    };
+
+    const onKey = (e) => {
+      if (e.key === "Escape") { cleanup(); resolve(false); }
+      if (e.key === "Enter") { cleanup(); resolve(true); }
+    };
+
+    ok.onclick = () => { cleanup(); resolve(true); };
+    cancel.onclick = () => { cleanup(); resolve(false); };
+    wrap.onclick = (e) => {
+      if (e.target === wrap) { cleanup(); resolve(false); }
+    };
+
+    document.addEventListener("keydown", onKey);
+  });
+}
 /* -----------------------------
    apiGet with timeout
 ------------------------------*/
@@ -856,9 +910,11 @@ if (btnShare) {
 
     try {
       await navigator.clipboard.writeText(shareUrl);
-      alert("Link copied ✅");
+      fmToast("Link copied ✅");
     } catch {
-      prompt("Copy this link:", shareUrl);
+      // no prompt (native UI) — just show toast + select fallback
+      fmToast("Copy blocked — tap to copy");
+      // optional: open a small modal input later, but keeping it clean for now
     }
   };
 }
@@ -1636,11 +1692,14 @@ clearBtn.className = "btn sm delete";
 clearBtn.id = "clearBtn";
 clearBtn.textContent = "Clear";
 clearBtn.onclick = () => {
-  if (confirm("Clear entire watchlist?")) {
-    saveWatchlist([]);
-    openWatchlist();
-  }
-};
+  // Clear watchlist (styled confirm + styled toast)
+if (await fmConfirm("Clear entire watchlist?")) {
+  saveWatchlist([]);     // ✅ clear storage
+  openWatchlist();       // ✅ refresh modal UI
+  fmToast("Watchlist cleared ✅");
+} else {
+  fmToast("Cancelled");
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   const top = document.querySelector(".modalTop");
