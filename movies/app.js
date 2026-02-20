@@ -1686,26 +1686,50 @@ function closeWatchlist() {
   closeAllWatchDropdowns(document);
 }
 
-// Clear button logic
-const clearBtn = document.createElement("button");
-clearBtn.className = "btn sm delete";
-clearBtn.id = "clearBtn";
-clearBtn.textContent = "Clear";
-clearBtn.onclick = () => {
-  // Clear watchlist (styled confirm + styled toast)
-if (await fmConfirm("Clear entire watchlist?")) {
-  saveWatchlist([]);     // ✅ clear storage
-  openWatchlist();       // ✅ refresh modal UI
-  fmToast("Watchlist cleared ✅");
-} else {
-  fmToast("Cancelled");
+/* -----------------------------------------------------------
+   Watchlist modal: clear button (styled confirm + toast)
+----------------------------------------------------------- */
+
+function ensureClearButton() {
+  const top = document.querySelector(".modalTop");
+  if (!top) return;
+
+  // already added?
+  if (document.getElementById("clearBtn")) return;
+
+  const clearBtn = document.createElement("button");
+  clearBtn.className = "btn sm delete";
+  clearBtn.id = "clearBtn";
+  clearBtn.type = "button";
+  clearBtn.textContent = "Clear";
+
+  clearBtn.onclick = async () => {
+    const ok = await fmConfirm("Clear entire watchlist?");
+    if (!ok) {
+      fmToast("Cancelled");
+      return;
+    }
+
+    saveWatchlist([]);
+    openWatchlist(); // re-render
+    fmToast("Watchlist cleared ✅");
+  };
+
+  // insert before Close
+  top.insertBefore(clearBtn, els.closeModal);
 }
 
+/* -----------------------------------------------------------
+   Init (run once)
+----------------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", () => {
-  const top = document.querySelector(".modalTop");
-  if (top && !document.getElementById("clearBtn")) {
-    top.insertBefore(clearBtn, els.closeModal);
-  }
+  initUI();
+  renderTarget(null);
+  clearLists();
+  setMeta("Ready.", false);
+
+  // add Clear button once the modal header exists
+  ensureClearButton();
 });
   
 document.addEventListener("DOMContentLoaded", () => {
