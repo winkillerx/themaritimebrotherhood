@@ -1697,28 +1697,27 @@ function ensureClearButton() {
   // already added?
   if (document.getElementById("clearBtn")) return;
 
-  // Clear button (Watchlist modal)
-const clearBtn = document.createElement("button");
-clearBtn.className = "btn sm delete";
-clearBtn.id = "clearBtn";
-clearBtn.textContent = "Clear";
+  const clearBtn = document.createElement("button");
+  clearBtn.className = "btn sm delete";
+  clearBtn.id = "clearBtn";
+  clearBtn.type = "button";
+  clearBtn.textContent = "Clear";
 
-clearBtn.onclick = async () => {
-  const ok = await fmConfirm("Clear entire watchlist?");
-  if (!ok) return;
+  clearBtn.onclick = async () => {
+    const ok = await fmConfirm("Clear entire watchlist?");
+    if (!ok) {
+      fmToast("Cancelled");
+      return;
+    }
 
-  saveWatchlist([]);
-  openWatchlist();            // refresh modal UI
-  fmToast("Watchlist cleared"); // ✅ no emoji / no checkmark
-};
+    saveWatchlist([]);
+    openWatchlist(); // re-render
+    fmToast("Watchlist cleared");
+  };
 
-// Insert Clear button into modal header after DOM loads
-document.addEventListener("DOMContentLoaded", () => {
-  const top = document.querySelector(".modalTop");
-  if (top && !document.getElementById("clearBtn")) {
-    top.insertBefore(clearBtn, els.closeModal);
-  }
-});
+  // insert before Close
+  top.insertBefore(clearBtn, els.closeModal);
+}
 
 /* -----------------------------------------------------------
    Init (run once)
