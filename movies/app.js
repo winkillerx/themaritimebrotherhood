@@ -621,7 +621,7 @@ function toggleWatchDropdown(anchorBtn, html) {
 
   // delay prevents immediate close from opening tap
   setTimeout(() => {
-    document.addEventListener("touchstart", onDoc, { passive: true });
+    
     document.addEventListener("keydown", onKey);
   }, 0);
 }
@@ -698,51 +698,28 @@ function enableMobileAutoHideHeader() {
   const header = document.querySelector(".top");
   if (!header) return;
 
-  // Only activate on touch devices
+  // Only on touch devices
   const isTouch =
     window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-
   if (!isTouch) return;
 
   let hideTimer = null;
-const IDLE_DELAY = 1000; // ms before hiding
+  const IDLE_DELAY = 1200;
 
-  const hideHeader = () => {
-    header.classList.add("auto-hidden");
-  };
-
-  const resetTimer = () => {
-    clearTimeout(hideTimer);
-    hideTimer = setTimeout(hideHeader, IDLE_DELAY);
-  };
-
-const showHeader = (e) => {
-  if (
-    e?.target?.closest("button") ||
-    e?.target?.closest("a") ||
-    e?.target?.closest("input") ||
-    e?.target?.closest("select")
-  ) {
+  const showHeader = () => {
     header.classList.remove("auto-hidden");
-    resetTimer();
-    return;
-  }
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => {
+      header.classList.add("auto-hidden");
+    }, IDLE_DELAY);
+  };
 
-  header.classList.remove("auto-hidden");
-  resetTimer();
-};
+  // ✅ SAFE events — do NOT cancel clicks
+  document.addEventListener("pointerdown", showHeader, { passive: true });
+  document.addEventListener("scroll", showHeader, { passive: true });
+  document.addEventListener("focusin", showHeader);
 
-["touchstart", "scroll"].forEach(evt => {
-  document.addEventListener(evt, showHeader, { passive: true });
-});
-  // Don’t hide while typing
-  document.addEventListener("focusin", (e) => {
-    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
-      showHeader();
-    }
-  });
-
-  resetTimer();
+  showHeader();
 }
 /* -----------------------------------------------------------
    SECTION A.6: Genres Grid (Discover Mode) — Popular-style w/ posters
@@ -1496,8 +1473,16 @@ els.watchlist.querySelectorAll("button[data-watch-id]").forEach((btn) => {
 
     // Delay prevents immediate self-close
     setTimeout(() => {
-      document.addEventListener("touchstart", closeOnOutside, { passive: true });
-    }, 0);
+      const closeOnOutside = (ev) => {
+  if (row.contains(ev.target)) return;
+  dropdown.remove();
+  document.removeEventListener("pointerdown", closeOnOutside, true);
+};
+
+// Delay prevents immediate self-close
+setTimeout(() => {
+  document.addEventListener("pointerdown", closeOnOutside, true);
+}, 0);
   });
 });
 
@@ -1676,12 +1661,7 @@ function initUI() {
     setActiveMode("none");
     doSearch();
   });
-	document.addEventListener("touchstart", (e) => {
-  if (!els.suggest?.contains(e.target) && e.target !== els.q) {
-    els.suggest?.classList.add("hidden");
-  }
-}, { passive: true });
-
+	
   els.watchlistBtn?.addEventListener("click", () => {
     setActiveMode("watchlist");
     openWatchlist();
@@ -1812,7 +1792,30 @@ function ensureClearButton() {
   // insert before Close
   top.insertBefore(clearBtn, els.closeModal);
 }
+function enableGlobalOutsideHandling() {
+  document.addEventListener(
+    "pointerdown",
+    (e) => {
+      // 🔑 Ignore real interactive elements
+      if (
+        e.target.closest("button") ||
+        e.target.closest("a") ||
+        e.target.closest("input") ||
+        e.target.closest("select") ||
+        e.target.closest(".watchDropdown")
+      ) {
+        return;
+      }
 
+      // Close suggestions
+      els.suggest?.classList.add("hidden");
+
+      // Close watch dropdowns
+      closeAllWatchDropdowns(document);
+    },
+    true // CAPTURE phase — does NOT block clicks
+  );
+}
 /* -----------------------------------------------------------
    Init (run once)
 ----------------------------------------------------------- */
