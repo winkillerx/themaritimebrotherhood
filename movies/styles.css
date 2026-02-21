@@ -256,7 +256,17 @@ body::before{ content:none !important; display:none !important; }
     background: rgba(8, 12, 24, .92);
   }
 }
+/* When header auto-hides, it must not intercept taps */
+.top.auto-hidden{
+  pointer-events: none;
+  transform: translateY(-110%);
+  transition: transform 0.25s ease;
+}
 
+/* When visible, taps are enabled */
+.top{
+  pointer-events: auto;
+}
 /* brand overflow fix */
 .brand{
   display:flex;
