@@ -1,220 +1,211 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-	<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <!-- =====================================================
+       BASIC META
+       ===================================================== -->
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
-  <!-- Mobile -->
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#05060c" />
-
-  <!-- Basic SEO -->
-  <title>Film Matrix — Find Similar Movies & TV Shows Instantly</title>
-  <meta name="description" content="Type a movie or TV show you love and Film Matrix instantly recommends similar titles (1950+). Watch trailers, browse popular movies & TV, explore genres, and build a watchlist." />
-  <meta name="keywords" content="movies, tv shows, film recommendations, similar movies, what to watch, movie finder, tv finder, film matrix" />
-  <meta name="author" content="Film Matrix" />
-
-  <!-- Canonical -->
+  <!-- =====================================================
+       PRIMARY SEO
+       ===================================================== -->
+  <title>Film Matrix — Discover Movies & TV Shows Instantly</title>
+  <meta
+    name="description"
+    content="Film Matrix helps you discover movies and TV shows instantly. Find similar titles, trailers, and where to watch in Canada."
+  />
+  <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://filmmatrix.net/" />
 
-  <!-- Open Graph (Facebook, Discord, LinkedIn) -->
+  <!-- =====================================================
+       OPEN GRAPH (SOCIAL PREVIEW)
+       ===================================================== -->
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Film Matrix — Find Similar Movies & TV Shows Instantly" />
-  <meta property="og:description" content="Discover movies and TV shows you'll love. Get instant recommendations, trailers, popular picks, and curated genres." />
+  <meta property="og:site_name" content="Film Matrix" />
+  <meta property="og:title" content="Film Matrix — Discover Movies & TV Shows" />
+  <meta
+    property="og:description"
+    content="Find movies and TV shows fast. Similar titles, trailers, and streaming providers in Canada."
+  />
   <meta property="og:url" content="https://filmmatrix.net/" />
   <meta property="og:image" content="https://filmmatrix.net/og.jpg" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="Film Matrix — Movie & TV Discovery Engine" />
 
-  <!-- Twitter / X -->
+  <!-- =====================================================
+       TWITTER
+       ===================================================== -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Film Matrix — Find Similar Movies & TV Shows" />
-  <meta name="twitter:description" content="Instant movie & TV recommendations with trailers, popular picks, genres, and watchlists." />
+  <meta name="twitter:title" content="Film Matrix — Discover Movies & TV Shows" />
+  <meta
+    name="twitter:description"
+    content="Discover what to watch next with Film Matrix."
+  />
   <meta name="twitter:image" content="https://filmmatrix.net/og.jpg" />
 
-  <!-- Favicon -->
-  <link rel="icon" href="/favicon.ico" sizes="any" />
-  <link rel="apple-touch-icon" href="/favicon.ico" />
+  <!-- =====================================================
+       FONTS
+       ===================================================== -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@500;600;700&display=swap"
+    rel="stylesheet"
+  />
 
-  <!-- Styles -->
-  <link rel="stylesheet" href="./styles.css" />
+  <!-- =====================================================
+       STYLES
+       ===================================================== -->
+  <link rel="stylesheet" href="styles.css" />
 </head>
 
-<body>
-<canvas id="matrixRain"></canvas>
+<body data-theme="blue">
+
+  <!-- =====================================================
+       MATRIX BACKGROUND (NON-INTERACTIVE)
+       ===================================================== -->
+  <canvas id="matrixRain" aria-hidden="true"></canvas>
+
+  <!-- =====================================================
+       APP WRAPPER
+       ===================================================== -->
   <div class="wrap">
+
+    <!-- ================= HEADER ================= -->
     <header class="top">
       <div class="brand">
-        <div class="logo">[FM]</div>
+        <div class="logo">🎬</div>
         <div class="brandText">
-          <div class="name">Film Matrix</div>
-<div class="sub">Find Similar Movies & TV Shows</div>
+          <div class="name">FILM MATRIX</div>
+          <div class="sub">Discover what to watch next</div>
         </div>
       </div>
 
       <div class="topBtns">
-        <button id="watchlistBtn" class="btn iconBtn" type="button" aria-label="Watchlist">👁</button>
-        <button id="random" class="btn iconBtn" type="button" aria-label="Random">🎲</button>
-        <button id="tvOnlyBtn" class="btn iconBtn" type="button" aria-label="TV Only">📺</button>
-        <button id="movieOnlyBtn" class="btn iconBtn" type="button" aria-label="Movies Only">🎬</button>
+        <button id="random" class="btn iconBtn" type="button">🎲</button>
+        <button id="watchlistBtn" class="btn iconBtn" type="button">⭐</button>
+        <button id="tvOnlyBtn" class="btn iconBtn" type="button">TV</button>
+        <button id="movieOnlyBtn" class="btn iconBtn" type="button">🎞</button>
       </div>
     </header>
 
-	<div class="searchWrap">
-  <div class="mobileHero"></div>
-  <section class="card searchCard">
-    <h2>Search</h2>
+    <!-- ================= MOBILE HERO ================= -->
+    <div class="mobileHero" aria-hidden="true"></div>
 
-  <p class="muted">
-    <strong>Film Matrix</strong> helps you find what to watch — fast.
-    <br><br>
+    <!-- ================= SEARCH ================= -->
+    <div class="searchWrap">
+      <div class="card searchCard">
+        <label class="lbl" for="q">Search Movies or TV Shows</label>
+        <input
+          id="q"
+          class="input"
+          type="search"
+          placeholder="Search by title…"
+          autocomplete="off"
+          inputmode="search"
+        />
 
-    Type a Movie or TV show and tap a suggestion or hit <strong>Search</strong>.
-    <br><br>
+        <div id="suggest" class="suggest hidden"></div>
 
-      <strong>Jump to:</strong><br><br>
-    • <a href="#target" class="inlineLink">Target</a> – your main selection<br>
-    • <a href="#results" class="inlineLink">Similar</a> – up to 20 matches<br>
-    • <a href="#popularMovies" class="inlineLink">Popular Movies</a> - 50+ popular Movies<br>
-    • <a href="#popularTv" class="inlineLink">Popular TV</a> - 50+ popular TV shows<br>
-    • <a href="#genreGrid" class="inlineLink">Genres</a> - 50+ popular genres
-    <br><br>
-
-
-    <strong>How it works:</strong><br><br>
-	  • Click on<strong> 🎬 button</strong> to search for Movies<br>
-		• Click on<strong> 📺 button</strong> to search for TV shows<br>
-		• Click on<strong> 🎲 button</strong> if you can't decide<br>
-		• Click on<strong> 👁 button</strong> to save to your watchlist<br>
-		• Pick a <strong>Target</strong> to see details & trailer<br>
-    • Explore <strong>Similar</strong> titles instantly<br>
-    • Browse what’s <strong>Popular Now TV & Movies</strong><br>
-    • Use <strong>Genres</strong> for curated categories<br><br>
-  </p>
-
-
-      <label class="lbl">Movie / TV</label>
-      <input id="q" class="input" placeholder="Blade, Heat, Alien..." autocomplete="off" />
-      <div id="suggest" class="suggest hidden"></div>
-
-      <div id="matches" class="chips hidden"></div>
-
-      <button id="go" class="btn full" type="button">Search</button>
-
-      <div class="filters">
-        <div class="filter">
-          <div class="lblRow">
-            <label class="lbl">Min rating</label>
-            <span id="minRatingVal" class="muted">0/10</span>
+        <div class="filters">
+          <div>
+            <label class="lbl">Minimum Rating</label>
+            <div class="lblRow">
+              <input id="minRating" type="range" min="0" max="10" step="0.5" />
+              <span id="minRatingVal" class="muted">0/10</span>
+            </div>
           </div>
-          <input id="minRating" type="range" min="0" max="10" step="0.5" value="0" />
+
+          <div>
+            <label class="lbl" for="genre">Genre</label>
+            <select id="genre" class="select"></select>
+          </div>
         </div>
 
-        <div class="filter">
-  <label class="lbl">Genre</label>
-  <select id="genre" class="select">
-    <option value="any">Any</option>
-  </select>
-</div>
-
-<div class="filter">
-  <label class="lbl">Theme</label>
-  <select id="themeSelect" class="select">
-    <option value="blue">Blue (Stock)</option>
-    <option value="red">Red</option>
-    <option value="purple">Purple</option>
-    <option value="green">Green</option>
-    <option value="pink">Pink</option>
-  </select>
-</div>
-    </section>
-
-    <section class="card">
-      <div class="sectionTitle">
-        <h2>Target</h2>
-        <div id="meta" class="muted">Ready.</div>
+        <button id="go" class="btn full" type="button">
+          Search
+        </button>
       </div>
+    </div>
 
-      <div id="target" class="targetBox">
-        <div class="muted">No selection yet.</div>
-      </div>
+    <!-- ================= META STATUS ================= -->
+    <div id="meta" class="muted" style="margin: 10px 0;"></div>
 
-      <div id="trailer" class="trailer hidden"></div>
+    <!-- ================= TARGET ================= -->
+    <div id="target" class="card"></div>
 
-      <div id="targetActions" class="actions hidden">
-        <button id="addWatch" class="btn" type="button">Add to Watchlist</button>
-        <button id="copyLink" class="btn" type="button">Copy Share Link</button>
-        <button id="openImdb" class="btn" type="button">TMDb</button>
-      </div>
-    </section>
+    <!-- ================= TRAILER ================= -->
+    <div id="trailer" class="trailer hidden"></div>
 
-    <section class="card">
-      <div class="sectionTitle">
-        <h2>Similar</h2>
-        <div class="muted">Up to 20 results • each has its own Trailer button.</div>
-      </div>
-      <div id="results" class="chips">
-        <div class="muted">No similar titles found (try another title).</div>
-      </div>
-    </section>
+    <!-- ================= MATCHES ================= -->
+    <div id="matches" class="chips hidden"></div>
 
-  <section class="card">
-  <div class="sectionTitle">
-    <h2>Popular Now</h2>
-    <div class="muted">Live from TMDb • movies + TV</div>
-  </div>
+    <!-- ================= SIMILAR ================= -->
+    <div id="results"></div>
 
-  <h3 class="laneTitle">Popular Movies</h3>
-  <div id="popularMovies" class="lane">
-    <div class="muted">Loading…</div>
-  </div>
+    <!-- ================= POPULAR ================= -->
+    <div class="laneTitle">Popular Movies</div>
+    <div id="popularMovies"></div>
 
-  <h3 class="laneTitle">Popular TV Shows</h3>
-  <div id="popularTv" class="lane">
-    <div class="muted">Loading…</div>
-  </div>
-</section>
+    <div class="laneTitle">Popular TV</div>
+    <div id="popularTv"></div>
 
-<section class="card">
-  <div class="sectionTitle">
-    <h2>Genres</h2>
-    <div class="muted">Curated categories across movies & TV</div>
-  </div>
+    <!-- ================= GENRES ================= -->
+    <div class="laneTitle">Genres</div>
+    <div id="genreGrid"></div>
 
-  <div id="genreGrid"></div>
-</section>
+    <!-- ================= FOOTER ================= -->
     <footer class="foot muted">
-  Film Matrix • Movies & TV Discovery • Powered by TMDb • Cyberpunk Interface
-</footer>
+      © <span id="year"></span> Film Matrix
+    </footer>
+
   </div>
 
-  <div id="modal" class="modal hidden">
-    <div class="modalCard">
-      <div class="modalTop">
-        <h3>Watchlist</h3>
-        <button id="closeModal" class="btn" type="button">Close</button>
+  <!-- =====================================================
+       CONFIRM / ALERT MODAL
+       ===================================================== -->
+  <div id="fmConfirm" class="fmConfirm hidden">
+    <div class="fmConfirmCard">
+      <div class="fmConfirmTitle">FILM MATRIX</div>
+      <div id="fmConfirmMsg" class="fmConfirmMsg"></div>
+      <div class="fmConfirmBtns">
+        <button id="fmConfirmOk" class="btn full">OK</button>
+        <button id="fmConfirmCancel" class="btn ghost full">Cancel</button>
       </div>
-      <div id="watchlist" class="watchlist"></div>
     </div>
   </div>
 
-  <!-- ✅ Film Matrix UI Dialogs -->
-<div id="fmToast" class="fmToast hidden" role="status" aria-live="polite"></div>
+  <!-- =====================================================
+       TOAST
+       ===================================================== -->
+  <div id="fmToast" class="fmToast hidden"></div>
 
-<div id="fmConfirm" class="fmConfirm hidden" role="dialog" aria-modal="true" aria-labelledby="fmConfirmTitle">
-  <div class="fmConfirmCard">
-    <div class="fmConfirmTitle" id="fmConfirmTitle">FILM MATRIX</div>
-    <div class="fmConfirmMsg" id="fmConfirmMsg">Are you sure?</div>
-    <div class="fmConfirmBtns">
-      <button id="fmConfirmOk" class="btn full" type="button">OK</button>
-      <button id="fmConfirmCancel" class="btn full ghost" type="button">Cancel</button>
-    </div>
-  </div>
-</div>
+  <!-- =====================================================
+       STRUCTURED DATA (SEO)
+       ===================================================== -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Film Matrix",
+    "url": "https://filmmatrix.net/",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://filmmatrix.net/?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
 
-<script src="./app.js"></script>
+  <!-- =====================================================
+       APP SCRIPT
+       ===================================================== -->
+  <script src="app.js" defer></script>
+
+  <script>
+    // Footer year
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+
 </body>
 </html>
