@@ -591,14 +591,12 @@ function renderWatchMenu(data) {
 function toggleWatchDropdown(anchorBtn, html) {
   if (!anchorBtn) return;
 
-  // If a dropdown already exists right after this button, toggle it off
-  const next = anchorBtn.nextElementSibling;
-  if (next && next.classList.contains("watchDropdown")) {
-    next.remove();
+  const existing = anchorBtn.nextElementSibling;
+  if (existing?.classList.contains("watchDropdown")) {
+    existing.remove();
     return;
   }
 
-  // Close any others anywhere (prevents multiple open)
   closeAllWatchDropdowns(document);
 
   const box = document.createElement("div");
@@ -606,25 +604,24 @@ function toggleWatchDropdown(anchorBtn, html) {
   box.innerHTML = html;
   anchorBtn.after(box);
 
-  const cleanup = () => {
-    box.remove();
-    document.removeEventListener("pointerdown", onDoc, true);
-    document.removeEventListener("keydown", onKey);
+  const onDoc = (e) => {
+    if (box.contains(e.target) || anchorBtn.contains(e.target)) return;
+    cleanup();
   };
 
   const onKey = (e) => {
     if (e.key === "Escape") cleanup();
   };
 
-  const onDoc = (e) => {
-    // If tap is inside dropdown or on the button, do nothing
-    if (box.contains(e.target) || anchorBtn.contains(e.target)) return;
-    cleanup();
+  const cleanup = () => {
+    box.remove();
+    document.removeEventListener("touchstart", onDoc);
+    document.removeEventListener("keydown", onKey);
   };
 
-  // 🔑 Delay binding so the opening tap doesn't instantly close it
+  // delay prevents immediate close from opening tap
   setTimeout(() => {
-    document.addEventListener("pointerdown", onDoc, true);
+    document.addEventListener("touchstart", onDoc, { passive: true });
     document.addEventListener("keydown", onKey);
   }, 0);
 }
@@ -710,11 +707,6 @@ function enableMobileAutoHideHeader() {
   let hideTimer = null;
 const IDLE_DELAY = 1000; // ms before hiding
 
-  const showHeader = () => {
-    header.classList.remove("auto-hidden");
-    resetTimer();
-  };
-
   const hideHeader = () => {
     header.classList.add("auto-hidden");
   };
@@ -724,11 +716,25 @@ const IDLE_DELAY = 1000; // ms before hiding
     hideTimer = setTimeout(hideHeader, IDLE_DELAY);
   };
 
-  // Show on any interaction
-  ["touchstart", "scroll", "click"].forEach(evt => {
-    document.addEventListener(evt, showHeader, { passive: true });
-  });
+const showHeader = (e) => {
+  if (
+    e?.target?.closest("button") ||
+    e?.target?.closest("a") ||
+    e?.target?.closest("input") ||
+    e?.target?.closest("select")
+  ) {
+    header.classList.remove("auto-hidden");
+    resetTimer();
+    return;
+  }
 
+  header.classList.remove("auto-hidden");
+  resetTimer();
+};
+
+["touchstart", "scroll"].forEach(evt => {
+  document.addEventListener(evt, showHeader, { passive: true });
+});
   // Don’t hide while typing
   document.addEventListener("focusin", (e) => {
     if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
@@ -1458,8 +1464,7 @@ function openWatchlist() {
     });
   });
 
-  // Watch
-  // Watch (WATCHLIST ONLY — scoped + auto-close)
+ // Watch (WATCHLIST ONLY — scoped + auto-close)
 els.watchlist.querySelectorAll("button[data-watch-id]").forEach((btn) => {
   btn.addEventListener("click", async (e) => {
     e.preventDefault();
@@ -1470,28 +1475,28 @@ els.watchlist.querySelectorAll("button[data-watch-id]").forEach((btn) => {
     const row = btn.closest(".watchItem");
     if (!row) return;
 
-    // 🔑 Close any existing watch dropdowns (watchlist only)
+    // Close any existing watch dropdowns (watchlist only)
     els.watchlist.querySelectorAll(".watchDropdown").forEach(d => d.remove());
 
     const data = await fetchWatchProviders(id, type);
 
-const dropdown = document.createElement("div");
-dropdown.className = "watchDropdown";
-dropdown.innerHTML = renderWatchMenu(data);
+    const dropdown = document.createElement("div");
+    dropdown.className = "watchDropdown";
+    dropdown.innerHTML = renderWatchMenu(data);
 
-// 🔑 insert directly AFTER the button row
-btn.closest("div").after(dropdown);
+    // Insert directly after the button row
+    btn.closest("div").after(dropdown);
 
-    // 🔑 Auto-close when tapping anywhere else
+    // ✅ Touch-safe outside close
     const closeOnOutside = (ev) => {
       if (row.contains(ev.target)) return;
       dropdown.remove();
-      document.removeEventListener("click", closeOnOutside, true);
+      document.removeEventListener("touchstart", closeOnOutside);
     };
 
-    // delay prevents immediate self-close
+    // Delay prevents immediate self-close
     setTimeout(() => {
-      document.addEventListener("click", closeOnOutside, true);
+      document.addEventListener("touchstart", closeOnOutside, { passive: true });
     }, 0);
   });
 });
@@ -1671,12 +1676,11 @@ function initUI() {
     setActiveMode("none");
     doSearch();
   });
-
-  document.addEventListener("click", (e) => {
-    if (!els.suggest?.contains(e.target) && e.target !== els.q) {
-      els.suggest?.classList.add("hidden");
-    }
-  });
+	document.addEventListener("touchstart", (e) => {
+  if (!els.suggest?.contains(e.target) && e.target !== els.q) {
+    els.suggest?.classList.add("hidden");
+  }
+}, { passive: true });
 
   els.watchlistBtn?.addEventListener("click", () => {
     setActiveMode("watchlist");
