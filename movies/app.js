@@ -613,15 +613,14 @@ function toggleWatchDropdown(anchorBtn, html) {
     if (e.key === "Escape") cleanup();
   };
 
-  const cleanup = () => {
-  box.remove();
-  document.removeEventListener("pointerdown", onDoc, true);
-  document.removeEventListener("keydown", onKey);
-};
+    const cleanup = () => {
+    box.remove();
+    document.removeEventListener("pointerdown", onDoc, true);
+    document.removeEventListener("keydown", onKey);
+  };
 
-  // delay prevents immediate close from opening tap
   setTimeout(() => {
-    
+    document.addEventListener("pointerdown", onDoc, true);
     document.addEventListener("keydown", onKey);
   }, 0);
 }
@@ -1465,15 +1464,21 @@ els.watchlist.querySelectorAll("button[data-watch-id]").forEach((btn) => {
     btn.closest("div").after(dropdown);
 
     // Outside close (SAFE)
+// Outside close (SAFE)
 const closeOnOutside = (ev) => {
   if (row.contains(ev.target) || dropdown.contains(ev.target)) return;
   dropdown.remove();
   document.removeEventListener("pointerdown", closeOnOutside, true);
+  document.removeEventListener("keydown", onKey);
+};
+
+const onKey = (ev) => {
+  if (ev.key === "Escape") closeOnOutside(ev);
 };
 
 // Delay prevents immediate self-close
 setTimeout(() => {
-  document.addEventListener("pointerdown", onDoc, true);
+  document.addEventListener("pointerdown", closeOnOutside, true);
   document.addEventListener("keydown", onKey);
 }, 0);
   });
@@ -1791,21 +1796,11 @@ document.addEventListener("DOMContentLoaded", () => {
   clearLists();
   setMeta("Ready.", false);
   ensureClearButton();
-  enableGlobalOutsideHandling(); // 👈 ADD THIS
+  enableGlobalOutsideHandling(); // keep this if you want outside-tap close behavior
 });
 /* -----------------------------------------------------------
    Init (run once)
------------------------------------------------------------ */
-document.addEventListener("DOMContentLoaded", () => {
-  initUI();
-  renderTarget(null);
-  clearLists();
-  setMeta("Ready.", false);
-
-  // add Clear button once the modal header exists
-  ensureClearButton();
-});
-/* ============================================================
+----------------------------------------------------------- *============================================================
    MATRIX RAIN BACKGROUND — FULLSCREEN + FIXED
    ============================================================ */
 
