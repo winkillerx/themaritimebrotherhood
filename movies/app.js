@@ -1306,10 +1306,10 @@ function showUndoDelete() {
 }
 
 function deleteFromWatchlist(id, type) {
-  const t = asType(type, "movie");
   const list = loadWatchlist();
-
-  const idx = list.findIndex((x) => String(x.id) === String(id) && asType(x.type, "movie") === t);
+  const idx = list.findIndex(
+    x => String(x.id) === String(id) && x.type === type
+  );
   if (idx === -1) return;
 
   lastDeletedWatchItem = list[idx];
@@ -1318,6 +1318,9 @@ function deleteFromWatchlist(id, type) {
 
   openWatchlist(); // re-render
   showUndoDelete();
+
+  // ✅ MATCH ALL OTHER UI MESSAGES
+  fmToast("Removed from watchlist");
 }
 
 /* ============================================================
