@@ -1,11 +1,9 @@
 /* ============================================================
    app.js — FILM_MATRIX
    Genre Discover + Boosted Search Integration
-   (CLEAN OVERWRITE — NO DUPES)
    ============================================================ */
-
 const YEAR_MIN = 1950;
-const POPULAR_COUNT = 54; // 50-ish each (Movie/TV)
+const POPULAR_COUNT = 54; // ✅ 50 each (Movie/TV)
 
 const GENRES = [
   ["any", "Any"],
@@ -16,10 +14,11 @@ const GENRES = [
   [10759, "Action & Adventure"], [10762, "Kids"], [10763, "News"], [10764, "Reality"],
   [10765, "Sci-Fi & Fantasy"], [10766, "Soap"], [10767, "Talk"], [10768, "War & Politics"],
 ];
-
 /* ============================================================
-   GENRE PRESETS — DISCOVER MODE
+   GENRE PRESETS — DISCOVER MODE (EXACT 50 CATEGORIES)
+   Used by Genres section below Popular
    ============================================================ */
+
 const GENRE_PRESETS = [
   // Crime / True Crime
   { name: "Serial Killers", keywords: "serial killer,true crime,murder", genres: "80,99", type: "both" },
@@ -95,18 +94,14 @@ const GENRE_PRESETS = [
   { name: "Sitcoms", keywords: "sitcom", genres: "35", type: "tv" },
   { name: "Reality TV", keywords: "reality", genres: "10764", type: "tv" },
 
-  // Awards / Classics / Cult
+  // “Awards / Classics / Cult”
   { name: "Award Winners", keywords: "oscar winner,award winning", genres: "", type: "both" },
-  { name: "Cult Classics", keywords: "cult classic", genres: "", type: "both" },
+  { name: "Cult Classics", keywords: "cult classic", genres: "", type: "both" }
 ];
-
 const genreNameById = new Map(
   GENRES.filter(([k]) => k !== "any").map(([id, name]) => [Number(id), name])
 );
 
-/* ============================================================
-   Element refs
-   ============================================================ */
 const els = {
   q: document.getElementById("q"),
   suggest: document.getElementById("suggest"),
@@ -125,6 +120,11 @@ const els = {
   target: document.getElementById("target"),
   trailer: document.getElementById("trailer"),
 
+  targetActions: document.getElementById("targetActions"),
+  addWatch: document.getElementById("addWatch"),
+  openImdb: document.getElementById("openImdb"),
+  copyLink: document.getElementById("copyLink"),
+
   results: document.getElementById("results"),
   matches: document.getElementById("matches"),
 
@@ -135,36 +135,33 @@ const els = {
   popularMovies: document.getElementById("popularMovies"),
   popularTv: document.getElementById("popularTv") || document.getElementById("popularTV"),
 };
-
 const themeSelect = document.getElementById("themeSelect");
 
-/* ============================================================
-   Theme
-   ============================================================ */
-function applyTheme(theme) {
+function applyTheme(theme){
   document.body.setAttribute("data-theme", theme);
   localStorage.setItem("filmMatrixTheme", theme);
 }
+
 const savedTheme = localStorage.getItem("filmMatrixTheme") || "blue";
 applyTheme(savedTheme);
-if (themeSelect) {
-  themeSelect.value = savedTheme;
-  themeSelect.addEventListener("change", (e) => applyTheme(e.target.value));
-}
 
+if (themeSelect){
+  themeSelect.value = savedTheme;
+  themeSelect.addEventListener("change", e => {
+    applyTheme(e.target.value);
+  });
+}
 const API_BASE = "";
 
-/* ============================================================
-   Mode / Filtering
-   ============================================================ */
+/* -----------------------------
+   Mode / Highlighting
+------------------------------*/
 let activeMode = "none"; // none | random | tv | movie | watchlist
 let mediaFilter = "any"; // any | tv | movie
 
 function setActiveMode(mode) {
   activeMode = mode;
-  [els.watchlistBtn, els.randomBtn, els.tvOnlyBtn, els.movieOnlyBtn].forEach((b) =>
-    b?.classList.remove("active")
-  );
+  [els.watchlistBtn, els.randomBtn, els.tvOnlyBtn, els.movieOnlyBtn].forEach((b) => b?.classList.remove("active"));
 
   if (mode === "watchlist") els.watchlistBtn?.classList.add("active");
   if (mode === "random") els.randomBtn?.classList.add("active");
@@ -180,7 +177,6 @@ function asType(x, fallback = "movie") {
 function safeUpper(x) {
   return String(x || "").toUpperCase();
 }
-
 function padToMultiple(items, multiple) {
   const list = (items || []).slice();
   const missing = (multiple - (list.length % multiple)) % multiple;
@@ -188,49 +184,30 @@ function padToMultiple(items, multiple) {
   return list;
 }
 
-/* ============================================================
-   Scroll lock + Modal open/close (NO DUPES)
-   ============================================================ */
-function lockScroll(lock = true) {
-  document.body.style.overflow = lock ? "hidden" : "";
-}
-
-function closeWatchlist() {
-  els.modal?.classList.add("hidden");
-  lockScroll(false);
-  closeAllWatchDropdowns(document);
-}
-
-function openWatchlistModal() {
-  lockScroll(true);
-  els.modal?.classList.remove("hidden");
-}
-
-/* ============================================================
-   Popular titles fit helper
-   ============================================================ */
+// Shrink font-size until the title fits inside its fixed-height box
 function fitPopTitles(container) {
   if (!container) return;
   const titles = container.querySelectorAll(".popTitle");
   titles.forEach((el) => {
+    // skip placeholders
     if (el.closest(".popCard")?.classList.contains("is-placeholder")) return;
 
-    el.style.fontSize = "";
+    el.style.fontSize = ""; // reset to CSS default
     const maxLoops = 12;
     let size = parseFloat(getComputedStyle(el).fontSize) || 13;
 
+    // keep shrinking until it fits the fixed height
     for (let i = 0; i < maxLoops; i++) {
       if (el.scrollHeight <= el.clientHeight + 1) break;
-      size = Math.max(9, size - 0.5);
+      size = Math.max(9, size - 0.5); // don’t go too tiny
       el.style.fontSize = `${size}px`;
       if (size <= 9) break;
     }
   });
 }
-
-/* ============================================================
+/* -----------------------------
    Helpers
-   ============================================================ */
+------------------------------*/
 function normalizeTitle(t = "") {
   return t
     .toLowerCase()
@@ -243,51 +220,80 @@ function normalizeTitle(t = "") {
 function classifyRelation(baseTitle, item) {
   const baseTokens = normalizeTitle(baseTitle)
     .split(" ")
-    .filter((w) => w.length > 2 && isNaN(w));
+    .filter(w => w.length > 2 && isNaN(w));
 
   const titleTokens = normalizeTitle(item.title || "")
     .split(" ")
-    .filter((w) => w.length > 2 && isNaN(w));
+    .filter(w => w.length > 2 && isNaN(w));
 
   if (!baseTokens.length || !titleTokens.length) return "other";
 
-  const shared = baseTokens.filter((w) => titleTokens.includes(w)).length;
+  // Count shared franchise words
+  const shared = baseTokens.filter(w => titleTokens.includes(w)).length;
+
+  // Require at least 2 shared core words (FAST + FURIOUS)
   const isSameFranchise = shared >= Math.min(2, baseTokens.length);
+
   if (!isSameFranchise) return "other";
 
-  if (normalizeTitle(item.title) === normalizeTitle(baseTitle)) return "original";
+  // Original
+  if (normalizeTitle(item.title) === normalizeTitle(baseTitle)) {
+    return "original";
+  }
 
-  if (item.year && item.baseYear && item.year < item.baseYear) return "prequel";
+  // Prequel
+  if (item.year && item.baseYear && item.year < item.baseYear) {
+    return "prequel";
+  }
 
+  // Remake / reboot (same title, different year)
   if (
     normalizeTitle(item.title) === normalizeTitle(baseTitle) &&
     item.year !== item.baseYear
-  ) return "remake";
+  ) {
+    return "remake";
+  }
 
+  // Otherwise: sequel
   return "sequel";
 }
 
 function sortByFranchise(baseTitle, items, baseYear) {
-  const enriched = items.map((m) => ({
+  const enriched = items.map(m => ({
     ...m,
     baseYear,
-    _relation: classifyRelation(baseTitle, { ...m, baseYear }),
+    _relation: classifyRelation(baseTitle, { ...m, baseYear })
   }));
 
-  const bucket = { original: [], sequel: [], prequel: [], remake: [], other: [] };
-  enriched.forEach((m) => (bucket[m._relation] || bucket.other).push(m));
+  const bucket = {
+    original: [],
+    sequel: [],
+    prequel: [],
+    remake: [],
+    other: []
+  };
 
+  enriched.forEach(m => {
+    (bucket[m._relation] || bucket.other).push(m);
+  });
+
+  // Chronological order inside buckets
   bucket.sequel.sort((a, b) => (a.year || 9999) - (b.year || 9999));
   bucket.prequel.sort((a, b) => (a.year || 9999) - (b.year || 9999));
   bucket.remake.sort((a, b) => (a.year || 9999) - (b.year || 9999));
 
-  return [...bucket.original, ...bucket.sequel, ...bucket.prequel, ...bucket.remake, ...bucket.other];
+  return [
+    ...bucket.original,
+    ...bucket.sequel,
+    ...bucket.prequel,
+    ...bucket.remake,
+    ...bucket.other
+  ];
 }
 
 function esc(s = "") {
   return String(s).replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;",
-    '"': "&quot;", "'": "&#39;",
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   }[c]));
 }
 
@@ -325,11 +331,12 @@ function clearLists() {
     els.matches.classList.add("hidden");
   }
 }
+// =========================
+// Film Matrix UI dialogs
+// =========================
 
-/* ============================================================
-   Toast / Confirm / Alert
-   ============================================================ */
 let toastTimer = null;
+
 function fmToast(msg, ms = 1600) {
   const el = document.getElementById("fmToast");
   if (!el) return;
@@ -341,6 +348,10 @@ function fmToast(msg, ms = 1600) {
   toastTimer = setTimeout(() => el.classList.add("hidden"), ms);
 }
 
+// =========================
+// Film Matrix UI dialogs
+// =========================
+
 function fmConfirm(msg, title = "FILM MATRIX") {
   return new Promise((resolve) => {
     const wrap = document.getElementById("fmConfirm");
@@ -348,16 +359,21 @@ function fmConfirm(msg, title = "FILM MATRIX") {
     const ok = document.getElementById("fmConfirmOk");
     const cancel = document.getElementById("fmConfirmCancel");
 
+    // Fallback if markup missing
     if (!wrap || !msgEl || !ok || !cancel) {
       resolve(window.confirm(msg));
       return;
     }
 
-    const titleEl = wrap.querySelector(".fmConfirmTitle") || wrap.querySelector("#fmConfirmTitle");
+    // Title (optional)
+    const titleEl =
+      wrap.querySelector(".fmConfirmTitle") ||
+      wrap.querySelector("#fmConfirmTitle");
     if (titleEl) titleEl.textContent = title;
 
     msgEl.textContent = msg;
 
+    // Ensure both buttons visible + labeled
     cancel.classList.remove("hidden");
     ok.textContent = "OK";
     cancel.textContent = "CANCEL";
@@ -379,12 +395,19 @@ function fmConfirm(msg, title = "FILM MATRIX") {
 
     ok.onclick = () => { cleanup(); resolve(true); };
     cancel.onclick = () => { cleanup(); resolve(false); };
-    wrap.onclick = (e) => { if (e.target === wrap) { cleanup(); resolve(false); } };
+
+    // Tap outside = cancel (matches your current behavior)
+    wrap.onclick = (e) => {
+      if (e.target === wrap) { cleanup(); resolve(false); }
+    };
 
     document.addEventListener("keydown", onKey);
   });
 }
 
+// =========================
+// Film Matrix single-button dialog (OK only)
+// =========================
 function fmAlert(msg, title = "FILM MATRIX") {
   return new Promise((resolve) => {
     const wrap = document.getElementById("fmConfirm");
@@ -392,18 +415,23 @@ function fmAlert(msg, title = "FILM MATRIX") {
     const ok = document.getElementById("fmConfirmOk");
     const cancel = document.getElementById("fmConfirmCancel");
 
+    // Fallback if markup missing
     if (!wrap || !msgEl || !ok) {
       window.alert(msg);
       resolve(true);
       return;
     }
 
-    const titleEl = wrap.querySelector(".fmConfirmTitle") || wrap.querySelector("#fmConfirmTitle");
+    // Title (optional)
+    const titleEl =
+      wrap.querySelector(".fmConfirmTitle") ||
+      wrap.querySelector("#fmConfirmTitle");
     if (titleEl) titleEl.textContent = title;
 
     msgEl.textContent = msg;
     wrap.classList.remove("hidden");
 
+    // Hide cancel (OK only)
     if (cancel) cancel.classList.add("hidden");
     ok.textContent = "OK";
 
@@ -412,23 +440,29 @@ function fmAlert(msg, title = "FILM MATRIX") {
       ok.onclick = null;
       wrap.onclick = null;
       document.removeEventListener("keydown", onKey);
-      if (cancel) cancel.classList.remove("hidden");
+      if (cancel) cancel.classList.remove("hidden"); // restore for next confirm()
     };
 
     const onKey = (e) => {
-      if (e.key === "Escape" || e.key === "Enter") { cleanup(); resolve(true); }
+      if (e.key === "Escape" || e.key === "Enter") {
+        cleanup();
+        resolve(true);
+      }
     };
 
     ok.onclick = () => { cleanup(); resolve(true); };
-    wrap.onclick = (e) => { if (e.target === wrap) { cleanup(); resolve(true); } };
+
+    // Tap outside closes (like iOS)
+    wrap.onclick = (e) => {
+      if (e.target === wrap) { cleanup(); resolve(true); }
+    };
 
     document.addEventListener("keydown", onKey);
   });
 }
-
-/* ============================================================
-   API helper (timeout)
-   ============================================================ */
+/* -----------------------------
+   apiGet with timeout
+------------------------------*/
 async function apiGet(path, params = {}, timeoutMs = 12000) {
   const url = new URL(`${location.origin}${API_BASE}${path}`);
   for (const [k, v] of Object.entries(params)) {
@@ -441,7 +475,10 @@ async function apiGet(path, params = {}, timeoutMs = 12000) {
 
   let res, text;
   try {
-    res = await fetch(url.toString(), { headers: { Accept: "application/json" }, signal: controller.signal });
+    res = await fetch(url.toString(), {
+      headers: { Accept: "application/json" },
+      signal: controller.signal
+    });
     text = await res.text();
   } finally {
     clearTimeout(timer);
@@ -465,20 +502,32 @@ async function apiGet(path, params = {}, timeoutMs = 12000) {
   return json;
 }
 
-/* ============================================================
-   Watch providers dropdown
-   ============================================================ */
+/* -----------------------------------------------------------
+   SECTION A: Helpers (place right after apiGet())
+-----------------------------------------------------------*/
+
 async function fetchWatchProviders(id, type) {
   try {
-    const r = await apiGet("/api/providers", { id, type: asType(type) });
-    if (Array.isArray(r?.providers)) return { providers: r.providers, link: r.link || null };
+    const r = await apiGet("/api/providers", {
+      id,
+      type: asType(type)
+    });
+
+    // ✅ API already returns final shape
+    if (Array.isArray(r?.providers)) {
+      return {
+        providers: r.providers,
+        link: r.link || null
+      };
+    }
+
+    // Fallback safety
     return { providers: [], link: null };
   } catch (e) {
     console.error("Watch providers failed:", e);
     return { providers: [], link: null };
   }
 }
-
 function closeAllWatchDropdowns(root = document) {
   root.querySelectorAll(".watchDropdown").forEach((d) => d.remove());
 }
@@ -519,11 +568,14 @@ function renderWatchMenu(data) {
             : `<div class="watchLogoFallback">🎬</div>`;
 
           return `
-            <a class="watchItem" href="${safeLink}" target="_blank" rel="noopener">
+            <a class="watchItem"
+               href="${safeLink}"
+               target="_blank"
+               rel="noopener">
               ${logo}
               <div class="watchItemText">
                 <div class="watchName">${name}</div>
-              </div>
+								</div>
             </a>
           `;
         }).join("")}
@@ -539,12 +591,14 @@ function renderWatchMenu(data) {
 function toggleWatchDropdown(anchorBtn, html) {
   if (!anchorBtn) return;
 
-  const existing = anchorBtn.nextElementSibling;
-  if (existing?.classList.contains("watchDropdown")) {
-    existing.remove();
+  // If a dropdown already exists right after this button, toggle it off
+  const next = anchorBtn.nextElementSibling;
+  if (next && next.classList.contains("watchDropdown")) {
+    next.remove();
     return;
   }
 
+  // Close any others anywhere (prevents multiple open)
   closeAllWatchDropdowns(document);
 
   const box = document.createElement("div");
@@ -552,28 +606,32 @@ function toggleWatchDropdown(anchorBtn, html) {
   box.innerHTML = html;
   anchorBtn.after(box);
 
-  const onDoc = (e) => {
-    if (box.contains(e.target) || anchorBtn.contains(e.target)) return;
-    cleanup();
-  };
-
-  const onKey = (e) => { if (e.key === "Escape") cleanup(); };
-
   const cleanup = () => {
     box.remove();
     document.removeEventListener("pointerdown", onDoc, true);
     document.removeEventListener("keydown", onKey);
   };
 
+  const onKey = (e) => {
+    if (e.key === "Escape") cleanup();
+  };
+
+  const onDoc = (e) => {
+    // If tap is inside dropdown or on the button, do nothing
+    if (box.contains(e.target) || anchorBtn.contains(e.target)) return;
+    cleanup();
+  };
+
+  // 🔑 Delay binding so the opening tap doesn't instantly close it
   setTimeout(() => {
     document.addEventListener("pointerdown", onDoc, true);
     document.addEventListener("keydown", onKey);
   }, 0);
 }
 
-/* ============================================================
-   Trailer
-   ============================================================ */
+/* -----------------------------
+   Trailer helpers
+------------------------------*/
 function renderTrailerEmbed(key) {
   if (!els.trailer) return;
   if (!key) {
@@ -592,9 +650,9 @@ async function fetchTrailerKey(id, type) {
   return data?.key || "";
 }
 
-/* ============================================================
-   Read-more
-   ============================================================ */
+/* -----------------------------
+   Read-more toggle
+------------------------------*/
 function makeReadMoreHTML(fullText = "", clampLines = 4) {
   const t = String(fullText || "").trim();
   if (!t) return { html: `<div class="overviewText muted">No description available.</div>`, hasToggle: false };
@@ -622,48 +680,72 @@ function wireReadMore(rootEl) {
     });
   });
 }
-
-/* ============================================================
-   Mobile: scroll to target
-   ============================================================ */
+/* -----------------------------------------------------------
+   1) Mobile: auto-scroll to Target
+-----------------------------------------------------------*/
 function scrollToTarget() {
   const el = els.target?.closest(".card") || els.target;
   if (!el) return;
-  setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+  // smooth scroll on mobile after selecting something
+  setTimeout(() => {
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 60);
 }
-
-/* ============================================================
-   Mobile: header auto-hide (safe iOS taps)
-   ============================================================ */
+/* -----------------------------------------------------------
+   SECTION A.6: Genre Grid (Discover Mode)
+----------------------------------------------------------- */
+/* -----------------------------------------------------------
+   Mobile: Auto-hide top header when idle
+----------------------------------------------------------- */
 function enableMobileAutoHideHeader() {
   const header = document.querySelector(".top");
   if (!header) return;
 
-  const isTouch = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+  // Only activate on touch devices
+  const isTouch =
+    window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+
   if (!isTouch) return;
 
   let hideTimer = null;
-  const IDLE_DELAY = 1200;
+const IDLE_DELAY = 1000; // ms before hiding
 
   const showHeader = () => {
     header.classList.remove("auto-hidden");
-    clearTimeout(hideTimer);
-    hideTimer = setTimeout(() => header.classList.add("auto-hidden"), IDLE_DELAY);
+    resetTimer();
   };
 
-  header.addEventListener("touchstart", showHeader, { passive: true });
-  document.addEventListener("scroll", showHeader, { passive: true });
-  document.addEventListener("pointermove", showHeader, { passive: true });
-  document.addEventListener("focusin", showHeader);
+  const hideHeader = () => {
+    header.classList.add("auto-hidden");
+  };
 
-  showHeader();
+  const resetTimer = () => {
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(hideHeader, IDLE_DELAY);
+  };
+
+  // Show on any interaction
+  ["touchstart", "scroll", "click"].forEach(evt => {
+    document.addEventListener(evt, showHeader, { passive: true });
+  });
+
+  // Don’t hide while typing
+  document.addEventListener("focusin", (e) => {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
+      showHeader();
+    }
+  });
+
+  resetTimer();
 }
+/* -----------------------------------------------------------
+   SECTION A.6: Genres Grid (Discover Mode) — Popular-style w/ posters
+----------------------------------------------------------- */
 
-/* ============================================================
-   Genres grid (Discover Mode)
-   ============================================================ */
 async function hydrateGenrePosters(container, presets) {
   if (!container) return;
+
+  // Concurrency limit so you don’t fire 50 requests at once
   const CONCURRENCY = 4;
   let i = 0;
 
@@ -686,16 +768,19 @@ async function hydrateGenrePosters(container, presets) {
 
         const first = (data.items || [])[0];
         const posterEl = btn.querySelector(".popPoster");
+
         if (first?.poster && posterEl) {
+          // swap placeholder -> image
           posterEl.outerHTML = `<img class="popPoster" src="${esc(first.poster)}" loading="lazy" alt="${esc(g.name)} poster" />`;
         }
-      } catch {}
+      } catch {
+        // keep placeholder if it fails
+      }
     }
   }
 
   await Promise.all(Array.from({ length: CONCURRENCY }, worker));
 }
-
 async function discoverOnce({ type, keywords, genres, minVotes = 30 }) {
   return apiGet("/api/discover", {
     type,
@@ -708,11 +793,13 @@ async function discoverOnce({ type, keywords, genres, minVotes = 30 }) {
 }
 
 async function discoverCategory({ type, keywords, genres }) {
+  // 1) If backend doesn't understand "both", do both ourselves
   const doType = async (t, minVotes, kw, gn) => {
     const r = await discoverOnce({ type: t, keywords: kw, genres: gn, minVotes });
-    return (r?.items || []).map((x) => ({ ...x, type: asType(x.type || t, t) }));
+    return (r?.items || []).map(x => ({ ...x, type: asType(x.type || t, t) }));
   };
 
+  // A) normal pass
   let items = [];
   try {
     if (type === "both") {
@@ -726,6 +813,7 @@ async function discoverCategory({ type, keywords, genres }) {
     }
   } catch {}
 
+  // B) relax votes if empty
   if (!items.length) {
     try {
       if (type === "both") {
@@ -740,6 +828,7 @@ async function discoverCategory({ type, keywords, genres }) {
     } catch {}
   }
 
+  // C) drop keywords if still empty (keywords commonly break discover)
   if (!items.length) {
     try {
       if (type === "both") {
@@ -754,14 +843,19 @@ async function discoverCategory({ type, keywords, genres }) {
     } catch {}
   }
 
+  // D) final fallback: search by keywords/name
   if (!items.length) {
-    const q = (keywords || "").split(",")[0]?.trim() || "popular";
+    const q =
+      (keywords || "").split(",")[0]?.trim() ||
+      (genres ? "" : "") ||
+      "popular";
     try {
       const s = await apiGet("/api/search", { q });
-      items = (s?.items || s?.results || []).map((x) => ({ ...x, type: asType(x.type, "movie") }));
+      items = (s?.items || s?.results || []).map(x => ({ ...x, type: asType(x.type, "movie") }));
     } catch {}
   }
 
+  // de-dupe by type+id, keep first
   const seen = new Set();
   const out = [];
   for (const it of items) {
@@ -772,7 +866,6 @@ async function discoverCategory({ type, keywords, genres }) {
   }
   return out;
 }
-
 function renderGenres(genres = []) {
   const container = document.getElementById("genreGrid");
   if (!container) return;
@@ -796,47 +889,52 @@ function renderGenres(genres = []) {
     </div>
   `;
 
+  // Click behavior (your discover logic)
   container.querySelectorAll(".genreCard").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const type = btn.getAttribute("data-type") || "both";
-      const keywords = btn.getAttribute("data-keywords") || "";
-      const genres = btn.getAttribute("data-genres") || "";
+  btn.addEventListener("click", async () => {
+    const type = btn.getAttribute("data-type") || "both";
+    const keywords = btn.getAttribute("data-keywords") || "";
+    const genres = btn.getAttribute("data-genres") || "";
 
-      clearLists();
-      setMeta("Loading category…", false);
+    clearLists();
+    setMeta("Loading category…", false);
 
-      try {
-        const items = await discoverCategory({ type, keywords, genres });
-        renderMatches(items);
+    try {
+      const items = await discoverCategory({ type, keywords, genres });
 
-        const first = items[0];
-        if (!first?.id) {
-          renderTarget(null);
-          setMeta("No results found for this category.", true);
-          return;
-        }
+      renderMatches(items);
 
-        await loadById(first.id, first.type);
-        scrollToTarget();
-      } catch (e) {
+      const first = items[0];
+      if (!first?.id) {
         renderTarget(null);
-        setMeta(`Category failed. (${e.status || "?"} – ${e.message})`, true);
+        setMeta("No results found for this category.", true);
+        return;
       }
-    });
-  });
 
+      await loadById(first.id, first.type);
+      scrollToTarget();
+    } catch (e) {
+      renderTarget(null);
+      setMeta(`Category failed. (${e.status || "?"} – ${e.message})`, true);
+    }
+  });
+});
+
+  // Poster hydration (popular-style posters)
   hydrateGenrePosters(container, genres);
 }
 
-/* ============================================================
-   Target render
-   ============================================================ */
+/* -----------------------------------------------------------
+   SECTION B: renderTarget() (FULL REPLACE)
+-----------------------------------------------------------*/
+
 function renderTarget(m) {
   if (!els.target) return;
   renderTrailerEmbed("");
 
   if (!m) {
     els.target.innerHTML = `<div class="muted">No selection yet.</div>`;
+    els.targetActions?.classList.add("hidden");
     setMeta("Ready.", false);
     return;
   }
@@ -884,43 +982,49 @@ function renderTarget(m) {
 
   wireReadMore(els.target);
 
+  // wire target action buttons
   const btnAdd = document.getElementById("addWatch");
   const btnWatch = document.getElementById("watchNow");
   const btnShare = document.getElementById("copyLink");
   const btnTmdb = document.getElementById("openImdb");
 
   if (btnTmdb) {
-    btnTmdb.onclick = () => window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(m.id)}`, "_blank");
-  }
-
-  if (btnShare) {
-    btnShare.onclick = async () => {
-      const u = new URL(location.origin);
-      u.pathname = `/t/${type}/${m.id}`;
-      const shareUrl = u.toString();
-
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-        await fmAlert("Link copied");
-      } catch {
-        await fmAlert("Copy blocked");
-      }
+    btnTmdb.onclick = () => {
+      window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(m.id)}`, "_blank");
     };
   }
 
-  if (btnAdd) btnAdd.onclick = () => addToWatchlist({ ...m, type });
+if (btnShare) {
+  btnShare.onclick = async () => {
+    const u = new URL(location.origin);
+    u.pathname = `/t/${type}/${m.id}`;
+    const shareUrl = u.toString();
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      await fmAlert("Link copied");
+    } catch {
+      await fmAlert("Copy blocked");
+    }
+  };
+}
+
+  if (btnAdd) {
+    btnAdd.onclick = () => addToWatchlist({ ...m, type });
+  }
 
   if (btnWatch) {
-    btnWatch.onclick = async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      closeAllWatchDropdowns(document);
+  btnWatch.onclick = async (e) => {
+    e.preventDefault();
+    e.stopPropagation(); // important on mobile
+    closeAllWatchDropdowns(document);
 
-      const data = await fetchWatchProviders(m.id, type);
-      toggleWatchDropdown(btnWatch, renderWatchMenu(data));
-    };
-  }
+    const data = await fetchWatchProviders(m.id, type);
+    toggleWatchDropdown(btnWatch, renderWatchMenu(data));
+  };
+}
 
+  // trailer
   (async () => {
     try {
       const key = m.trailerKey || (await fetchTrailerKey(m.id, type));
@@ -933,19 +1037,22 @@ function renderTarget(m) {
   setMeta(`Selected: ${m.title}`, false);
 }
 
-/* ============================================================
-   Similar render
-   ============================================================ */
+/* -----------------------------------------------------------
+   SECTION C: renderSimilar() (FULL REPLACE)
+-----------------------------------------------------------*/
+
 function renderSimilar(items) {
   const cleaned = (items || [])
-    .filter((m) => m && m.title)
-    .filter((m) => !/^untitled$/i.test(m.title.trim()));
+  .filter(m => m && m.title)
+  .filter(m => !/^untitled$/i.test(m.title.trim()));
 
-  const baseTitle = els.target?.querySelector(".title")?.textContent || "";
-  const baseYear =
-    Number(els.target?.querySelector(".title span")?.textContent?.replace(/\D/g, "")) || null;
+const baseTitle =
+  els.target?.querySelector(".title")?.textContent || "";
 
-  const list = sortByFranchise(baseTitle, cleaned, baseYear).slice(0, 20);
+const baseYear =
+  Number(els.target?.querySelector(".title span")?.textContent?.replace(/\D/g, "")) || null;
+
+const list = sortByFranchise(baseTitle, cleaned, baseYear).slice(0, 20);
   if (!els.results) return;
 
   if (!list.length) {
@@ -953,52 +1060,58 @@ function renderSimilar(items) {
     return;
   }
 
-  els.results.innerHTML = list.map((m) => {
-    const type = asType(m.type, "movie");
+  els.results.innerHTML = list
+    .map((m) => {
+      const type = asType(m.type, "movie");
 
-    const poster = m.poster
-      ? `<img class="poster" src="${esc(m.poster)}" loading="lazy" alt="${esc(m.title)} poster" />`
-      : `<div class="poster placeholder"></div>`;
+      const poster = m.poster
+        ? `<img class="poster" src="${esc(m.poster)}" loading="lazy" alt="${esc(m.title)} poster" />`
+        : `<div class="poster placeholder"></div>`;
 
-    const genres = Array.isArray(m.genres)
-      ? m.genres.map((g) => genreNameById.get(Number(g)) || "").filter(Boolean).slice(0, 4).join(", ")
-      : "";
+      const genres = Array.isArray(m.genres)
+        ? m.genres
+            .map((g) => genreNameById.get(Number(g)) || "")
+            .filter(Boolean)
+            .slice(0, 4)
+            .join(", ")
+        : "";
 
-    const overviewBits = makeReadMoreHTML(m.overview || "", 4);
+      const overviewBits = makeReadMoreHTML(m.overview || "", 4);
 
-    return `
-      <div class="simCard" data-id="${esc(m.id)}" data-type="${esc(type)}">
-        <div class="targetGrid">
-          ${poster}
+      return `
+        <div class="simCard" data-id="${esc(m.id)}" data-type="${esc(type)}">
+          <div class="targetGrid">
+            ${poster}
 
-          <div class="targetInfo">
-            <div class="titleRow">
-              <div class="title">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
-              <div class="pill">⭐ ${esc(fmtRating(m.rating))}</div>
-            </div>
-          </div>
-
-          <div class="metaRow">
-            <div class="genresText">${esc(genres || "—")}</div>
-            <div class="typeText muted">${esc(safeUpper(type))}</div>
-          </div>
-
-          <div class="overviewBlock">
-            ${overviewBits.html}
-
-            <div class="simActions">
-              <button class="btn sm openBtn" type="button">Open</button>
-              <button class="btn sm watchBtn" type="button">Watch</button>
-              <button class="btn sm trailerBtn" type="button">Trailer</button>
-              <button class="btn sm tmdbBtn" type="button">TMDb</button>
+            <div class="targetInfo">
+              <div class="titleRow">
+                <div class="title">${esc(m.title)} <span class="muted">${fmtYear(m.year)}</span></div>
+                <div class="pill">⭐ ${esc(fmtRating(m.rating))}</div>
+              </div>
             </div>
 
-            <div class="miniTrailer hidden"></div>
+            <div class="metaRow">
+              <div class="genresText">${esc(genres || "—")}</div>
+              <div class="typeText muted">${esc(safeUpper(type))}</div>
+            </div>
+
+            <div class="overviewBlock">
+              ${overviewBits.html}
+
+              <div class="simActions">
+                <button class="btn sm openBtn" type="button">Open</button>
+                <button class="btn sm watchBtn" type="button">Watch</button>
+                <button class="btn sm trailerBtn" type="button">Trailer</button>
+                <button class="btn sm tmdbBtn" type="button">TMDb</button>
+              </div>
+
+              <div class="miniTrailer hidden"></div>
+            </div>
           </div>
         </div>
-      </div>
-    `;
-  }).join("");
+      `;
+    })
+    .join("");
 
   wireReadMore(els.results);
 
@@ -1013,17 +1126,18 @@ function renderSimilar(items) {
     const mini = card.querySelector(".miniTrailer");
 
     openBtn?.addEventListener("click", () => loadById(id, type));
+
     tmdbBtn?.addEventListener("click", () =>
       window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(id)}`, "_blank")
     );
 
     watchBtn?.addEventListener("click", async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+  e.preventDefault();
+  e.stopPropagation();
 
-      const data = await fetchWatchProviders(id, type);
-      toggleWatchDropdown(watchBtn, renderWatchMenu(data));
-    });
+  const data = await fetchWatchProviders(id, type);
+  toggleWatchDropdown(watchBtn, renderWatchMenu(data));
+});
 
     trailerBtn?.addEventListener("click", async () => {
       try {
@@ -1051,7 +1165,7 @@ function renderSimilar(items) {
         )}" title="Trailer" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
         mini.classList.remove("hidden");
         trailerBtn.textContent = "Hide trailer";
-      } catch {
+      } catch (e) {
         await fmAlert("Trailer failed");
         trailerBtn.textContent = "Trailer";
       } finally {
@@ -1061,32 +1175,38 @@ function renderSimilar(items) {
   });
 }
 
-/* ============================================================
-   Suggestions + matches
-   ============================================================ */
+/* -----------------------------
+   Suggestions
+------------------------------*/
 function renderSuggestions(items) {
-  const query = (els.q?.value || "").toLowerCase().trim();
+const query = (els.q?.value || "").toLowerCase().trim();
 
-  const list = (items || [])
-    .filter((m) => m && m.title)
-    .filter((m) => !/^untitled$/i.test(m.title.trim()))
-    .map((m) => {
-      const title = m.title.toLowerCase();
-      let score = 0;
+const list = (items || [])
+  .filter(m => m && m.title)
+  .filter(m => !/^untitled$/i.test(m.title.trim()))
+  .map(m => {
+    const title = m.title.toLowerCase();
 
-      if (title === query) score += 1000;
-      else if (title.startsWith(query)) score += 800;
-      else if (title.includes(query)) score += 600;
+    let score = 0;
 
-      query.split(" ").forEach((word) => {
-        if (word && title.includes(word)) score += 100;
-      });
+    // 1️⃣ exact match
+    if (title === query) score += 1000;
 
-      return { ...m, _score: score };
-    })
-    .sort((a, b) => b._score - a._score)
-    .slice(0, 10);
+    // 2️⃣ starts with query
+    else if (title.startsWith(query)) score += 800;
 
+    // 3️⃣ contains full query
+    else if (title.includes(query)) score += 600;
+
+    // 4️⃣ word-based relevance (blade + 2)
+    query.split(" ").forEach(word => {
+      if (title.includes(word)) score += 100;
+    });
+
+    return { ...m, _score: score };
+  })
+  .sort((a, b) => b._score - a._score)
+  .slice(0, 10);
   if (!els.suggest) return;
 
   if (!list.length) {
@@ -1116,12 +1236,16 @@ function renderSuggestions(items) {
   });
 }
 
+/* -----------------------------
+   Search matches (chips)
+------------------------------*/
 function renderMatches(items) {
   if (!els.matches) return;
 
   const filtered = (items || [])
-    .filter((m) => m && m.title)
-    .filter((m) => !/^untitled$/i.test(m.title.trim()));
+  .filter(m => m && m.title)
+  .filter(m => !/^untitled$/i.test(m.title.trim()));
+	
 
   const list = filtered.slice(0, 10);
 
@@ -1142,7 +1266,7 @@ function renderMatches(items) {
     `;
   }).join("");
 
-  els.matches.querySelectorAll(".chip").forEach((btn) => {
+  els.matches.querySelectorAll(".chip").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = btn.getAttribute("data-id");
       const type = asType(btn.getAttribute("data-type") || "movie", "movie");
@@ -1151,9 +1275,9 @@ function renderMatches(items) {
   });
 }
 
-/* ============================================================
+/* -----------------------------
    Suggest input handler
-   ============================================================ */
+------------------------------*/
 let suggestTimer = null;
 function onSuggestInput() {
   clearTimeout(suggestTimer);
@@ -1179,9 +1303,9 @@ function onSuggestInput() {
   }, 160);
 }
 
-/* ============================================================
-   Core: Load by id / Search
-   ============================================================ */
+/* -----------------------------
+   Core: Load by id
+------------------------------*/
 async function loadById(id, type = "movie") {
   clearLists();
   setMeta("Loading…", false);
@@ -1205,7 +1329,7 @@ async function loadById(id, type = "movie") {
     });
 
     renderSimilar(sim.similar || sim.results || []);
-    scrollToTarget();
+		scrollToTarget();
   } catch (e) {
     renderTarget(null);
     clearLists();
@@ -1213,6 +1337,9 @@ async function loadById(id, type = "movie") {
   }
 }
 
+/* -----------------------------
+   Search
+------------------------------*/
 async function doSearch() {
   const q = (els.q?.value || "").trim();
   if (!q) return;
@@ -1246,11 +1373,10 @@ async function doSearch() {
   }
 }
 
-/* ============================================================
-   Watchlist (storage + delete + undo) — NO DUPES
-   ============================================================ */
+/* -----------------------------
+   Watchlist Logic
+------------------------------*/
 const WL_KEY = "filmmatrix_watchlist_v2";
-let lastDeletedWatchItem = null;
 
 function loadWatchlist() {
   try { return JSON.parse(localStorage.getItem(WL_KEY) || "[]"); }
@@ -1271,90 +1397,45 @@ function addToWatchlist(m) {
   fmAlert("Added to watchlist");
 }
 
-function showUndoDelete() {
-  const bar = document.getElementById("undoBar");
-  const btn = document.getElementById("undoBtn");
-  if (!bar || !btn) {
-    fmToast("Deleted");
-    return;
-  }
+/* -----------------------------------------------------------
+   SECTION D: openWatchlist() (FULL REPLACE)
+-----------------------------------------------------------*/
 
-  bar.classList.remove("hidden");
-
-  const cleanup = () => {
-    bar.classList.add("hidden");
-    btn.onclick = null;
-  };
-
-  btn.onclick = () => {
-    if (!lastDeletedWatchItem) return cleanup();
-
-    const list = loadWatchlist();
-    list.unshift(lastDeletedWatchItem);
-    saveWatchlist(list);
-    lastDeletedWatchItem = null;
-
-    openWatchlist(); // re-render
-    fmToast("Restored");
-    cleanup();
-  };
-
-  setTimeout(() => {
-    // auto-hide after 4s
-    cleanup();
-  }, 4000);
-}
-
-function deleteFromWatchlist(id, type) {
-  const list = loadWatchlist();
-  const idx = list.findIndex(
-    x => String(x.id) === String(id) && x.type === type
-  );
-  if (idx === -1) return;
-
-  lastDeletedWatchItem = list[idx];
-  list.splice(idx, 1);
-  saveWatchlist(list);
-
-  openWatchlist(); // re-render
-  showUndoDelete();
-
-  // ✅ MATCH ALL OTHER UI MESSAGES
-  fmToast("Removed from watchlist");
-}
-
-/* ============================================================
-   Watchlist modal render
-   ============================================================ */
 function openWatchlist() {
   const list = loadWatchlist();
   if (!els.watchlist) return;
 
-  closeAllWatchDropdowns(document);
-
   els.watchlist.innerHTML = list.length
-    ? list.map((m) => {
-      const type = asType(m.type, "movie");
-      return `
-        <div class="watchItem">
-          ${m.poster ? `<img class="watchPoster" src="${esc(m.poster)}" alt="" />` : ""}
-          <div>
-            <div>
-              <strong>${esc(m.title || "")}</strong>
-              <span class="muted"> ${fmtYear(m.year)}</span>
-              <span class="muted"> (${esc(safeUpper(type))})</span>
-            </div>
-            <div class="watchMeta">⭐ ${esc(fmtRating(m.rating))}</div>
+    ? list
+        .map((m) => {
+          const type = asType(m.type, "movie");
+          return `
+            <div class="watchItem">
+              ${m.poster ? `<img class="watchPoster" src="${esc(m.poster)}" alt="" />` : ""}
+              <div>
+                <div>
+                  <strong>${esc(m.title || "")}</strong>
+                  <span class="muted"> ${fmtYear(m.year)}</span>
+                  <span class="muted"> (${esc(safeUpper(type))})</span>
+                </div>
+                <div class="watchMeta">⭐ ${esc(fmtRating(m.rating))}</div>
 
-            <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
-              <button class="btn sm" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">Open</button>
-              <button class="btn sm watchBtn" type="button" data-watch-id="${esc(m.id)}" data-watch-type="${esc(type)}">Watch</button>
-              <button class="btn sm delete" type="button" data-del-id="${esc(m.id)}" data-del-type="${esc(type)}">Delete</button>
+                <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+                  <button class="btn sm" type="button" data-id="${esc(m.id)}" data-type="${esc(type)}">Open</button>
+
+                  <button class="btn sm watchBtn" type="button" data-watch-id="${esc(m.id)}" data-watch-type="${esc(
+            type
+          )}">Watch</button>
+
+                  <button class="btn sm delete" type="button" data-del-id="${esc(m.id)}" data-del-type="${esc(
+            type
+          )}">Delete</button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      `;
-    }).join("")
+          `;
+        })
+        .join("")
     : `<div class="muted">No watchlist items yet.</div>`;
 
   // Open
@@ -1376,48 +1457,50 @@ function openWatchlist() {
     });
   });
 
-  // Watch (scoped inside modal)
-  els.watchlist.querySelectorAll("button[data-watch-id]").forEach((btn) => {
-    btn.addEventListener("click", async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+  // Watch
+  // Watch (WATCHLIST ONLY — scoped + auto-close)
+els.watchlist.querySelectorAll("button[data-watch-id]").forEach((btn) => {
+  btn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-      const id = btn.dataset.watchId;
-      const type = asType(btn.dataset.watchType || "movie", "movie");
-      const row = btn.closest(".watchItem");
-      if (!row) return;
+    const id = btn.dataset.watchId;
+    const type = asType(btn.dataset.watchType || "movie", "movie");
+    const row = btn.closest(".watchItem");
+    if (!row) return;
 
-      els.watchlist.querySelectorAll(".watchDropdown").forEach((d) => d.remove());
+    // 🔑 Close any existing watch dropdowns (watchlist only)
+    els.watchlist.querySelectorAll(".watchDropdown").forEach(d => d.remove());
 
-      const data = await fetchWatchProviders(id, type);
+    const data = await fetchWatchProviders(id, type);
 
-      const dropdown = document.createElement("div");
-      dropdown.className = "watchDropdown";
-      dropdown.innerHTML = renderWatchMenu(data);
+const dropdown = document.createElement("div");
+dropdown.className = "watchDropdown";
+dropdown.innerHTML = renderWatchMenu(data);
 
-      btn.closest("div")?.after(dropdown);
+// 🔑 insert directly AFTER the button row
+btn.closest("div").after(dropdown);
 
-      const closeOnOutside = (ev) => {
-        if (row.contains(ev.target) || dropdown.contains(ev.target)) return;
-        dropdown.remove();
-        document.removeEventListener("pointerdown", closeOnOutside, true);
-        document.removeEventListener("keydown", onKey);
-      };
-      const onKey = (ev) => { if (ev.key === "Escape") closeOnOutside(ev); };
+    // 🔑 Auto-close when tapping anywhere else
+    const closeOnOutside = (ev) => {
+      if (row.contains(ev.target)) return;
+      dropdown.remove();
+      document.removeEventListener("click", closeOnOutside, true);
+    };
 
-      setTimeout(() => {
-        document.addEventListener("pointerdown", closeOnOutside, true);
-        document.addEventListener("keydown", onKey);
-      }, 0);
-    });
+    // delay prevents immediate self-close
+    setTimeout(() => {
+      document.addEventListener("click", closeOnOutside, true);
+    }, 0);
   });
+});
 
-  openWatchlistModal();
+  els.modal?.classList.remove("hidden");
 }
 
-/* ============================================================
-   Popular feed (movies + tv)
-   ============================================================ */
+/* -----------------------------
+   Popular Feed (50 + 50)
+------------------------------*/
 let popularCache = { movies: [], tv: [] };
 let popularLoadedOnce = false;
 
@@ -1427,23 +1510,26 @@ async function fetchPopularPagesTo50() {
 
   for (let page = 1; page <= 4; page++) {
     const data = await apiGet("/api/popular", { page });
+
     const m = Array.isArray(data.movies) ? data.movies : [];
     const t = Array.isArray(data.tv) ? data.tv : [];
 
-    moviesOut.push(...m.map((x) => ({ ...x, type: "movie" })));
-    tvOut.push(...t.map((x) => ({ ...x, type: "tv" })));
+    moviesOut.push(...m.map(x => ({ ...x, type: "movie" })));
+    tvOut.push(...t.map(x => ({ ...x, type: "tv" })));
 
     if (moviesOut.length >= POPULAR_COUNT && tvOut.length >= POPULAR_COUNT) break;
   }
 
   return {
-    movies: moviesOut.filter((x) => x && x.id).slice(0, POPULAR_COUNT),
-    tv: tvOut.filter((x) => x && x.id).slice(0, POPULAR_COUNT),
+    movies: moviesOut.filter(x => x && x.id).slice(0, POPULAR_COUNT),
+    tv: tvOut.filter(x => x && x.id).slice(0, POPULAR_COUNT),
   };
 }
 
 function renderPopularGrid(container, items) {
   if (!container) return;
+
+  // 3 columns is your base layout on mobile → pad to 3 so no “missing” card gaps
   const baseCols = 3;
 
   const clean = (items || []).filter(Boolean).slice(0, POPULAR_COUNT);
@@ -1457,9 +1543,11 @@ function renderPopularGrid(container, items) {
   container.innerHTML = `
     <div class="popGrid">
       ${list.map((m) => {
+        // Placeholder to fill the last row cleanly
         if (!m) {
           return `
-            <div class="popCard is-placeholder" aria-hidden="true" style="opacity:0; pointer-events:none;">
+            <div class="popCard is-placeholder" aria-hidden="true"
+                 style="opacity:0; pointer-events:none;">
               <div class="popPoster placeholder"></div>
               <div class="popTitle"></div>
             </div>
@@ -1467,10 +1555,16 @@ function renderPopularGrid(container, items) {
         }
 
         return `
-          <button class="popCard" type="button" data-id="${esc(m.id)}" data-type="${esc(asType(m.type || m.media_type, "movie"))}">
-            ${m.poster
-              ? `<img class="popPoster" src="${esc(m.poster)}" loading="lazy" alt="${esc(m.title)} poster" />`
-              : `<div class="popPoster placeholder"></div>`
+          <button
+            class="popCard"
+            type="button"
+            data-id="${esc(m.id)}"
+            data-type="${esc(asType(m.type || m.media_type, "movie"))}"
+          >
+            ${
+              m.poster
+                ? `<img class="popPoster" src="${esc(m.poster)}" loading="lazy" alt="${esc(m.title)} poster" />`
+                : `<div class="popPoster placeholder"></div>`
             }
             <div class="popTitle">${esc(m.title)}</div>
           </button>
@@ -1487,6 +1581,7 @@ function renderPopularGrid(container, items) {
     });
   });
 
+  // 🔑 After render, shrink titles to fit their fixed-height box
   fitPopTitles(container);
 }
 
@@ -1505,15 +1600,16 @@ async function loadPopularNow() {
     popularCache.movies = movies.slice();
     popularCache.tv = tv.slice();
     popularLoadedOnce = true;
-  } catch {
+
+  } catch (e) {
     if (els.popularMovies) els.popularMovies.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
     if (els.popularTv) els.popularTv.innerHTML = `<div class="muted">Popular feed unavailable.</div>`;
   }
 }
 
-/* ============================================================
-   Random
-   ============================================================ */
+/* -----------------------------
+   Random (CLIENT-SIDE)
+------------------------------*/
 async function doRandom() {
   clearLists();
   setMeta("Picking random…", false);
@@ -1531,7 +1627,8 @@ async function doRandom() {
     else if (mediaFilter === "tv") pool = popularCache.tv.slice();
     else pool = [...popularCache.movies, ...popularCache.tv];
 
-    pool = pool.filter((x) => x && x.id);
+    pool = pool.filter(x => x && x.id);
+
     if (!pool.length) throw new Error("Popular feed unavailable, cannot pick random.");
 
     const chosen = pick(pool);
@@ -1546,27 +1643,9 @@ async function doRandom() {
   }
 }
 
-/* ============================================================
-   Global outside handling (SAFE)
-   - Closes suggestion dropdown when tapping outside
-   - Does NOT steal first tap
-   ============================================================ */
-function enableGlobalOutsideHandling() {
-  // Close suggestions if click outside input/suggest
-  const onPointer = (e) => {
-    const inSuggest = els.suggest?.contains(e.target);
-    const inInput = els.q?.contains(e.target);
-    if (inSuggest || inInput) return;
-    els.suggest?.classList.add("hidden");
-  };
-
-  // Capture phase is fine as long as we never preventDefault
-  document.addEventListener("pointerdown", onPointer, true);
-}
-
-/* ============================================================
+/* -----------------------------
    Init UI
-   ============================================================ */
+------------------------------*/
 function initUI() {
   if (els.genre) {
     els.genre.innerHTML = GENRES.map(([val, name]) => `<option value="${esc(val)}">${esc(name)}</option>`).join("");
@@ -1590,6 +1669,12 @@ function initUI() {
   els.searchBtn?.addEventListener("click", () => {
     setActiveMode("none");
     doSearch();
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!els.suggest?.contains(e.target) && e.target !== els.q) {
+      els.suggest?.classList.add("hidden");
+    }
   });
 
   els.watchlistBtn?.addEventListener("click", () => {
@@ -1631,18 +1716,58 @@ function initUI() {
   const type = asType(url.searchParams.get("type") || "movie", "movie");
   if (id) loadById(id, type);
 
-  loadPopularNow();
-  renderGenres(GENRE_PRESETS);
+    loadPopularNow();
+		renderGenres(GENRE_PRESETS);
   setActiveMode("none");
-  enableMobileAutoHideHeader();
+	  enableMobileAutoHideHeader();
+}
+/* -----------------------------------------------------------
+   SECTION E: Bottom Enhancements (FULL REPLACE)
+-----------------------------------------------------------*/
+
+function lockScroll(lock = true) {
+  document.body.style.overflow = lock ? "hidden" : "";
 }
 
-/* ============================================================
-   Watchlist modal: clear button (NO DUPES)
-   ============================================================ */
+async function deleteFromWatchlist(id, type) {
+  const list = loadWatchlist();
+  const idx = list.findIndex(
+    x => String(x.id) === String(id) && x.type === type
+  );
+  if (idx === -1) return;
+
+  list.splice(idx, 1);
+  saveWatchlist(list);
+  openWatchlist(); // re-render
+
+  // ✅ Match the same modal style used for "Added to watchlist"
+  await fmAlert("Removed from watchlist");
+}
+
+// NOTE: The previous "Undo delete" bar was removed so the delete feedback
+// matches the same UI system as the rest of the app (fmAlert/fmConfirm).
+
+const oldOpenWatchlist = openWatchlist;
+openWatchlist = function () {
+  oldOpenWatchlist();
+  lockScroll(true);
+};
+
+function closeWatchlist() {
+  els.modal?.classList.add("hidden");
+  lockScroll(false);
+  closeAllWatchDropdowns(document);
+}
+
+/* -----------------------------------------------------------
+   Watchlist modal: clear button (styled confirm + toast)
+----------------------------------------------------------- */
+
 function ensureClearButton() {
   const top = document.querySelector(".modalTop");
   if (!top) return;
+
+  // already added?
   if (document.getElementById("clearBtn")) return;
 
   const clearBtn = document.createElement("button");
@@ -1657,42 +1782,44 @@ function ensureClearButton() {
       await fmAlert("Cancelled");
       return;
     }
+
     saveWatchlist([]);
-    openWatchlist();
+    openWatchlist(); // re-render
     await fmAlert("Watchlist cleared");
   };
 
+  // insert before Close
   top.insertBefore(clearBtn, els.closeModal);
 }
 
-/* ============================================================
-   DOM Ready
-   ============================================================ */
+/* -----------------------------------------------------------
+   Init (run once)
+----------------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", () => {
   initUI();
   renderTarget(null);
   clearLists();
   setMeta("Ready.", false);
 
+  // add Clear button once the modal header exists
   ensureClearButton();
-  enableGlobalOutsideHandling();
 });
-
 /* ============================================================
    MATRIX RAIN BACKGROUND — FULLSCREEN + FIXED
    ============================================================ */
-(function matrixRain() {
+
+(function matrixRain(){
   const canvas = document.getElementById("matrixRain");
   if (!canvas) return;
 
-  canvas.style.pointerEvents = "none";
   const ctx = canvas.getContext("2d");
 
-  const chars = "アァカサタナハマヤラワ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%";
+  const chars =
+    "アァカサタナハマヤラワ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%";
 
   let fontSize = 14;
-  let drops = [];
   let columns = 0;
+  let drops = [];
 
   function resizeMatrix() {
     const dpr = window.devicePixelRatio || 1;
@@ -1707,17 +1834,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const bufferCols = 10;
-    columns = Math.floor(width / fontSize) + bufferCols;
-    drops = Array(columns).fill(1);
+    const bufferCols = 10; // 5 extra on each side
+
+columns = Math.floor(width / fontSize) + bufferCols;
+drops = Array(columns).fill(1);
   }
 
   function draw() {
     const width = canvas.width / (window.devicePixelRatio || 1);
     const height = canvas.height / (window.devicePixelRatio || 1);
 
-    ctx.fillStyle = "rgba(10, 14, 28, 0.12)";
-    ctx.fillRect(0, 0, width, height);
+    // fade layer (trail)
+    // subtle glass shade to match cards
+ctx.fillStyle = "rgba(10, 14, 28, 0.12)";
+ctx.fillRect(0, 0, width, height);
 
     ctx.fillStyle = "rgba(34, 211, 238, 0.85)";
     ctx.font = `${fontSize}px monospace`;
@@ -1729,7 +1859,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       ctx.fillText(text, x, y);
 
-      if (y > height && Math.random() > 0.975) drops[i] = 0;
+      if (y > height && Math.random() > 0.975) {
+        drops[i] = 0;
+      }
+
       drops[i]++;
     }
   }
@@ -1738,5 +1871,5 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("resize", resizeMatrix);
   window.addEventListener("orientationchange", resizeMatrix);
 
-  setInterval(draw, 33);
+  setInterval(draw, 33); // ~30 FPS
 })();
