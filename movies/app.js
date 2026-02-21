@@ -1715,7 +1715,7 @@ function lockScroll(lock = true) {
 function deleteFromWatchlist(id, type) {
   const list = loadWatchlist();
   const idx = list.findIndex(
-    x => String(x.id) === String(id) && x.type === type
+    (x) => String(x.id) === String(id) && x.type === type
   );
   if (idx === -1) return;
 
@@ -1743,7 +1743,9 @@ function showUndoDelete() {
 
   els.watchlist.prepend(bar);
 
-  setTimeout(() => { if (bar.parentNode) bar.remove(); }, 6000);
+  setTimeout(() => {
+    if (bar.parentNode) bar.remove();
+  }, 6000);
 }
 
 const oldOpenWatchlist = openWatchlist;
@@ -1790,23 +1792,31 @@ function ensureClearButton() {
   // insert before Close
   top.insertBefore(clearBtn, els.closeModal);
 }
+
+/* -----------------------------------------------------------
+   Init (run once)
+----------------------------------------------------------- */
+
 document.addEventListener("DOMContentLoaded", () => {
   initUI();
   renderTarget(null);
   clearLists();
   setMeta("Ready.", false);
+
   ensureClearButton();
-  enableGlobalOutsideHandling(); // keep this if you want outside-tap close behavior
+  enableGlobalOutsideHandling(); // outside-tap closes menus/suggestions
 });
-/* -----------------------------------------------------------
-   Init (run once)
------------------------------------------------------------ *============================================================
+
+/* ============================================================
    MATRIX RAIN BACKGROUND — FULLSCREEN + FIXED
    ============================================================ */
 
-(function matrixRain(){
+(function matrixRain() {
   const canvas = document.getElementById("matrixRain");
   if (!canvas) return;
+
+  // 🔑 CRITICAL: prevent canvas from eating taps (fixes "double tap" on mobile)
+  canvas.style.pointerEvents = "none";
 
   const ctx = canvas.getContext("2d");
 
@@ -1814,8 +1824,8 @@ document.addEventListener("DOMContentLoaded", () => {
     "アァカサタナハマヤラワ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%";
 
   let fontSize = 14;
-  let columns = 0;
   let drops = [];
+  let columns = 0;
 
   function resizeMatrix() {
     const dpr = window.devicePixelRatio || 1;
@@ -1830,20 +1840,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const bufferCols = 10; // 5 extra on each side
-
-columns = Math.floor(width / fontSize) + bufferCols;
-drops = Array(columns).fill(1);
+    const bufferCols = 10;
+    columns = Math.floor(width / fontSize) + bufferCols;
+    drops = Array(columns).fill(1);
   }
 
   function draw() {
     const width = canvas.width / (window.devicePixelRatio || 1);
     const height = canvas.height / (window.devicePixelRatio || 1);
 
-    // fade layer (trail)
-    // subtle glass shade to match cards
-ctx.fillStyle = "rgba(10, 14, 28, 0.12)";
-ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = "rgba(10, 14, 28, 0.12)";
+    ctx.fillRect(0, 0, width, height);
 
     ctx.fillStyle = "rgba(34, 211, 238, 0.85)";
     ctx.font = `${fontSize}px monospace`;
@@ -1855,10 +1862,7 @@ ctx.fillRect(0, 0, width, height);
 
       ctx.fillText(text, x, y);
 
-      if (y > height && Math.random() > 0.975) {
-        drops[i] = 0;
-      }
-
+      if (y > height && Math.random() > 0.975) drops[i] = 0;
       drops[i]++;
     }
   }
@@ -1867,5 +1871,5 @@ ctx.fillRect(0, 0, width, height);
   window.addEventListener("resize", resizeMatrix);
   window.addEventListener("orientationchange", resizeMatrix);
 
-  setInterval(draw, 33); // ~30 FPS
+  setInterval(draw, 33);
 })();
