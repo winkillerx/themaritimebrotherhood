@@ -1305,19 +1305,20 @@ function showUndoDelete() {
   }, 4000);
 }
 
-function deleteFromWatchlist(id, type) {
-  const t = asType(type, "movie");
+async function deleteFromWatchlist(id, type) {
   const list = loadWatchlist();
-
-  const idx = list.findIndex((x) => String(x.id) === String(id) && asType(x.type, "movie") === t);
+  const idx = list.findIndex(
+    x => String(x.id) === String(id) && x.type === type
+  );
   if (idx === -1) return;
 
-  lastDeletedWatchItem = list[idx];
   list.splice(idx, 1);
   saveWatchlist(list);
 
-  openWatchlist(); // re-render
-  showUndoDelete();
+  openWatchlist(); // re-render list
+
+  // ✅ Use SAME modal style as "Clear entire watchlist"
+  await fmAlert("Removed from watchlist");
 }
 
 /* ============================================================
