@@ -614,10 +614,10 @@ function toggleWatchDropdown(anchorBtn, html) {
   };
 
   const cleanup = () => {
-    box.remove();
-    document.removeEventListener("touchstart", onDoc);
-    document.removeEventListener("keydown", onKey);
-  };
+  box.remove();
+  document.removeEventListener("pointerdown", onDoc, true);
+  document.removeEventListener("keydown", onKey);
+};
 
   // delay prevents immediate close from opening tap
   setTimeout(() => {
@@ -1464,24 +1464,17 @@ els.watchlist.querySelectorAll("button[data-watch-id]").forEach((btn) => {
     // Insert directly after the button row
     btn.closest("div").after(dropdown);
 
-    // ✅ Touch-safe outside close
-    const closeOnOutside = (ev) => {
-      if (row.contains(ev.target)) return;
-      dropdown.remove();
-      document.removeEventListener("touchstart", closeOnOutside);
-    };
-
-    // Delay prevents immediate self-close
-    setTimeout(() => {
-      const closeOnOutside = (ev) => {
-  if (row.contains(ev.target)) return;
+    // Outside close (SAFE)
+const closeOnOutside = (ev) => {
+  if (row.contains(ev.target) || dropdown.contains(ev.target)) return;
   dropdown.remove();
   document.removeEventListener("pointerdown", closeOnOutside, true);
 };
 
 // Delay prevents immediate self-close
 setTimeout(() => {
-  document.addEventListener("pointerdown", closeOnOutside, true);
+  document.addEventListener("pointerdown", onDoc, true);
+  document.addEventListener("keydown", onKey);
 }, 0);
   });
 });
@@ -1792,30 +1785,14 @@ function ensureClearButton() {
   // insert before Close
   top.insertBefore(clearBtn, els.closeModal);
 }
-function enableGlobalOutsideHandling() {
-  document.addEventListener(
-    "pointerdown",
-    (e) => {
-      // 🔑 Ignore real interactive elements
-      if (
-        e.target.closest("button") ||
-        e.target.closest("a") ||
-        e.target.closest("input") ||
-        e.target.closest("select") ||
-        e.target.closest(".watchDropdown")
-      ) {
-        return;
-      }
-
-      // Close suggestions
-      els.suggest?.classList.add("hidden");
-
-      // Close watch dropdowns
-      closeAllWatchDropdowns(document);
-    },
-    true // CAPTURE phase — does NOT block clicks
-  );
-}
+document.addEventListener("DOMContentLoaded", () => {
+  initUI();
+  renderTarget(null);
+  clearLists();
+  setMeta("Ready.", false);
+  ensureClearButton();
+  enableGlobalOutsideHandling(); // 👈 ADD THIS
+});
 /* -----------------------------------------------------------
    Init (run once)
 ----------------------------------------------------------- */
