@@ -1,5 +1,64 @@
-// analytics stub (prevents errors)
-window.trackEvent = window.trackEvent || function () {};
+/* ============================================================
+   Analytics — real implementation (FilmMatrix)
+   - Sends: event_type, referrer, session_id, search_query, screen_resolution
+   - City/Region should be filled server-side via IP lookup
+   ============================================================ */
+
+(function initAnalytics(){
+  const TRACK_URL = "https://analytics.filmmatrix.net/dashboard/track.php"; 
+  // ^ CHANGE THIS to your real endpoint URL (or "/dashboard/track.php" if same domain)
+
+  function getSessionId(){
+    try{
+      let id = localStorage.getItem("fm_session_id");
+      if(!id){
+        id = (crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+        localStorage.setItem("fm_session_id", id);
+      }
+      return id;
+    }catch{
+      return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+  }
+
+  function screenRes(){
+    try{
+      return `${window.screen.width}x${window.screen.height}`;
+    }catch{
+      return null;
+    }
+  }
+
+  // expose globally (your app already calls trackEvent() in a few places)
+  window.trackEvent = async function(event_type, payload = {}){
+    try{
+      const body = {
+        event_type: String(event_type || "page_view"),
+        page: location.pathname,
+        referrer: document.referrer || "direct",
+        session_id: getSessionId(),
+        screen_resolution: screenRes(),
+        // optional fields
+        search_query: payload.query || payload.search_query || null,
+        ...payload
+      };
+
+      await fetch(TRACK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        keepalive: true
+      });
+    }catch(e){
+      // silent fail (never break the app)
+    }
+  };
+
+  // Optional: automatic page_view once on load
+  window.addEventListener("load", () => {
+    window.trackEvent("page_view");
+  }, { once:true });
+})();
 /* ============================================================
    app.js — FILM_MATRIX
    Genre Discover + Boosted Search Integration
