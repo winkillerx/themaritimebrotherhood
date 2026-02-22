@@ -153,26 +153,6 @@ if (themeSelect) {
 }
 
 /* ============================================================
-   Analytics (Vercel) — SAFE + NON-BLOCKING
-   ============================================================ */
-// Change this line (usually near the top)
-const ANALYTICS_ENDPOINT = "https://filmmatrix.net/api/analytics.php";
-
-function trackEvent(event, data = {}) {
-  fetch(ANALYTICS_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      event,
-      page: location.pathname,
-      ...data
-    })
-  }).catch(() => {});
-}
-
-// Page view (once)
-trackEvent("page_view");
-/* ============================================================
    Mode / Filtering
    ============================================================ */
 let activeMode = "none"; // none | random | tv | movie | watchlist
