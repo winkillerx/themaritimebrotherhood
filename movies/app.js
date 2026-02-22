@@ -156,7 +156,7 @@ if (themeSelect) {
    Analytics (Vercel) — SAFE + NON-BLOCKING
    ============================================================ */
 // Change this line (usually near the top)
-const ANALYTICS_ENDPOINT = "https://fm-analytics.vercel.app/api/e";
+const ANALYTICS_ENDPOINT = "https://filmmatrix.net/api/analytics.php";
 
 function trackEvent(event, data = {}) {
   fetch(ANALYTICS_ENDPOINT, {
