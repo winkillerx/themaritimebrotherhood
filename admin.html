@@ -1,29 +1,63 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <title>FilmMatrix Analytics</title>
-  <meta name="robots" content="noindex,nofollow" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
-      background: #05060c;
-      color: #e7ecff;
-      font-family: monospace;
+      background: #0b0f19;
+      color: #e5e7eb;
+      font-family: system-ui, sans-serif;
       padding: 16px;
     }
-    h2 { color: #22d3ee; }
-    .log {
-      border-bottom: 1px solid rgba(255,255,255,.1);
-      padding: 8px 0;
+    h1 {
+      color: #22d3ee;
+      font-size: 20px;
+      margin-bottom: 12px;
     }
-    .event { color: #7c3aed; }
-    .meta { opacity: .7; font-size: 12px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th, td {
+      border-bottom: 1px solid #1f2937;
+      padding: 6px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      color: #9ca3af;
+    }
+    tr:hover {
+      background: #111827;
+    }
+    .muted {
+      color: #9ca3af;
+    }
   </style>
 </head>
 <body>
-  <h2>📊 FilmMatrix Live Analytics</h2>
-  <div id="logs">Loading…</div>
 
-  <script src="/admin.js"></script>
+<h1>📊 FilmMatrix Live Analytics</h1>
+<div class="muted">Auto-refresh every 3 seconds</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Time</th>
+      <th>Event</th>
+      <th>Page</th>
+      <th>Title</th>
+      <th>Type</th>
+      <th>Device</th>
+      <th>IP</th>
+    </tr>
+  </thead>
+  <tbody id="rows"></tbody>
+</table>
+
+<script src="/admin.js"></script>
 </body>
 </html>
