@@ -5,14 +5,13 @@
    ============================================================ */
 
 (function initAnalytics(){
-  const TRACK_URL = "/track/index.php";
-  // ^ CHANGE THIS to your real endpoint URL (or "/dashboard/track.php" if same domain)
+  const TRACK_URL = "https://analytics.filmmatrix.net/track/index.php";
 
   function getSessionId(){
     try{
       let id = localStorage.getItem("fm_session_id");
       if(!id){
-        id = (crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+        id = crypto.randomUUID();
         localStorage.setItem("fm_session_id", id);
       }
       return id;
@@ -22,37 +21,31 @@
   }
 
   function screenRes(){
-    try{
-      return `${window.screen.width}x${window.screen.height}`;
-    }catch{
-      return null;
-    }
+    return `${screen.width}x${screen.height}`;
   }
 
-  // expose globally (your app already calls trackEvent() in a few places)
   window.trackEvent = async function(event_type, payload = {}){
     try{
-      const body = {
-        event_type: String(event_type || "page_view"),
-        page: location.pathname,
-        referrer: document.referrer || "direct",
-        session_id: getSessionId(),
-        screen_resolution: screenRes(),
-        // optional fields
-        search_query: payload.query || payload.search_query || null,
-        ...payload
-      };
-
       await fetch(TRACK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          event_type,
+          page: location.pathname,
+          referrer: document.referrer || "direct",
+          session_id: getSessionId(),
+          screen_resolution: screenRes(),
+          search_query: payload.query || null
+        }),
         keepalive: true
       });
-    }catch(e){
-      // silent fail (never break the app)
-    }
+    }catch{}
   };
+
+  window.addEventListener("load", () => {
+    trackEvent("page_view");
+  }, { once:true });
+})();
 
   // Optional: automatic page_view once on load
   window.addEventListener("load", () => {
