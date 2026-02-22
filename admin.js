@@ -1,23 +1,64 @@
-const OUT = document.getElementById("out");
+const LOGS_ENDPOINT = "https://fm-analytics.vercel.app/api/logs";
+const rows = document.getElementById("rows");
+const statusEl = document.getElementById("status");
 
-async function loadLogs() {
-  const res = await fetch("https://fm-analytics.vercel.app/api/logs");
-  const logs = await res.json();
+function parseUA(ua = "") {
+  ua = ua.toLowerCase();
 
-  if (!logs.length) {
-    OUT.textContent = "No logs yet.";
-    return;
-  }
+  const device =
+    ua.includes("iphone") || ua.includes("android") ? "Mobile" :
+    ua.includes("ipad") ? "Tablet" :
+    "Desktop";
 
-  OUT.textContent = logs.map(l =>
-    `[${l.time}]
-IP: ${l.ip}
-Event: ${l.event}
-Page: ${l.page}
-UA: ${l.ua}
-----------------------`
-  ).join("\n");
+  let browser = "Unknown";
+  if (ua.includes("chrome") && !ua.includes("edg")) browser = "Chrome";
+  else if (ua.includes("safari") && !ua.includes("chrome")) browser = "Safari";
+  else if (ua.includes("firefox")) browser = "Firefox";
+  else if (ua.includes("edg")) browser = "Edge";
+
+  return { device, browser };
 }
 
+async function loadLogs() {
+  try {
+    const res = await fetch(LOGS_ENDPOINT);
+    const logs = await res.json();
+
+    statusEl.textContent = `Connected • ${logs.length} logs`;
+
+    if (!Array.isArray(logs) || logs.length === 0) {
+      rows.innerHTML = `
+        <tr>
+          <td colspan="6" class="empty">No logs yet</td>
+        </tr>
+      `;
+      return;
+    }
+
+    rows.innerHTML = logs.map(log => {
+      const { device, browser } = parseUA(log.ua);
+
+      return `
+        <tr>
+          <td class="mono">${new Date(log.time).toLocaleTimeString()}</td>
+          <td class="event">${log.event}</td>
+          <td>${log.page || "-"}</td>
+          <td>${device}</td>
+          <td>${browser}</td>
+          <td class="mono">${log.ip}</td>
+        </tr>
+      `;
+    }).join("");
+  } catch (err) {
+    statusEl.textContent = "Disconnected";
+    rows.innerHTML = `
+      <tr>
+        <td colspan="6" class="empty">Failed to load logs</td>
+      </tr>
+    `;
+  }
+}
+
+// Initial + live refresh
 loadLogs();
 setInterval(loadLogs, 3000);
