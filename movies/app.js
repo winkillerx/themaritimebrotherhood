@@ -5,7 +5,7 @@
    ============================================================ */
 
 (function initAnalytics(){
-  const TRACK_URL = "https://analytics.filmmatrix.net/dashboard/track.php"; 
+  const TRACK_URL = "https://www.filmmatrix.net/track/index.php";
   // ^ CHANGE THIS to your real endpoint URL (or "/dashboard/track.php" if same domain)
 
   function getSessionId(){
