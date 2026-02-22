@@ -155,6 +155,7 @@ if (themeSelect) {
 /* ============================================================
    Analytics (Vercel) — SAFE + NON-BLOCKING
    ============================================================ */
+// Change this line (usually near the top)
 const ANALYTICS_ENDPOINT = "https://fm-analytics.vercel.app/api/e";
 
 function trackEvent(event, data = {}) {
