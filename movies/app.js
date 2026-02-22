@@ -152,8 +152,27 @@ if (themeSelect) {
   themeSelect.addEventListener("change", (e) => applyTheme(e.target.value));
 }
 
-const API_BASE = "";
+/* ============================================================
+   Analytics (Vercel) — SAFE + NON-BLOCKING
+   ============================================================ */
+const ANALYTICS_ENDPOINT = "https://fm-analytics.vercel.app/api/track";
 
+function trackEvent(event, data = {}) {
+  try {
+    fetch(ANALYTICS_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event,
+        page: location.pathname,
+        ...data
+      })
+    }).catch(() => {});
+  } catch {}
+}
+
+// Page view (once)
+trackEvent("page_view");
 /* ============================================================
    Mode / Filtering
    ============================================================ */
@@ -653,7 +672,6 @@ function enableMobileAutoHideHeader() {
 
   header.addEventListener("touchstart", showHeader, { passive: true });
   document.addEventListener("scroll", showHeader, { passive: true });
-  document.addEventListener("pointermove", showHeader, { passive: true });
   document.addEventListener("focusin", showHeader);
 
   showHeader();
@@ -843,12 +861,22 @@ function renderTarget(m) {
 
   const type = asType(m.type, "movie");
 
+  // ✅ Analytics: target selected (ONCE per selection)
+  trackEvent("target_selected", {
+    id: m.id,
+    title: m.title,
+    type
+  });
+
   const poster = m.poster
     ? `<img class="poster" src="${esc(m.poster)}" alt="${esc(m.title)} poster" />`
     : `<div class="poster placeholder"></div>`;
 
   const genres = Array.isArray(m.genres)
-    ? m.genres.map((g) => genreNameById.get(Number(g)) || "").filter(Boolean).join(", ")
+    ? m.genres
+        .map((g) => genreNameById.get(Number(g)) || "")
+        .filter(Boolean)
+        .join(", ")
     : "";
 
   const overviewBits = makeReadMoreHTML(m.overview || "", 5);
@@ -1217,6 +1245,9 @@ async function doSearch() {
   const q = (els.q?.value || "").trim();
   if (!q) return;
 
+  // ✅ Analytics: user performed a real search
+  trackEvent("search", { query: q });
+
   clearLists();
   setMeta("Searching…", false);
 
@@ -1263,14 +1294,35 @@ function saveWatchlist(items) {
 
 function addToWatchlist(m) {
   if (!m) return;
+
   const type = asType(m.type, "movie");
   const list = loadWatchlist();
-  if (list.some((x) => String(x.id) === String(m.id) && asType(x.type, "movie") === type)) return;
-  list.unshift({ id: m.id, type, title: m.title, year: m.year, rating: m.rating, poster: m.poster });
+
+  // ❌ already in watchlist → do nothing, no tracking
+  if (list.some((x) => String(x.id) === String(m.id) && asType(x.type, "movie") === type)) {
+    return;
+  }
+
+  list.unshift({
+    id: m.id,
+    type,
+    title: m.title,
+    year: m.year,
+    rating: m.rating,
+    poster: m.poster
+  });
+
   saveWatchlist(list);
+
+  // ✅ Analytics: watchlist add (ONLY when successful)
+  trackEvent("watchlist_add", {
+    id: m.id,
+    title: m.title,
+    type
+  });
+
   fmAlert("Added to watchlist");
 }
-
 function showUndoDelete() {
   const bar = document.getElementById("undoBar");
   const btn = document.getElementById("undoBtn");
@@ -1315,9 +1367,15 @@ async function deleteFromWatchlist(id, type) {
   list.splice(idx, 1);
   saveWatchlist(list);
 
+  // ✅ Analytics: watchlist remove (ONLY when removal actually happens)
+  trackEvent("watchlist_remove", {
+    id,
+    type
+  });
+
   openWatchlist(); // re-render list
 
-  // ✅ Use SAME modal style as "Clear entire watchlist"
+  // Same UI style as clear watchlist
   await fmAlert("Removed from watchlist");
 }
 
