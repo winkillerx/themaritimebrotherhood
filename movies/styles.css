@@ -1556,7 +1556,7 @@ input[type="range"]::-moz-focus-outer{
   }
 
   .card.searchCard{
-    margin-top: 8px !important; /* hides the seam */
+    margin-top: 12px !important; /* hides the seam */
     border-bottom-left-radius: calc(var(--r) + 6px) !important;
     border-bottom-right-radius: calc(var(--r) + 6px) !important;
 
