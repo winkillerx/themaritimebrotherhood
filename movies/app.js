@@ -1,3 +1,5 @@
+// analytics stub (prevents errors)
+window.trackEvent = window.trackEvent || function () {};
 /* ============================================================
    app.js — FILM_MATRIX
    Genre Discover + Boosted Search Integration
