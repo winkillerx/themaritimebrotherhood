@@ -3,7 +3,7 @@
    Genre Discover + Boosted Search Integration
    (CLEAN OVERWRITE — NO DUPES)
    ============================================================ */
-
+const API_BASE = "";
 const YEAR_MIN = 1950;
 const POPULAR_COUNT = 54; // 50-ish each (Movie/TV)
 
