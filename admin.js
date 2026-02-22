@@ -1,27 +1,38 @@
-// 🔐 simple password gate
-if (prompt("Admin password") !== "test123") {
-  document.body.innerHTML = "Access denied";
-  throw new Error("Denied");
-}
+// admin.js (on filmmatrix.net)
+
+const rows = document.getElementById("rows");
 
 async function loadLogs() {
-  const res = await fetch("https://fm-analytics.vercel.app/api/logs");
-  const logs = await res.json();
+  try {
+    const res = await fetch(
+      "https://fm-analytics.vercel.app/api/logs"
+    );
 
-  const el = document.getElementById("logs");
-  el.innerHTML = logs.map(l => `
-    <div class="log">
-      <div class="event">${l.event}</div>
-      <div class="meta">
-        ${l.time} · ${l.page}
-        ${l.title ? "· " + l.title : ""}
-        ${l.query ? "· q=" + l.query : ""}
-        <br>
-        IP: ${l.ip}
-      </div>
-    </div>
-  `).join("");
+    const logs = await res.json();
+
+    rows.innerHTML = logs
+      .slice()
+      .reverse()
+      .map(l => `
+        <tr>
+          <td>${new Date(l.time).toLocaleTimeString()}</td>
+          <td>${l.event}</td>
+          <td>${l.page}</td>
+          <td>${l.title || "-"}</td>
+          <td>${l.type || "-"}</td>
+          <td>${l.device}</td>
+          <td style="opacity:.6">${l.ip}</td>
+        </tr>
+      `)
+      .join("");
+  } catch (e) {
+    rows.innerHTML = `
+      <tr>
+        <td colspan="7">Failed to load logs</td>
+      </tr>
+    `;
+  }
 }
 
 loadLogs();
-setInterval(loadLogs, 4000);
+setInterval(loadLogs, 3000);
