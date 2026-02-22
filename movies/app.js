@@ -158,17 +158,15 @@ if (themeSelect) {
 const ANALYTICS_ENDPOINT = "https://fm-analytics.vercel.app/api/track";
 
 function trackEvent(event, data = {}) {
-  try {
-    fetch(ANALYTICS_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        event,
-        page: location.pathname,
-        ...data
-      })
-    }).catch(() => {});
-  } catch {}
+  fetch(ANALYTICS_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      event,
+      page: location.pathname,
+      ...data
+    })
+  }).catch(() => {});
 }
 
 // Page view (once)
@@ -1040,7 +1038,10 @@ function renderSimilar(items) {
     const tmdbBtn = card.querySelector(".tmdbBtn");
     const mini = card.querySelector(".miniTrailer");
 
-    openBtn?.addEventListener("click", () => loadById(id, type));
+    openBtn?.addEventListener("click", () => {
+  trackEvent("similar_open", { id, type });
+  loadById(id, type);
+});
     tmdbBtn?.addEventListener("click", () =>
       window.open(`https://www.themoviedb.org/${type}/${encodeURIComponent(id)}`, "_blank")
     );
