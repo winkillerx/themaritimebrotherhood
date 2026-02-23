@@ -1780,7 +1780,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(draw, 33);
 })();
 /* ============================================================
-   🎮 FILM MATRIX INVADERS — FINAL
+   🎮 FILM MATRIX INVADERS — FINAL (FIXED MOBILE INPUT)
 ============================================================ */
 (() => {
   const unlock = document.getElementById("fmUnlock");
@@ -1810,9 +1810,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const isTouch = matchMedia("(pointer: coarse)").matches;
 
   function resize() {
-    canvas.width = innerWidth;
-    canvas.height = innerHeight;
-    ship.y = canvas.height - 42;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    ship.y = canvas.height - 44;
+    if (!ship.x) ship.x = canvas.width / 2;
   }
 
   /* 🎬 Higher-quality posters */
@@ -1856,16 +1857,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /* Bullets */
     ctx.fillStyle = "#7dd3fc";
-    bullets.forEach(b => {
+    for (let i = bullets.length - 1; i >= 0; i--) {
+      const b = bullets[i];
       b.y -= 12;
       ctx.fillRect(b.x - 2, b.y, 4, 10);
-    });
+      if (b.y < -20) bullets.splice(i, 1);
+    }
 
-    enemies.forEach((e, ei) => {
+    /* Enemies */
+    for (let ei = enemies.length - 1; ei >= 0; ei--) {
+      const e = enemies[ei];
       e.y += e.speed;
       ctx.drawImage(e.img, e.x, e.y, e.w, e.h);
 
-      bullets.forEach((b, bi) => {
+      for (let bi = bullets.length - 1; bi >= 0; bi--) {
+        const b = bullets[bi];
         if (
           b.x > e.x &&
           b.x < e.x + e.w &&
@@ -1877,16 +1883,20 @@ document.addEventListener("DOMContentLoaded", () => {
           score += e.boss ? 250 : 10;
           level = 1 + Math.floor(score / 160);
           scoreEl.textContent = `SCORE: ${score}`;
+          break;
         }
-      });
+      }
 
       if (e.y > canvas.height) {
         enemies.splice(ei, 1);
         lives--;
         livesEl.textContent = `LIVES: ${lives}`;
-        if (lives <= 0) gameOver();
+        if (lives <= 0) {
+          gameOver();
+          return;
+        }
       }
-    });
+    }
 
     if (score > 0 && score % 500 === 0 && !enemies.some(e => e.boss)) {
       spawnEnemy(true);
@@ -1894,12 +1904,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (Math.random() < 0.010 + level * 0.0025) spawnEnemy();
 
-    running && requestAnimationFrame(update);
+    if (running) requestAnimationFrame(update);
   }
 
   function start() {
     resize();
-    bullets.length = enemies.length = 0;
+    bullets.length = 0;
+    enemies.length = 0;
     score = 0;
     lives = 3;
     level = 1;
@@ -1937,12 +1948,12 @@ document.addEventListener("DOMContentLoaded", () => {
   /* 🔓 Unlock */
   unlock.addEventListener("click", start);
 
-  /* 🖱 Desktop */
+  /* 🖱 Desktop controls */
   window.addEventListener("mousemove", e => {
     if (!isTouch && running) ship.x = e.clientX;
   });
 
-  window.addEventListener("click", () => {
+  window.addEventListener("mousedown", () => {
     if (!isTouch && running) shoot();
   });
 
@@ -1950,31 +1961,48 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.key === "Escape") stop();
   });
 
-  /* 📱 Mobile — invisible, 35% reduced sensitivity */
+  /* 📱 Mobile — FIXED invisible controls */
   if (isTouch) {
     let lastX = null;
+    let moved = false;
 
-    canvas.addEventListener("touchstart", e => {
-      if (!running) return;
-      lastX = e.touches[0].clientX;
-      shoot();
-    }, { passive: true });
+    canvas.addEventListener(
+      "touchstart",
+      e => {
+        if (!running) return;
+        lastX = e.touches[0].clientX;
+        moved = false;
+      },
+      { passive: true }
+    );
 
-    canvas.addEventListener("touchmove", e => {
-      if (!running || lastX === null) return;
+    canvas.addEventListener(
+      "touchmove",
+      e => {
+        if (!running || lastX === null) return;
 
-      const x = e.touches[0].clientX;
-      const delta = x - lastX;
+        const x = e.touches[0].clientX;
+        const delta = x - lastX;
 
-      ship.x += delta * 0.0975; // 🔽 35% reduction
-      ship.x = Math.max(0, Math.min(canvas.width, ship.x));
+        // ✅ 35% reduced sensitivity
+        ship.x += delta * 0.0975;
+        ship.x = Math.max(0, Math.min(canvas.width, ship.x));
 
-      lastX = x;
-      e.preventDefault();
-    }, { passive: false });
+        lastX = x;
+        moved = true;
+        e.preventDefault();
+      },
+      { passive: false }
+    );
 
     canvas.addEventListener("touchend", () => {
+      if (!running) return;
+
+      // Tap = shoot (only if no drag)
+      if (!moved) shoot();
+
       lastX = null;
+      moved = false;
     });
   }
 
