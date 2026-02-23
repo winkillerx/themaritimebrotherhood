@@ -13,102 +13,113 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@600;700;800&display=swap" rel="stylesheet">
 
 <style>
+/* ===============================
+   GLOBAL HARDENING
+================================ */
+*{
+  box-sizing:border-box;
+  -webkit-user-select:none;
+  -webkit-touch-callout:none;
+  user-select:none;
+}
+html,body{
+  margin:0;
+  height:100svh;
+  overflow:hidden;
+  font-family:Inter,system-ui,sans-serif;
+  color:#e7ecff;
+  -webkit-tap-highlight-color:transparent;
+}
+
+/* ===============================
+   THEME
+================================ */
 :root{
   --bg0:#05060c;
   --bg1:#070a14;
   --bg2:#071425;
   --accent:#22d3ee;
   --accentBorder:rgba(34,211,238,.55);
+  --accentSoft:rgba(34,211,238,.18);
   --muted:rgba(231,236,255,.65);
   --card:rgba(10,14,28,.78);
 }
 
-*{ box-sizing:border-box; }
 /* ===============================
-   DISABLE SELECTION / CALLOUTS
+   LAYOUT
 ================================ */
-*{
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-  user-select: none;
-}
-
-html, body{
-  -webkit-tap-highlight-color: transparent;
-}
-
 body{
-  margin:0;
-  height:100svh;               /* 🔑 fixes mobile Safari */
   display:grid;
   place-items:center;
-  font-family:Inter,system-ui,sans-serif;
-  color:#e7ecff;
-  overflow:hidden;             /* no page scroll */
-
   background:
     radial-gradient(1200px 600px at 15% 10%, rgba(124,58,237,.18), transparent 55%),
     radial-gradient(900px 520px at 85% 20%, rgba(34,211,238,.18), transparent 55%),
     linear-gradient(180deg, var(--bg1), var(--bg0), var(--bg2));
 }
 
+/* MATRIX */
 #matrixRain{
   position:fixed;
   inset:0;
-  z-index:0;
   pointer-events:none;
+  z-index:0;
 }
 
+/* CARD */
 .card{
   position:relative;
   z-index:1;
-  width:min(680px, 96vw);
-  max-height:calc(100svh - 16px);   /* 🔑 fits screen */
-  padding:24px 20px 20px;
-  border-radius:24px;
+  width:min(760px,96vw);
+  max-height:calc(100svh - 8px);
+  padding:26px 22px 20px;
+  border-radius:26px;
   border:1px solid var(--accentBorder);
   background:var(--card);
-  backdrop-filter: blur(14px);
-  box-shadow:0 24px 70px rgba(0,0,0,.7);
-  text-align:center;
+  box-shadow:
+    0 0 0 1px var(--accentSoft),
+    0 24px 70px rgba(0,0,0,.7);
+  backdrop-filter:blur(14px);
   display:flex;
   flex-direction:column;
+  text-align:center;
 }
 
 .logo{
   font-family:Orbitron;
   color:var(--accent);
   letter-spacing:.18em;
-  margin-bottom:6px;
 }
 
 h1{
   font-family:Orbitron;
   font-size:26px;
-  margin:0 0 6px;
+  margin:6px 0;
 }
 
 .muted{ color:var(--muted); font-size:14px; }
 
+/* ===============================
+   GAME AREA
+================================ */
 .gameWrap{
-  position:relative;
   margin:14px 0 12px;
   border-radius:16px;
   border:1px solid var(--accentBorder);
   overflow:hidden;
   background:#02030a;
-  flex:1;                       /* 🔑 fills remaining space */
+  flex:1.4;                 /* 🔑 LONGER GAME */
   display:flex;
   flex-direction:column;
 }
 
 #game{
-  display:block;
   width:100%;
-  flex:1;                       /* 🔑 adaptive height */
+  flex:1;
+  min-height:460px;
   touch-action:none;
 }
 
+/* HUD */
 .hud{
   display:flex;
   justify-content:space-between;
@@ -120,40 +131,51 @@ h1{
   border-top:1px solid var(--accentBorder);
 }
 
-/* ===============================
-   CONTROLS — BIGGER / TOUCH SAFE
-================================ */
+/* CONTROLS */
 .controls{
   display:flex;
-  justify-content:space-between;
-  padding:12px;
   gap:12px;
+  padding:12px;
 }
 
-.joystick,
-.fire{
+.joystick,.fire{
   flex:1;
-  min-height:64px;              /* 🔑 taller */
-  padding:16px 12px;
+  min-height:72px;
+  padding:16px;
   border-radius:16px;
   border:1px solid var(--accentBorder);
   background:rgba(6,10,18,.88);
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
   font-family:Orbitron;
   font-size:13px;
   letter-spacing:.14em;
-  color:#e7ecff;
-
-  touch-action:none;            /* 🔑 critical */
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  touch-action:none;
 }
 
 .fire{
   background:rgba(34,211,238,.18);
-  box-shadow: inset 0 0 18px rgba(34,211,238,.25);
+  box-shadow:inset 0 0 18px rgba(34,211,238,.25);
+}
+
+/* ACTIONS */
+.actions{
+  display:flex;
+  gap:10px;
+  margin-top:10px;
+}
+
+.btn{
+  flex:1;
+  padding:14px;
+  border-radius:999px;
+  border:1px solid var(--accentBorder);
+  background:rgba(6,10,18,.7);
+  color:#e7ecff;
+  font-family:Orbitron;
+  letter-spacing:.12em;
+  text-transform:uppercase;
 }
 </style>
 </head>
@@ -165,13 +187,14 @@ h1{
 <div class="card">
   <div class="logo">FILM MATRIX</div>
   <h1>Defense Simulation</h1>
-  <div class="muted">Countermeasures active</div>
+  <div class="muted">Countermeasures engaged</div>
 
   <div class="gameWrap">
     <canvas id="game"></canvas>
     <div class="hud">
       <div id="score">SCORE 00000</div>
       <div id="lives">LIVES 5</div>
+      <div id="high">BEST 00000</div>
     </div>
   </div>
 
@@ -179,10 +202,17 @@ h1{
     <div class="joystick" id="joy">MOVE</div>
     <div class="fire" id="fire">FIRE</div>
   </div>
+
+  <div class="actions">
+    <button class="btn" id="reset">RESET</button>
+    <a class="btn" href="https://filmmatrix.net">EXIT</a>
+  </div>
 </div>
 
 <script>
-/* MATRIX BACKGROUND */
+/* ===============================
+   MATRIX RAIN
+================================ */
 const mc=document.getElementById("matrixRain");
 const mctx=mc.getContext("2d");
 function resizeMatrix(){
@@ -207,16 +237,19 @@ setInterval(()=>{
   }
 },50);
 
-/* GAME */
+/* ===============================
+   GAME LOGIC
+================================ */
 const g=document.getElementById("game");
 const ctx=g.getContext("2d");
 let w,h;
 function resizeGame(){ w=g.width=g.clientWidth; h=g.height=g.clientHeight; }
 resizeGame(); addEventListener("resize",resizeGame);
 
-const ship={ x:w/2, y:h-26, w:50, h:10, targetX:w/2 };
+const ship={ x:w/2, targetX:w/2, y:h-26, w:50, h:10 };
 let bullets=[], enemies=[];
 let score=0, lives=5;
+let high=Number(localStorage.getItem("fmHighScore")||0);
 
 const posters=[
   "https://image.tmdb.org/t/p/w500/8UlWHLMpgZm9bx6QYh0NFoq67TZ.jpg",
@@ -232,37 +265,43 @@ function spawn(){
 
 function shoot(){ bullets.push({ x:ship.x, y:ship.y }); }
 
+/* JOYSTICK */
 const joy=document.getElementById("joy");
-let joyActive=false, joyX=0;
+let joyX=0, joyActive=false;
 
-joy.addEventListener("touchstart", e => {
+joy.addEventListener("touchstart",e=>{
+  e.preventDefault(); e.stopPropagation();
+  joyActive=true;
+  joyX=e.touches[0].clientX;
+},{passive:false});
+
+joy.addEventListener("touchmove",e=>{
+  if(!joyActive) return;
+  e.preventDefault(); e.stopPropagation();
+  const dx=e.touches[0].clientX-joyX;
+  ship.targetX+=dx*0.6;
+  joyX=e.touches[0].clientX;
+},{passive:false});
+
+joy.addEventListener("touchend",e=>{
   e.preventDefault();
-  e.stopPropagation();
-  joyActive = true;
-  joyX = e.touches[0].clientX;
-}, { passive:false });
+  joyActive=false;
+},{passive:false});
 
-joy.addEventListener("touchmove", e => {
-  if (!joyActive) return;
-  e.preventDefault();
-  const dx = e.touches[0].clientX - joyX;
-  ship.targetX += dx * 0.6;
-  joyX = e.touches[0].clientX;
-}, { passive:false });
-
-joy.addEventListener("touchend", e => {
-  e.preventDefault();
-  joyActive = false;
-}, { passive:false });
-
-const fire = document.getElementById("fire");
-
-fire.addEventListener("touchstart", e => {
-  e.preventDefault();
-  e.stopPropagation();
+/* FIRE */
+const fire=document.getElementById("fire");
+fire.addEventListener("touchstart",e=>{
+  e.preventDefault(); e.stopPropagation();
   shoot();
-}, { passive:false });
+},{passive:false});
 
+/* RESET */
+document.getElementById("reset").onclick=()=>{
+  bullets=[]; enemies=[];
+  score=0; lives=5;
+};
+
+/* LOOP */
 function loop(){
   ctx.clearRect(0,0,w,h);
 
@@ -281,19 +320,27 @@ function loop(){
     ctx.drawImage(e.img,e.x,e.y,e.w,e.h);
     bullets.forEach((b,j)=>{
       if(b.x>e.x&&b.x<e.x+e.w&&b.y>e.y&&b.y<e.y+e.h){
-        enemies.splice(i,1); bullets.splice(j,1);
+        enemies.splice(i,1);
+        bullets.splice(j,1);
         score+=10;
       }
     });
     if(e.y>h){ enemies.splice(i,1); lives--; }
   });
 
-  if(Math.random()<0.03) spawn();
+  if(score>high){
+    high=score;
+    localStorage.setItem("fmHighScore",high);
+  }
 
   document.getElementById("score").textContent=`SCORE ${String(score).padStart(5,"0")}`;
   document.getElementById("lives").textContent=`LIVES ${lives}`;
+  document.getElementById("high").textContent=`BEST ${String(high).padStart(5,"0")}`;
 
-  if(lives>0) requestAnimationFrame(loop);
+  if(lives>0){
+    if(Math.random()<0.03) spawn();
+    requestAnimationFrame(loop);
+  }
 }
 loop();
 </script>
