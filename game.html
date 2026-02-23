@@ -24,6 +24,18 @@
 }
 
 *{ box-sizing:border-box; }
+/* ===============================
+   DISABLE SELECTION / CALLOUTS
+================================ */
+*{
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+html, body{
+  -webkit-tap-highlight-color: transparent;
+}
 
 body{
   margin:0;
@@ -108,26 +120,40 @@ h1{
   border-top:1px solid var(--accentBorder);
 }
 
+/* ===============================
+   CONTROLS — BIGGER / TOUCH SAFE
+================================ */
 .controls{
   display:flex;
   justify-content:space-between;
-  padding:10px;
-  gap:10px;
+  padding:12px;
+  gap:12px;
 }
 
-.joystick, .fire{
+.joystick,
+.fire{
   flex:1;
-  padding:12px;
-  border-radius:12px;
+  min-height:64px;              /* 🔑 taller */
+  padding:16px 12px;
+  border-radius:16px;
   border:1px solid var(--accentBorder);
-  background:rgba(6,10,18,.85);
+  background:rgba(6,10,18,.88);
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
   font-family:Orbitron;
-  font-size:12px;
-  letter-spacing:.12em;
+  font-size:13px;
+  letter-spacing:.14em;
+  color:#e7ecff;
+
+  touch-action:none;            /* 🔑 critical */
 }
 
 .fire{
-  background:rgba(34,211,238,.15);
+  background:rgba(34,211,238,.18);
+  box-shadow: inset 0 0 18px rgba(34,211,238,.25);
 }
 </style>
 </head>
@@ -209,24 +235,33 @@ function shoot(){ bullets.push({ x:ship.x, y:ship.y }); }
 const joy=document.getElementById("joy");
 let joyActive=false, joyX=0;
 
-joy.addEventListener("touchstart",e=>{
-  joyActive=true;
-  joyX=e.touches[0].clientX;
-},{passive:true});
+joy.addEventListener("touchstart", e => {
+  e.preventDefault();
+  e.stopPropagation();
+  joyActive = true;
+  joyX = e.touches[0].clientX;
+}, { passive:false });
 
-joy.addEventListener("touchmove",e=>{
-  if(!joyActive) return;
-  const dx=e.touches[0].clientX-joyX;
-  ship.targetX+=dx*0.6;
-  joyX=e.touches[0].clientX;
-},{passive:true});
+joy.addEventListener("touchmove", e => {
+  if (!joyActive) return;
+  e.preventDefault();
+  const dx = e.touches[0].clientX - joyX;
+  ship.targetX += dx * 0.6;
+  joyX = e.touches[0].clientX;
+}, { passive:false });
 
-joy.addEventListener("touchend",()=>joyActive=false);
+joy.addEventListener("touchend", e => {
+  e.preventDefault();
+  joyActive = false;
+}, { passive:false });
 
-document.getElementById("fire").addEventListener("touchstart",e=>{
+const fire = document.getElementById("fire");
+
+fire.addEventListener("touchstart", e => {
+  e.preventDefault();
   e.stopPropagation();
   shoot();
-},{passive:true});
+}, { passive:false });
 
 function loop(){
   ctx.clearRect(0,0,w,h);
