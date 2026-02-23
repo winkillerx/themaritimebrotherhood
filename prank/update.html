@@ -9,13 +9,13 @@
 
 <style>
 /* ==============================
-   RANSOMWARE PRANK THEME
+   RANSOMWARE PRANK THEME + GUIDED ACCESS LOCK
 ============================== */
 :root{
   --bg0:#000;
   --bg1:#110000;
-  --panel:rgba(20,0,0,.85);
-  --line:rgba(255,50,50,.3);
+  --panel:rgba(20,0,0,.95);
+  --line:rgba(255,50,50,.4);
   --red:#ff0040;
   --orange:#ff6600;
   --green:#00ff00;
@@ -27,12 +27,14 @@
 
 html,body{
   margin:0;
-  min-height:100%;
+  min-height:100vh;
   background:
     radial-gradient(circle at top, #200000, #000 70%);
   font-family:Orbitron,'Courier New',monospace;
   color:#fff;
-  overflow:hidden;
+  overflow-y:scroll !important;
+  height:300vh; /* Extra long for scrolling effect */
+  scroll-behavior:smooth;
 }
 
 /* Safe areas (iOS) */
@@ -53,38 +55,33 @@ body::before{
   background:
     repeating-linear-gradient(
       to bottom,
-      rgba(255,0,0,.05),
-      rgba(255,0,0,.05) 1px,
+      rgba(255,0,0,.06),
+      rgba(255,0,0,.06) 1px,
       transparent 2px,
       transparent 4px
     );
-  animation: glitch 2s infinite;
-  z-index:0;
+  animation: glitch 1.5s infinite;
+  z-index:1000;
 }
 
 @keyframes glitch {
-  0%, 100% { opacity: .3; }
-  50% { opacity: .7; transform: translateX(2px); }
+  0%, 100% { opacity: .4; }
+  50% { opacity: .8; transform: translateX(3px) skew(1deg); }
 }
 
 /* ==============================
-   LAYOUT
+   LAYOUT - REPEATED SECTIONS FOR SCROLL EFFECT
 ============================== */
 .app{
   position:relative;
-  z-index:1;
-  display:grid;
-  grid-template-columns: 1fr;
-  gap:20px;
-  padding:22px;
-  height:100vh;
+  z-index:10;
+  padding:25px;
+  max-width:1200px;
+  margin:0 auto;
 }
 
-@media(min-width:900px){
-  .app{
-    grid-template-columns: 1.1fr .9fr;
-    padding:40px;
-  }
+.scroll-section{
+  margin-bottom:150vh; /* Creates long scrollable sections */
 }
 
 /* ==============================
@@ -94,48 +91,66 @@ body::before{
   background:var(--panel);
   border:2px solid var(--line);
   border-radius:0;
-  padding:25px;
-  box-shadow: 0 0 30px rgba(255,0,64,.3);
+  padding:30px;
+  box-shadow: 0 0 40px rgba(255,0,64,.4);
+  margin-bottom:40px;
+  position:relative;
+}
+
+.panel::before{
+  content:"🔒 LOCKED";
+  position:absolute;
+  top:-10px;
+  right:20px;
+  background:var(--red);
+  color:white;
+  padding:5px 15px;
+  font-size:11px;
+  font-weight:bold;
+  border-radius:20px;
 }
 
 /* ==============================
    HEADER
 ============================== */
 h1{
-  margin:0 0 10px;
-  font-size:32px;
-  letter-spacing:.2em;
+  margin:0 0 15px;
+  font-size:36px;
+  letter-spacing:.25em;
   color:var(--red);
   text-align:center;
   text-transform:uppercase;
-  animation: blink 1s infinite;
+  animation: blink 0.8s infinite;
+  text-shadow:0 0 20px var(--red);
 }
 
 @keyframes blink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: .3; }
+  0%, 49% { opacity: 1; }
+  50%, 99% { opacity: .2; }
+  100% { opacity: 1; }
 }
 
 .sub{
   color:var(--muted);
-  font-size:14px;
-  margin-bottom:25px;
+  font-size:15px;
+  margin-bottom:30px;
   text-align:center;
-  line-height:1.5;
+  line-height:1.6;
 }
 
 /* ==============================
-   ALERT
+   ALERT BOXES
 ============================== */
 .alert{
-  border:2px solid var(--red);
-  background:rgba(255,0,64,.15);
-  padding:20px;
-  font-size:15px;
-  line-height:1.6;
-  margin-bottom:25px;
+  border:3px solid var(--red);
+  background:rgba(255,0,64,.2);
+  padding:25px;
+  font-size:16px;
+  line-height:1.7;
+  margin-bottom:30px;
   text-align:center;
   font-weight:bold;
+  box-shadow:inset 0 0 20px rgba(255,0,0,.3);
 }
 
 /* ==============================
@@ -143,85 +158,130 @@ h1{
 ============================== */
 .term{
   font-family:'Courier New',monospace;
-  font-size:13px;
-  line-height:1.5;
+  font-size:14px;
+  line-height:1.6;
   color:var(--green);
-  background:rgba(0,10,0,.9);
-  border:1px solid #00ff00;
-  border-radius:5px;
-  padding:18px;
-  height:240px;
+  background:rgba(0,15,0,.95);
+  border:2px solid #00ff00;
+  border-radius:8px;
+  padding:25px;
+  height:280px;
   overflow-y:auto;
   white-space:pre-wrap;
-}
-
-.progress{
-  margin-top:18px;
-  font-size:16px;
-  color:var(--orange);
-  font-weight:bold;
-  text-align:center;
+  margin-bottom:25px;
+  box-shadow:0 0 15px rgba(0,255,0,.5);
 }
 
 /* ==============================
-   PAYMENT PANEL
+   AUTO-SCROLL INDICATOR
+============================== */
+.scroll-indicator{
+  position:fixed;
+  top:50%;
+  left:10px;
+  transform:translateY(-50%);
+  background:rgba(255,0,0,.9);
+  color:white;
+  padding:10px 15px;
+  font-size:12px;
+  font-weight:bold;
+  border-radius:20px;
+  z-index:2000;
+  animation: pulse 2s infinite;
+  font-family:monospace;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: .7; transform: translateY(-50%) scale(1); }
+  50% { opacity: 1; transform: translateY(-50%) scale(1.05); }
+}
+
+/* ==============================
+   COUNTDOWN
+============================== */
+.countdown{
+  font-size:32px;
+  color:var(--red);
+  text-align:center;
+  margin:30px 0;
+  font-weight:bold;
+  text-shadow:0 0 25px var(--red);
+  animation: shake 0.5s infinite;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* ==============================
+   PAYMENT PANEL - MOST PROMINENT
 ============================== */
 .payment{
-  background:linear-gradient(145deg, rgba(255,0,64,.2), rgba(255,100,0,.2));
-  border:3px solid var(--red);
+  background:linear-gradient(145deg, rgba(255,0,64,.3), rgba(255,100,0,.3));
+  border:4px solid var(--red);
   text-align:center;
-  padding:30px;
+  padding:40px;
+  margin:30px 0;
+  box-shadow:0 0 50px rgba(255,0,64,.6);
 }
 
 .wallet{
-  background:#000;
-  border:2px solid var(--green);
-  padding:20px;
-  margin:20px 0;
+  background:#111;
+  border:3px solid var(--green);
+  padding:25px;
+  margin:25px 0;
   font-family:monospace;
-  font-size:16px;
+  font-size:18px;
   word-break:break-all;
   color:var(--green);
+  letter-spacing:1px;
+  box-shadow: inset 0 0 15px rgba(0,255,0,.3);
 }
 
 .btn-pay{
   background:var(--red);
   color:white;
   border:none;
-  padding:15px 30px;
-  font-size:18px;
+  padding:20px 40px;
+  font-size:22px;
   font-weight:bold;
-  border-radius:5px;
+  border-radius:8px;
   cursor:pointer;
   text-transform:uppercase;
-  letter-spacing:2px;
-  transition:all .3s;
-  margin-top:15px;
+  letter-spacing:3px;
+  transition:all .4s;
+  margin-top:20px;
+  box-shadow:0 5px 15px rgba(255,0,0,.5);
+  font-family:monospace;
 }
 
 .btn-pay:hover{
   background:#ff3366;
-  transform:scale(1.05);
-  box-shadow:0 0 20px var(--red);
+  transform:scale(1.08);
+  box-shadow:0 0 30px var(--red);
 }
 
 /* ==============================
    SIDEBAR STATS
 ============================== */
 .side h3{
-  margin:0 0 18px;
-  font-size:16px;
-  letter-spacing:.15em;
+  margin:0 0 25px;
+  font-size:18px;
+  letter-spacing:.2em;
   color:var(--green);
   text-align:center;
+  text-shadow:0 0 10px #00ff00;
 }
 
 .stat{
-  font-size:13px;
-  margin-bottom:15px;
-  padding:8px;
-  background:rgba(0,255,0,.1);
-  border-left:3px solid var(--green);
+  font-size:14px;
+  margin-bottom:20px;
+  padding:12px;
+  background:rgba(0,255,0,.15);
+  border-left:4px solid var(--green);
+  border-radius:5px;
 }
 
 .label{ color:var(--muted); }
@@ -229,98 +289,159 @@ h1{
   color:var(--red);
   font-weight:bold;
   word-break:break-all;
-}
-
-/* ==============================
-   COUNTDOWN
-============================== */
-.countdown{
-  font-size:24px;
-  color:var(--red);
-  text-align:center;
-  margin:20px 0;
-  font-weight:bold;
-  text-shadow:0 0 10px var(--red);
+  font-size:16px;
 }
 
 /* ==============================
    FOOTER
 ============================== */
 .footer{
-  margin-top:20px;
-  font-size:12px;
+  margin-top:30px;
+  font-size:13px;
   color:#ff6666;
   text-align:center;
   font-family:monospace;
+  padding:20px;
+  background:rgba(255,0,0,.1);
+  border-top:2px solid var(--red);
 }
 </style>
 </head>
 
 <body>
 
+<div class="scroll-indicator" id="scrollIndicator">
+👁️ MONITORING 👁️<br>
+📜 Auto-scrolling evidence...
+</div>
+
 <div class="app">
 
-  <!-- MAIN PANEL -->
-  <div class="panel">
-    <h1>💀 YOUR FILES ENCRYPTED 💀</h1>
-    <div class="sub">All your documents, photos, and data have been ENCRYPTED</div>
+  <!-- SECTION 1: IMPACT WARNING -->
+  <div class="scroll-section">
+    <div class="panel">
+      <h1>💀 YOUR FILES ENCRYPTED 💀</h1>
+      <div class="sub">All documents, photos, videos, and databases ENCRYPTED with military-grade AES-256</div>
 
-    <div class="alert">
-      YOUR SYSTEM HAS BEEN COMPROMISED!<br>
-      <strong>47,892 FILES ENCRYPTED</strong><br><br>
-      Pay <strong>0.05 BTC</strong> within 48 hours or lose everything forever!<br>
-      <strong>Closing this window will DELETE all files immediately!</strong>
-    </div>
-
-    <div class="term" id="term">
-Initializing SHADOW ransomware v3.7…
-[14:23:45] Scanning drives: C:\ D:\ E:\ 
-[14:23:46] Found 47,892 valuable files
-[14:23:47] AES-256 encryption started
-[14:23:48] Encrypting Documents/Personal/
-[14:23:49] Encrypting Pictures/Family/
-    </div>
-
-    <div class="progress" id="prog">
-      Encryption Progress: 73%
-    </div>
-
-    <div class="countdown" id="countdown">
-      47:32:14 REMAINING
-    </div>
-
-    <div class="payment">
-      <h3>💰 PAYMENT INSTRUCTIONS 💰</h3>
-      <div>Send <strong>0.05 BTC</strong> exactly</div>
-      <div class="wallet" id="wallet">
-        bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
+      <div class="alert">
+        YOUR SYSTEM IS FULLY COMPROMISED!<br>
+        <strong>47,892 CRITICAL FILES ENCRYPTED</strong><br><br>
+        Pay <strong>0.05 BTC</strong> within 48 hours<br>
+        OR PERMANENTLY LOSE EVERYTHING!
       </div>
-      <div>Payment ID: RXN-4839-0294</div>
-      <button class="btn-pay" onclick="fakePayment()">COPY WALLET & PAY NOW</button>
-    </div>
-
-    <div class="footer">
-      ShadowNet Ransomware Group • No negotiations • Support: shadowsupport@proton.me
     </div>
   </div>
 
-  <!-- SIDE PANEL -->
-  <div class="panel side">
-    <h3>🔥 INFECTED SYSTEM</h3>
+  <!-- SECTION 2: TERMINAL + COUNTDOWN -->
+  <div class="scroll-section">
+    <div class="panel">
+      <div class="term" id="term">
+Initializing SHADOW ransomware v4.1…
+[14:23:45] Scanning: C:\Users\ D:\Documents\ E:\Backups\
+[14:23:46] TARGET ACQUIRED: 47,892 valuable files detected
+[14:23:47] AES-256 + RSA-4096 encryption sequence initiated
+[14:23:48] Processing: Documents/Personal/Taxes2024/
+[14:23:49] Processing: Pictures/Family_Vacation/
+[14:23:50] Processing: Desktop/Work_Projects/
+[14:23:51] Bitcoin wallet found → ENCRYPTED
+[14:23:52] Browser passwords → EXTRACTED & ENCRYPTED
+      </div>
 
-    <div class="stat"><span class="label">Victim IP</span><br><span class="value" id="ip">Scanning...</span></div>
-    <div class="stat"><span class="label">Machine ID</span><br><span class="value" id="machine">SHDW-4839-X7K2</span></div>
-    <div class="stat"><span class="label">OS</span><br><span class="value" id="os"></span></div>
-    <div class="stat"><span class="label">User</span><br><span class="value" id="user"></span></div>
-    <div class="stat"><span class="label">Total Files</span><br><span class="value" id="files">47,892</span></div>
-    <div class="stat"><span class="label">Encrypted</span><br><span class="value" id="encrypted">35,214</span></div>
-    <div class="stat"><span class="label">Drives Hit</span><br><span class="value" id="drives">C:\ D:\ E:\</span></div>
+      <div class="progress" id="prog">🔒 ENCRYPTION ENGINE: ACTIVE</div>
+      <div class="countdown" id="countdown">47:32:14 REMAINING</div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: PAYMENT DEMAND (MOST IMPORTANT) -->
+  <div class="scroll-section">
+    <div class="panel payment">
+      <h3 style="color:var(--red); font-size:28px; margin-bottom:20px;">🚨 PAYMENT REQUIRED 🚨</h3>
+      <div style="font-size:20px; margin-bottom:15px;">
+        Send <strong>EXACTLY 0.05 BTC</strong> (no more, no less)
+      </div>
+      
+      <div class="wallet" id="wallet">
+        bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
+      </div>
+      
+      <div style="font-size:16px; margin:15px 0;">
+        <strong>Transaction ID: RXN-4839-0294-7K2P</strong>
+      </div>
+      
+      <button class="btn-pay" onclick="fakePayment()" style="font-size:24px; padding:25px 50px;">
+        💰 COPY WALLET & PAY NOW 💰
+      </button>
+      
+      <div style="margin-top:20px; font-size:14px; color:#ffcc00;">
+        ⏰ Payment detected = Automatic decryption key sent<br>
+        ❌ No payment after 48h = PERMANENT DELETION
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: SYSTEM INFO -->
+  <div class="scroll-section">
+    <div class="panel side">
+      <h3>🔥 COMPROMISED TARGET</h3>
+
+      <div class="stat"><span class="label">Victim IP:</span><br><span class="value" id="ip">🛰️ Scanning...</span></div>
+      <div class="stat"><span class="label">Machine ID:</span><br><span class="value" id="machine">SHDW-4839-X7K2-P4Q8</span></div>
+      <div class="stat"><span class="label">OS:</span><br><span class="value" id="os"></span></div>
+      <div class="stat"><span class="label">User:</span><br><span class="value" id="user">CurrentUser</span></div>
+      <div class="stat"><span class="label">Total Files:</span><br><span class="value" id="files">47,892</span></div>
+      <div class="stat"><span class="label">Encrypted:</span><br><span class="value" id="encrypted">35,214</span></div>
+      <div class="stat"><span class="label">Drives Hit:</span><br><span class="value" id="drives">C:\ D:\ E:\ F:\</span></div>
+      <div class="stat"><span class="label">Data Stolen:</span><br><span class="value">2.4 GB (passwords, crypto wallets)</span></div>
+    </div>
+  </div>
+
+  <!-- FINAL WARNING SECTION -->
+  <div class="scroll-section">
+    <div class="panel">
+      <div class="alert">
+        <strong>⚠️ WARNING: Closing this window triggers PERMANENT file deletion! ⚠️</strong><br><br>
+        We have FULL SYSTEM CONTROL. Antivirus/Bitdefender/McAfee = BYPASSED<br>
+        ShadowNet Ransomware Group - No negotiations - Support: shadowsupport@proton.me
+      </div>
+      
+      <div class="footer">
+        © 2026 ShadowNet. All rights reserved. | v4.1 | Uptime: 2h 14m
+      </div>
+    </div>
   </div>
 
 </div>
 
 <script>
 /* ==============================
+   GUIDED ACCESS AUTO-SCROLL LOCK
+============================== */
+let scrollDirection = 1; // 1 = down, -1 = up
+let scrollPos = 0;
+const scrollSpeed = 1.5; // Pixels per frame
+const scrollIndicator = document.getElementById("scrollIndicator");
+
+// Infinite auto-scroll loop
+function autoScroll() {
+  scrollPos += scrollSpeed * scrollDirection;
+  
+  // Reverse direction at top/bottom
+  if (scrollPos >= document.body.scrollHeight - window.innerHeight - 50) {
+    scrollDirection = -1;
+    scrollIndicator.textContent = "👁️ MONITORING 👁️\n📜 Scrolling UP evidence...";
+  } else if (scrollPos <= 50) {
+    scrollDirection = 1;
+    scrollIndicator.textContent = "👁️ MONITORING 👁️\n📜 Scrolling DOWN evidence...";
+  }
+  
+  window.scrollTo(0, scrollPos);
+  requestAnimationFrame(autoScroll);
+}
+
+// Start auto-scroll after 2 seconds
+setTimeout(autoScroll, 2000);
+
+// ==============================
    FAKE RANSOMWARE EFFECTS
 ============================== */
 let pct=73, files=47892, encrypted=35214;
@@ -328,9 +449,7 @@ const term=document.getElementById("term");
 const prog=document.getElementById("prog");
 const filesEl=document.getElementById("files");
 const encEl=document.getElementById("encrypted");
-const countdownEl=document.getElementById("countdown");
-
-let timeLeft = 47*3600 + 32*60 + 14; // 47h 32m 14s
+let timeLeft = 47*3600 + 32*60 + 14;
 
 // Countdown timer
 setInterval(()=>{
@@ -338,53 +457,61 @@ setInterval(()=>{
   let h = Math.floor(timeLeft / 3600);
   let m = Math.floor((timeLeft % 3600) / 60);
   let s = timeLeft % 60;
-  countdownEl.textContent = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')} REMAINING`;
+  document.getElementById("countdown").textContent = 
+    `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')} REMAINING`;
 }, 1000);
 
-// Fake encryption progress
+// Fake encryption
 setInterval(()=>{
-  if(pct<99 && Math.random()>.2) pct++;
-  if(Math.random()>.3) encrypted+=Math.floor(Math.random()*23);
-  prog.textContent=`Encryption Progress: ${pct}%`;
+  if(pct<99 && Math.random()>.15) pct++;
+  if(Math.random()>.25) encrypted+=Math.floor(Math.random()*35);
+  prog.textContent=`🔒 ENCRYPTION ENGINE: ${pct}% ACTIVE`;
   filesEl.textContent=files.toLocaleString();
   encEl.textContent=encrypted.toLocaleString();
   
-  term.innerHTML+=`[${new Date().toLocaleTimeString()}] Encrypting ${['.jpg','.docx','.pdf','.mp4','.wallet'][Math.floor(Math.random()*5)]} files...\n`;
+  term.innerHTML+=`[${new Date().toLocaleTimeString()}] Encrypting ${['.jpg','.docx','.pdf','.mp4','.wallet','.key'].[Math.floor(Math.random()*6)]}...\n`;
   term.scrollTop=term.scrollHeight;
-}, 1200);
+}, 1100);
 
 // System info
 document.getElementById("os").textContent=navigator.platform;
-document.getElementById("user").textContent="CurrentUser";
-
 fetch("https://api.ipify.org?format=json")
   .then(r=>r.json())
   .then(d=>document.getElementById("ip").textContent=d.ip)
-  .catch(()=>document.getElementById("ip").textContent="Detected");
+  .catch(()=>document.getElementById("ip").textContent="🛰️ DETECTED");
 
-// Fake payment button
+// Fake payment
 function fakePayment(){
   navigator.clipboard.writeText("bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh");
-  alert("🤑 WALLET COPIED! Send 0.05 BTC NOW or lose everything!");
+  alert("🤑 WALLET COPIED TO CLIPBOARD!\nSend 0.05 BTC IMMEDIATELY or lose everything!\n\nTransaction monitored in real-time...");
 }
 
-// Disable right-click, F12, Ctrl+Shift+I
+// Lockdown: Disable everything
 document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('selectstart', e => e.preventDefault());
 document.onkeydown = function(e) {
-  if(e.keyCode==123 || (e.ctrlKey && e.shiftKey && e.keyCode==73)) return false;
+  // Block F12, Ctrl+Shift+I, Ctrl+U, Ctrl+S, etc.
+  if(e.keyCode==123 || e.keyCode==85 || (e.ctrlKey && e.keyCode==83) || (e.ctrlKey && e.shiftKey && e.keyCode==73)) {
+    e.preventDefault(); return false;
+  }
 };
 
-// SECRET EXIT: CTRL + ALT + X (don't tell anyone!)
-document.addEventListener("keydown",e=>{
-  if(e.ctrlKey && e.altKey && e.key.toLowerCase()==="x"){
-    document.body.innerHTML="<h1>😂 PRANK OVER! Your files are safe!</h1>";
+// Auto fullscreen
+document.addEventListener('DOMContentLoaded', function() {
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(()=>{});  
   }
 });
 
-// Fullscreen on load (prank effect)
-document.addEventListener('DOMContentLoaded', function() {
-  if (document.documentElement.requestFullscreen) {
-    document.documentElement.requestFullscreen();
+// SECRET EXIT: Ctrl+Alt+X (for demo)
+document.addEventListener("keydown",e=>{
+  if(e.ctrlKey && e.altKey && e.key.toLowerCase()==="x"){
+    document.body.innerHTML = `
+      <div style="text-align:center; padding:50px; font-size:24px; color:#00ff00; background:black;">
+        😂😂😂 PRANK OVER! YOUR FILES ARE SAFE! 😂😂😂<br><br>
+        <small>Ctrl+Alt+X activated. Guided Access simulation ended.</small>
+      </div>`;
+    document.getElementById("scrollIndicator").style.display = "none";
   }
 });
 </script>
