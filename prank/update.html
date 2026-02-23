@@ -36,7 +36,7 @@ html,body{
 }
 
 /* ==============================
-   FIXED INFINITE LOOP SCROLLER - SLOWER 45% TOTAL
+   FIXED INFINITE LOOP SCROLLER - SLOWER 25%
 ============================== */
 .video-scroller{
   position:fixed;
@@ -49,7 +49,7 @@ html,body{
   position:absolute;
   top:0; width:100%;
   height:200vh; /* Exactly 2 screens for perfect loop */
-  animation: infiniteVerticalScroll 32s linear infinite; /* 26.67s → 32s (20% slower) */
+  animation: infiniteVerticalScroll 26.666s linear infinite; /* SLOWED 25% (20s→26.67s) */
 }
 
 @keyframes infiniteVerticalScroll {
@@ -59,14 +59,14 @@ html,body{
 }
 
 /* ==============================
-   FIXED PANELS - 2% GAP (16px)
+   FIXED PANELS - 2% GAP (16px → 16px total)
 ============================== */
 .panel{
   background:var(--panel);
   border:2px solid var(--line);
   border-radius:6px;
   padding:18px;
-  margin-bottom:16px; /* 2% gap */
+  margin-bottom:16px; /* FIXED: 2% gap = 16px */
   box-shadow: 0 0 25px rgba(255,0,64,.6);
   position:relative;
   min-height:200px;
@@ -177,13 +177,12 @@ h1{
 }
 @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-4px);} 75%{transform:translateX(4px);} }
 
-/* PAYMENT PANEL - MOVED TO BOTTOM */
 .payment{ 
   background:linear-gradient(145deg, rgba(255,0,64,.4), rgba(255,100,0,.4)); 
   border:4px solid var(--red); 
   text-align:center; 
   padding:25px; 
-  margin-bottom:16px; /* 2% gap */
+  margin-bottom:16px; /* FIXED: Matches 2% gap */
   box-shadow:0 0 50px rgba(255,0,64,.8);
   animation: moneyGlow 2.5s infinite;
 }
@@ -261,6 +260,16 @@ h1{
   animation: footerFlicker 4s infinite;
 }
 @keyframes footerFlicker { 0%,95%,100%{opacity:1;} 97%{opacity:0.7;} }
+/* =====================================
+   FIX: Separate Payment + Victim cards
+===================================== */
+.payment{
+  margin-bottom: 48px !important; /* pushes victim profile down */
+}
+
+.side{
+  margin-top: 48px; /* extra safety buffer */
+}
 </style>
 </head>
 
@@ -269,7 +278,7 @@ h1{
 <!-- FIXED MONITOR HUD -->
 <div class="scroll-indicator" id="scrollIndicator">
 👁️ <span style="color:#00ff00;">VIDEO MODE ACTIVE</span> 👁️<br>
-📹 Auto-scroll: <span id="scrollDir" style="color:#ffff00;">DOWN</span> (32s cycle)<br>
+📹 Auto-scroll: <span id="scrollDir" style="color:#ffff00;">DOWN</span> (26.7s cycle)<br>
 🎯 Session: <span id="sessionId">RXN-4839-0294</span><br>
 ⏱️ Cycle: <span id="cycleTime">00:00</span>
 <div class="indicator-line" style="font-size:10px;color:#ffaa00;">📡 LIVE TRANSMIT → C2 SERVER</div>
@@ -281,7 +290,7 @@ h1{
     
     <!-- TOP HALF: DOWNWARD CONTENT -->
     <div style="height:100vh; padding:15px;">
-      <!-- PANEL 1: IMPACT -->
+      <!-- PANEL 1: IMPACT (16px gap) -->
       <div class="panel">
         <h1>💀 FILES ENCRYPTED 💀</h1>
         <div class="sub">48,217 documents, photos, crypto wallets, passwords ENCRYPTED</div>
@@ -292,7 +301,7 @@ h1{
         </div>
       </div>
 
-      <!-- PANEL 2: TERMINAL -->
+      <!-- PANEL 2: TERMINAL (16px gap) -->
       <div class="panel">
         <div class="term" id="term">
 [14:23:45] SHADOW v4.2 INITIATED
@@ -304,7 +313,23 @@ h1{
         <div class="countdown" id="countdown">47:32:14</div>
       </div>
 
-      <!-- PANEL 3: VICTIM DATA (MOVED UP) -->
+      <!-- PANEL 3: PAYMENT (16px gap) -->
+      <div class="panel payment">
+        <h3 style="color:var(--red); font-size:26px;">🚨 SEND PAYMENT NOW 🚨</h3>
+        <div style="font-size:20px; margin-bottom:12px;">
+          <strong>0.05 BTC EXACTLY → INSTANT DECRYPT</strong>
+        </div>
+        <div class="wallet" id="wallet">bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh</div>
+        <div style="font-size:15px; margin:12px 0;">
+          <strong>TxID: RXN-4839-0294-7K2P-Q8MX</strong>
+        </div>
+        <button class="btn-pay" onclick="fakePayment()" style="pointer-events:auto;">💰 COPY & PAY NOW 💰</button>
+      </div>
+    </div>
+
+    <!-- BOTTOM HALF: UPWARD CONTENT (NO OVERLAP) -->
+    <div style="height:100vh; padding:15px;">
+      <!-- PANEL 4: VICTIM DATA (16px gap) -->
       <div class="panel side">
         <h3>🎯 LIVE VICTIM PROFILE</h3>
         <div class="stat"><span class="label">IP:</span><br><span class="value" id="ip">🛰️ RESOLVING...</span></div>
@@ -318,24 +343,8 @@ h1{
         <div class="stat"><span class="label">Files:</span><br><span class="value" id="files">48,217</span></div>
         <div class="stat"><span class="label">Encrypted:</span><br><span class="value" id="encrypted">36,847</span></div>
       </div>
-    </div>
 
-    <!-- BOTTOM HALF: UPWARD CONTENT - PAYMENT MOVED HERE -->
-    <div style="height:100vh; padding:15px;">
-      <!-- PANEL 4: PAYMENT (MOVED TO BOTTOM) -->
-      <div class="panel payment">
-        <h3 style="color:var(--red); font-size:26px;">🚨 SEND PAYMENT NOW 🚨</h3>
-        <div style="font-size:20px; margin-bottom:12px;">
-          <strong>0.05 BTC EXACTLY → INSTANT DECRYPT</strong>
-        </div>
-        <div class="wallet" id="wallet">bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh</div>
-        <div style="font-size:15px; margin:12px 0;">
-          <strong>TxID: RXN-4839-0294-7K2P-Q8MX</strong>
-        </div>
-        <button class="btn-pay" onclick="fakePayment()" style="pointer-events:auto;">💰 COPY & PAY NOW 💰</button>
-      </div>
-
-      <!-- PANEL 5: THREAT -->
+      <!-- PANEL 5: THREAT (16px gap) -->
       <div class="panel">
         <div class="alert">
           <strong>⚠️ SESSION LOCKED - NO ESCAPE ⚠️</strong><br>
@@ -353,7 +362,7 @@ h1{
 
 <script>
 /* ==============================
-   ALL SCRIPTS - DIRECTION SYNCED TO 32s
+   ALL SCRIPTS UNCHANGED
 ============================== */
 // DISABLE ALL INPUT
 document.addEventListener('keydown', e => e.preventDefault());
@@ -363,14 +372,14 @@ document.addEventListener('touchstart', e => e.preventDefault());
 document.addEventListener('selectstart', e => e.preventDefault());
 window.onbeforeunload = null;
 
-// DIRECTION INDICATOR - SYNCED TO 32s CYCLE
+// DIRECTION INDICATOR - SYNCED TO 26.67s CYCLE
 const scrollDirEl = document.getElementById("scrollDir");
 let directionDown = true;
 setInterval(() => {
   directionDown = !directionDown;
   scrollDirEl.textContent = directionDown ? "DOWN" : "UP";
   scrollDirEl.style.color = directionDown ? "#ffff00" : "#00ff88";
-}, 16000); // 16s (half of 32s cycle)
+}, 13333); // 13.333s (half of 26.67s cycle)
 
 function animateValue(el, start, end, duration) {
   let startTime = null;
