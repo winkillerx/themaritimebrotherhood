@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Film Matrix — Defense Simulation</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#05060c">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg0:#05060c;
+      --bg1:#070a14;
+      --bg2:#071425;
+
+      --accent:#22d3ee;
+      --accentSoft:rgba(34,211,238,.18);
+      --accentBorder:rgba(34,211,238,.55);
+
+      --muted:rgba(231,236,255,.65);
+      --card:rgba(10,14,28,.78);
+    }
+
+    *{ box-sizing:border-box; }
+
+    body{
+      margin:0;
+      min-height:100svh;
+      display:grid;
+      place-items:center;
+      font-family:Inter,system-ui,sans-serif;
+      color:#e7ecff;
+      overflow:hidden;
+
+      background:
+        radial-gradient(1200px 600px at 15% 10%, rgba(124,58,237,.18), transparent 55%),
+        radial-gradient(900px 520px at 85% 20%, rgba(34,211,238,.18), transparent 55%),
+        linear-gradient(180deg, var(--bg1), var(--bg0), var(--bg2));
+    }
+
+    /* MATRIX BACKGROUND */
+    #matrixRain{
+      position:fixed;
+      inset:0;
+      z-index:0;
+      pointer-events:none;
+    }
+
+    /* CARD */
+    .card{
+      position:relative;
+      z-index:1;
+      width:min(560px, 94vw);
+      padding:34px 28px 30px;
+      border-radius:28px;
+      border:1px solid var(--accentBorder);
+      background:var(--card);
+      box-shadow:
+        0 0 0 1px var(--accentSoft),
+        0 28px 90px rgba(0,0,0,.7);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      text-align:center;
+    }
+
+    .logo{
+      font-family:Orbitron,system-ui,sans-serif;
+      font-weight:800;
+      letter-spacing:.18em;
+      margin-bottom:10px;
+      color:var(--accent);
+    }
+
+    h1{
+      font-family:Orbitron,system-ui,sans-serif;
+      font-size:28px;
+      letter-spacing:.08em;
+      margin:0 0 6px;
+    }
+
+    .muted{
+      color:var(--muted);
+      font-size:14px;
+      margin-bottom:18px;
+    }
+
+    /* GAME FRAME */
+    .gameWrap{
+      position:relative;
+      margin:18px 0 20px;
+      border-radius:18px;
+      border:1px solid var(--accentBorder);
+      background:
+        radial-gradient(circle at center, rgba(34,211,238,.08), transparent 70%),
+        linear-gradient(180deg, rgba(6,10,18,.9), rgba(6,10,18,.95));
+      overflow:hidden;
+      box-shadow:
+        inset 0 0 40px rgba(0,0,0,.8),
+        0 0 0 1px var(--accentSoft);
+    }
+
+    canvas#game{
+      display:block;
+      width:100%;
+      height:340px;
+    }
+
+    .controls{
+      display:flex;
+      justify-content:space-between;
+      padding:10px 14px;
+      font-size:12px;
+      letter-spacing:.12em;
+      color:var(--muted);
+    }
+
+    .btn{
+      min-width:260px;
+      padding:16px 18px;
+      border-radius:999px;
+      border:1px solid var(--accentBorder);
+      background:rgba(6,10,18,.6);
+      color:#e7ecff;
+      text-decoration:none;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      transition:.2s ease;
+      display:inline-block;
+    }
+
+    .btn:hover{
+      border-color:var(--accent);
+      box-shadow:
+        0 0 0 1px var(--accentSoft),
+        0 0 24px rgba(34,211,238,.35);
+    }
+
+    .foot{
+      margin-top:14px;
+      font-size:12px;
+      color:var(--muted);
+      letter-spacing:.12em;
+    }
+
+    @media (max-width:520px){
+      canvas#game{ height:300px; }
+      h1{ font-size:24px; }
+    }
+  </style>
+</head>
+
+<body>
+
+<canvas id="matrixRain"></canvas>
+
+<div class="card">
+  <div class="logo">FILM MATRIX</div>
+  <h1>Defense Simulation</h1>
+  <div class="muted">Unauthorized route • Countermeasures engaged</div>
+
+  <div class="gameWrap">
+    <canvas id="game"></canvas>
+    <div class="controls">
+      <span>MOVE</span>
+      <span>SHOOT</span>
+    </div>
+  </div>
+
+  <a href="https://filmmatrix.net" class="btn">Return to Main System</a>
+  <div class="foot">Cyberpunk Interface • Analytics Aware</div>
+</div>
+
+<script>
+/* ===============================
+   MATRIX RAIN (CRISP)
+================================ */
+const mCanvas = document.getElementById("matrixRain");
+const mCtx = mCanvas.getContext("2d");
+
+function resizeMatrix(){
+  const dpr = devicePixelRatio || 1;
+  mCanvas.width = innerWidth * dpr;
+  mCanvas.height = innerHeight * dpr;
+  mCtx.setTransform(dpr,0,0,dpr,0,0);
+}
+resizeMatrix();
+addEventListener("resize", resizeMatrix);
+
+const chars="アカサタナハマヤラ0123456789";
+const fontSize=14;
+let cols=Math.floor(innerWidth/fontSize);
+let drops=Array(cols).fill(1);
+
+function drawMatrix(){
+  mCtx.fillStyle="rgba(5,6,12,.18)";
+  mCtx.fillRect(0,0,mCanvas.width,mCanvas.height);
+  mCtx.font="600 "+fontSize+"px monospace";
+  mCtx.fillStyle="rgba(34,211,238,.75)";
+  for(let i=0;i<drops.length;i++){
+    const c=chars[Math.random()*chars.length|0];
+    mCtx.fillText(c,i*fontSize,drops[i]*fontSize);
+    if(drops[i]*fontSize>innerHeight&&Math.random()>0.97) drops[i]=0;
+    drops[i]++;
+  }
+}
+setInterval(drawMatrix,50);
+
+/* ===============================
+   EMBEDDED GAME
+================================ */
+const g=document.getElementById("game");
+const ctx=g.getContext("2d");
+let w,h;
+
+function resizeGame(){
+  w=g.width=g.offsetWidth;
+  h=g.height=g.offsetHeight;
+}
+resizeGame();
+addEventListener("resize",resizeGame);
+
+const ship={ x:w/2, y:h-18, w:46, h:10 };
+const bullets=[], enemies=[];
+const posters=[
+  "https://image.tmdb.org/t/p/w500/8UlWHLMpgZm9bx6QYh0NFoq67TZ.jpg",
+  "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
+  "https://image.tmdb.org/t/p/w500/6DrHO1jr3qVrViUO6s6kFiAGM7.jpg"
+];
+
+function spawn(){
+  const img=new Image();
+  img.src=posters[Math.random()*posters.length|0];
+  enemies.push({ x:Math.random()*(w-60), y:-80, img });
+}
+
+function shoot(){ bullets.push({ x:ship.x, y:ship.y }); }
+
+/* Controls */
+g.addEventListener("mousemove",e=>ship.x=e.offsetX);
+g.addEventListener("mousedown",shoot);
+
+let lastX=null;
+g.addEventListener("touchstart",e=>{
+  lastX=e.touches[0].clientX;
+  shoot();
+});
+g.addEventListener("touchmove",e=>{
+  const x=e.touches[0].clientX;
+  ship.x+=(x-lastX)*0.1;
+  lastX=x;
+  e.preventDefault();
+},{passive:false});
+
+function loop(){
+  ctx.clearRect(0,0,w,h);
+
+  ctx.fillStyle="#22d3ee";
+  ctx.shadowColor="#22d3ee";
+  ctx.shadowBlur=12;
+  ctx.fillRect(ship.x-ship.w/2, ship.y, ship.w, ship.h);
+  ctx.shadowBlur=0;
+
+  bullets.forEach(b=>b.y-=10);
+  ctx.fillStyle="#7dd3fc";
+  bullets.forEach(b=>ctx.fillRect(b.x-2,b.y,4,8));
+
+  enemies.forEach(e=>{
+    e.y+=1.2;
+    ctx.drawImage(e.img,e.x,e.y,56,84);
+  });
+
+  if(Math.random()<0.03) spawn();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+
+</body>
+</html>
