@@ -2,33 +2,52 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>SYSTEM BREACH DETECTED</title>
+<meta name="viewport"
+  content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>System Breach • FilmMatrix</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&display=swap" rel="stylesheet">
 
 <style>
+/* ==============================
+   FILMMATRIX CYBER THEME
+============================== */
 :root{
-  --bg:#03040a;
-  --panel:rgba(8,12,30,.92);
-  --neon:#00eaff;
-  --danger:#ff355e;
-  --warn:#ffb703;
-  --muted:#7c8db5;
+  --bg0:#05060c;
+  --bg1:#070a14;
+  --panel:rgba(10,14,28,.72);
+  --line:rgba(120,170,255,.18);
+  --cyan:#4fdcff;
+  --red:#ff3b5c;
+  --muted:#8fa3bf;
 }
+
+*{ box-sizing:border-box; }
 
 html,body{
   margin:0;
-  height:100%;
-  background:radial-gradient(circle at top,#0b1030,#02030a);
+  min-height:100%;
+  background:
+    radial-gradient(circle at top, #0b1430, #05060c 70%);
   font-family:Orbitron,system-ui,sans-serif;
   color:white;
-  overflow:hidden;
 }
 
-#scanlines{
+/* Safe areas (iOS) */
+body{
+  padding:
+    env(safe-area-inset-top)
+    env(safe-area-inset-right)
+    env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+/* Scanlines */
+body::before{
+  content:"";
   position:fixed;
   inset:0;
+  pointer-events:none;
   background:
     repeating-linear-gradient(
       to bottom,
@@ -37,107 +56,136 @@ html,body{
       transparent 2px,
       transparent 4px
     );
-  pointer-events:none;
+  z-index:0;
 }
 
-#app{
-  height:100%;
+/* ==============================
+   LAYOUT
+============================== */
+.app{
+  position:relative;
+  z-index:1;
   display:grid;
-  grid-template-columns: 1fr 420px;
+  grid-template-columns: 1fr;
+  gap:20px;
+  padding:22px;
 }
 
-.main{
-  padding:40px;
+@media(min-width:900px){
+  .app{
+    grid-template-columns: 1.1fr .9fr;
+    padding:40px;
+  }
 }
 
-.side{
+/* ==============================
+   PANELS
+============================== */
+.panel{
   background:var(--panel);
-  border-left:1px solid rgba(0,234,255,.2);
-  padding:30px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:22px;
 }
 
+/* ==============================
+   HEADER
+============================== */
 h1{
-  color:var(--danger);
-  letter-spacing:.14em;
+  margin:0 0 6px;
   font-size:26px;
-  margin-bottom:6px;
-  animation:glitch 3s infinite;
-}
-
-@keyframes glitch{
-  0%{text-shadow:0 0 2px var(--neon)}
-  50%{text-shadow:-2px 0 var(--danger),2px 0 var(--neon)}
-  100%{text-shadow:0 0 2px var(--neon)}
+  letter-spacing:.14em;
+  color:var(--red);
 }
 
 .sub{
   color:var(--muted);
   font-size:12px;
-  margin-bottom:28px;
+  margin-bottom:18px;
 }
 
+/* ==============================
+   ALERT
+============================== */
 .alert{
-  border:1px solid rgba(255,53,94,.5);
-  background:rgba(255,53,94,.08);
-  padding:18px;
-  font-size:14px;
-  margin-bottom:24px;
+  border:1px solid rgba(255,59,92,.45);
+  background:rgba(255,59,92,.08);
+  padding:16px;
+  font-size:13px;
+  line-height:1.6;
+  margin-bottom:20px;
 }
 
+/* ==============================
+   TERMINAL
+============================== */
 .term{
   font-family:monospace;
   font-size:12px;
-  line-height:1.5;
+  line-height:1.6;
   color:#7dd3fc;
-  height:260px;
-  overflow:hidden;
   background:rgba(0,0,0,.35);
+  border:1px solid var(--line);
+  border-radius:10px;
   padding:14px;
-  border:1px solid rgba(0,234,255,.15);
+  height:220px;
+  overflow:hidden;
+}
+
+@media(max-width:600px){
+  .term{ height:180px; }
 }
 
 .progress{
-  margin-top:18px;
+  margin-top:14px;
   font-size:13px;
-  color:var(--neon);
+  color:var(--cyan);
 }
 
-.footer{
-  position:absolute;
-  bottom:20px;
-  left:40px;
-  font-size:11px;
-  color:#5b6f9c;
+/* ==============================
+   SIDEBAR STATS
+============================== */
+.side h3{
+  margin:0 0 14px;
+  font-size:14px;
+  letter-spacing:.12em;
+  color:var(--cyan);
 }
 
 .stat{
-  margin-bottom:14px;
-  font-size:13px;
+  font-size:12px;
+  margin-bottom:12px;
 }
-.label{color:var(--muted)}
-.value{color:var(--neon); word-break:break-all}
 
-.badge{
-  display:inline-block;
-  padding:4px 8px;
-  border:1px solid rgba(255,183,3,.6);
-  color:var(--warn);
+.label{ color:var(--muted); }
+.value{
+  color:var(--cyan);
+  word-break:break-all;
+}
+
+/* ==============================
+   FOOTER
+============================== */
+.footer{
+  margin-top:18px;
   font-size:11px;
-  margin-bottom:16px;
+  color:#5f708f;
 }
 </style>
 </head>
 
 <body>
-<div id="scanlines"></div>
 
-<div id="app">
-  <div class="main">
+<div class="app">
+
+  <!-- MAIN PANEL -->
+  <div class="panel">
     <h1>⚠ SYSTEM BREACH</h1>
     <div class="sub">Unauthorized encryption process detected • Session isolated</div>
 
     <div class="alert">
-      Critical system activity indicates a <strong>simulated ransomware event</strong>.<br>
+      Critical system activity indicates a
+      <strong>simulated ransomware event</strong>.<br>
       Files appear inaccessible due to encryption routines.<br><br>
       <strong>Do not close this window.</strong>
     </div>
@@ -146,15 +194,18 @@ h1{
       Initializing encryption engine…<br>
     </div>
 
-    <div class="progress" id="prog">Encrypting user files: 0%</div>
+    <div class="progress" id="prog">
+      Encrypting user files: 0%
+    </div>
 
     <div class="footer">
       Incident ID: FM-RX-A77 • Response Mode: ISOLATED
     </div>
   </div>
 
-  <div class="side">
-    <div class="badge">TARGET SYSTEM</div>
+  <!-- SIDE PANEL -->
+  <div class="panel side">
+    <h3>TARGET SYSTEM</h3>
 
     <div class="stat"><span class="label">Public IP</span><br><span class="value" id="ip">Detecting…</span></div>
     <div class="stat"><span class="label">Browser</span><br><span class="value" id="browser"></span></div>
@@ -165,25 +216,30 @@ h1{
     <div class="stat"><span class="label">Locale</span><br><span class="value" id="lang"></span></div>
     <div class="stat"><span class="label">Encrypted Files</span><br><span class="value" id="files">0</span></div>
   </div>
+
 </div>
 
 <script>
-/* ===== Fake Encryption ===== */
+/* ==============================
+   FAKE ENCRYPTION
+============================== */
 let pct=0, files=0;
 const term=document.getElementById("term");
 const prog=document.getElementById("prog");
 const filesEl=document.getElementById("files");
 
 setInterval(()=>{
-  if(pct<96 && Math.random()>.2) pct++;
-  files+=Math.floor(Math.random()*8);
+  if(pct<97 && Math.random()>.25) pct++;
+  files+=Math.floor(Math.random()*6);
   prog.textContent=`Encrypting user files: ${pct}%`;
   filesEl.textContent=files.toLocaleString();
   term.innerHTML+=`[${new Date().toLocaleTimeString()}] Encrypting block ${Math.floor(Math.random()*9000)}…<br>`;
   term.scrollTop=term.scrollHeight;
 },900);
 
-/* ===== System Info ===== */
+/* ==============================
+   SYSTEM INFO
+============================== */
 browser.textContent=navigator.userAgent;
 os.textContent=navigator.platform;
 device.textContent=/mobile/i.test(navigator.userAgent)?"Mobile":"Desktop";
@@ -196,15 +252,17 @@ fetch("https://api.ipify.org?format=json")
   .then(d=>ip.textContent=d.ip)
   .catch(()=>ip.textContent="Unavailable");
 
-/* ===== Secret Exit =====
+/* ==============================
+   SECRET EXIT
    CTRL + ALT + E
-*/
+============================== */
 document.addEventListener("keydown",e=>{
   if(e.ctrlKey && e.altKey && e.key.toLowerCase()==="e"){
-    alert("Simulation terminated.");
+    alert("Simulation ended.");
     location.reload();
   }
 });
 </script>
+
 </body>
 </html>
