@@ -1,216 +1,210 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport"
-  content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-<title>Working on updates</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>SYSTEM BREACH DETECTED</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&display=swap" rel="stylesheet">
 
 <style>
-html, body {
-  margin:0;
-  padding:0;
-  height:100%;
-  background:#0a0f1f;
-  color:#fff;
-  font-family:"Segoe UI", system-ui, sans-serif;
-  overflow:hidden;
-  touch-action:none;
-  user-select:none;
+:root{
+  --bg:#03040a;
+  --panel:rgba(8,12,30,.92);
+  --neon:#00eaff;
+  --danger:#ff355e;
+  --warn:#ffb703;
+  --muted:#7c8db5;
 }
 
-.screen {
+html,body{
+  margin:0;
+  height:100%;
+  background:radial-gradient(circle at top,#0b1030,#02030a);
+  font-family:Orbitron,system-ui,sans-serif;
+  color:white;
+  overflow:hidden;
+}
+
+#scanlines{
   position:fixed;
   inset:0;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  text-align:center;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,.03),
+      rgba(255,255,255,.03) 1px,
+      transparent 2px,
+      transparent 4px
+    );
+  pointer-events:none;
 }
 
-.spinner {
-  width:80px;
-  height:80px;
-  border:6px solid rgba(255,255,255,.15);
-  border-top-color:#fff;
-  border-radius:50%;
-  animation:spin 1.2s linear infinite;
+#app{
+  height:100%;
+  display:grid;
+  grid-template-columns: 1fr 420px;
+}
+
+.main{
+  padding:40px;
+}
+
+.side{
+  background:var(--panel);
+  border-left:1px solid rgba(0,234,255,.2);
+  padding:30px;
+}
+
+h1{
+  color:var(--danger);
+  letter-spacing:.14em;
+  font-size:26px;
+  margin-bottom:6px;
+  animation:glitch 3s infinite;
+}
+
+@keyframes glitch{
+  0%{text-shadow:0 0 2px var(--neon)}
+  50%{text-shadow:-2px 0 var(--danger),2px 0 var(--neon)}
+  100%{text-shadow:0 0 2px var(--neon)}
+}
+
+.sub{
+  color:var(--muted);
+  font-size:12px;
   margin-bottom:28px;
 }
 
-@keyframes spin { to { transform:rotate(360deg); } }
-
-.dim {
-  animation:dim 120s forwards;
+.alert{
+  border:1px solid rgba(255,53,94,.5);
+  background:rgba(255,53,94,.08);
+  padding:18px;
+  font-size:14px;
+  margin-bottom:24px;
 }
 
-@keyframes dim {
-  to { filter:brightness(.55); }
+.term{
+  font-family:monospace;
+  font-size:12px;
+  line-height:1.5;
+  color:#7dd3fc;
+  height:260px;
+  overflow:hidden;
+  background:rgba(0,0,0,.35);
+  padding:14px;
+  border:1px solid rgba(0,234,255,.15);
 }
 
-h1 { font-size:22px; margin-bottom:8px; }
-p { font-size:15px; opacity:.85; margin:4px 0; }
-#percent { margin-top:12px; font-size:14px; opacity:.75; }
-#msg { margin-top:8px; font-size:13px; opacity:.6; }
-
-/* BOOT */
-#boot { background:black; }
-#boot p { opacity:.7; }
-
-/* BSOD */
-#bsod {
-  display:none;
-  background:#0078d7;
-  color:white;
-  padding:40px;
-  align-items:flex-start;
-  text-align:left;
+.progress{
+  margin-top:18px;
+  font-size:13px;
+  color:var(--neon);
 }
-#bsod h1 { font-size:56px; }
+
+.footer{
+  position:absolute;
+  bottom:20px;
+  left:40px;
+  font-size:11px;
+  color:#5b6f9c;
+}
+
+.stat{
+  margin-bottom:14px;
+  font-size:13px;
+}
+.label{color:var(--muted)}
+.value{color:var(--neon); word-break:break-all}
+
+.badge{
+  display:inline-block;
+  padding:4px 8px;
+  border:1px solid rgba(255,183,3,.6);
+  color:var(--warn);
+  font-size:11px;
+  margin-bottom:16px;
+}
 </style>
 </head>
 
 <body>
+<div id="scanlines"></div>
 
-<!-- BOOT -->
-<div id="boot" class="screen">
-  <div class="spinner"></div>
-  <p>Starting Windows</p>
-</div>
+<div id="app">
+  <div class="main">
+    <h1>⚠ SYSTEM BREACH</h1>
+    <div class="sub">Unauthorized encryption process detected • Session isolated</div>
 
-<!-- UPDATE -->
-<div id="update" class="screen dim" style="display:none;">
-  <div class="spinner"></div>
-  <h1 id="title">Working on updates</h1>
-  <p id="subtitle">Don’t turn off your device.</p>
-  <div id="percent">0%</div>
-  <div id="msg"></div>
-</div>
+    <div class="alert">
+      Critical system activity indicates a <strong>simulated ransomware event</strong>.<br>
+      Files appear inaccessible due to encryption routines.<br><br>
+      <strong>Do not close this window.</strong>
+    </div>
 
-<!-- BSOD -->
-<div id="bsod" class="screen">
-  <h1>:(</h1>
-  <p>Your device ran into a problem and needs to restart.</p>
-  <p>We're just collecting some error info.</p>
-  <br>
-  <p>Stop code: SYSTEM_UPDATE_FAILURE</p>
+    <div class="term" id="term">
+      Initializing encryption engine…<br>
+    </div>
+
+    <div class="progress" id="prog">Encrypting user files: 0%</div>
+
+    <div class="footer">
+      Incident ID: FM-RX-A77 • Response Mode: ISOLATED
+    </div>
+  </div>
+
+  <div class="side">
+    <div class="badge">TARGET SYSTEM</div>
+
+    <div class="stat"><span class="label">Public IP</span><br><span class="value" id="ip">Detecting…</span></div>
+    <div class="stat"><span class="label">Browser</span><br><span class="value" id="browser"></span></div>
+    <div class="stat"><span class="label">OS</span><br><span class="value" id="os"></span></div>
+    <div class="stat"><span class="label">Device</span><br><span class="value" id="device"></span></div>
+    <div class="stat"><span class="label">Resolution</span><br><span class="value" id="res"></span></div>
+    <div class="stat"><span class="label">Timezone</span><br><span class="value" id="tz"></span></div>
+    <div class="stat"><span class="label">Locale</span><br><span class="value" id="lang"></span></div>
+    <div class="stat"><span class="label">Encrypted Files</span><br><span class="value" id="files">0</span></div>
+  </div>
 </div>
 
 <script>
-/* ===============================
-   BOOT → UPDATE
-================================ */
-setTimeout(() => {
-  boot.style.display = "none";
-  update.style.display = "flex";
-}, 4000);
+/* ===== Fake Encryption ===== */
+let pct=0, files=0;
+const term=document.getElementById("term");
+const prog=document.getElementById("prog");
+const filesEl=document.getElementById("files");
 
-/* ===============================
-   UPDATE LOGIC (MEAN)
-================================ */
-let percent = 0;
-let restarting = false;
+setInterval(()=>{
+  if(pct<96 && Math.random()>.2) pct++;
+  files+=Math.floor(Math.random()*8);
+  prog.textContent=`Encrypting user files: ${pct}%`;
+  filesEl.textContent=files.toLocaleString();
+  term.innerHTML+=`[${new Date().toLocaleTimeString()}] Encrypting block ${Math.floor(Math.random()*9000)}…<br>`;
+  term.scrollTop=term.scrollHeight;
+},900);
 
-const stallPoints = [87, 91, 93];
-const messages = [
-  "This may take a while.",
-  "Installing system components.",
-  "Applying security updates.",
-  "Optimizing system performance.",
-  "Almost there.",
-  "Please keep your device plugged in."
-];
+/* ===== System Info ===== */
+browser.textContent=navigator.userAgent;
+os.textContent=navigator.platform;
+device.textContent=/mobile/i.test(navigator.userAgent)?"Mobile":"Desktop";
+res.textContent=`${screen.width} × ${screen.height}`;
+tz.textContent=Intl.DateTimeFormat().resolvedOptions().timeZone;
+lang.textContent=navigator.language;
 
-setInterval(() => {
-  if (restarting) return;
-  if (Math.random() < 0.15) return;
+fetch("https://api.ipify.org?format=json")
+  .then(r=>r.json())
+  .then(d=>ip.textContent=d.ip)
+  .catch(()=>ip.textContent="Unavailable");
 
-  if (percent < 99) {
-    if (stallPoints.includes(percent) && Math.random() < 0.85) return;
-    percent++;
-    percentEl.textContent = percent + "%";
-    msgEl.textContent = messages[Math.floor(Math.random() * messages.length)];
-  }
-
-  if (percent >= 99 && Math.random() < 0.35) fakeRestart();
-}, 1400);
-
-function fakeRestart() {
-  restarting = true;
-  title.textContent = "Restarting";
-  subtitle.textContent = "";
-  percentEl.textContent = "";
-  msgEl.textContent = "";
-
-  setTimeout(() => {
-    restarting = false;
-    percent = Math.floor(85 + Math.random() * 6);
-    title.textContent = "Working on updates";
-    subtitle.textContent = "Don’t turn off your device.";
-  }, 6000);
-}
-
-/* ===============================
-   BSOD AFTER 10 MINUTES
-================================ */
-setTimeout(() => {
-  update.style.display = "none";
-  bsod.style.display = "flex";
-  setTimeout(() => location.reload(), 6000);
-}, 600000);
-
-/* ===============================
-   HARD LOCK INPUT
-================================ */
-document.addEventListener("touchmove", e => e.preventDefault(), { passive:false });
-document.addEventListener("gesturestart", e => e.preventDefault());
-document.addEventListener("contextmenu", e => e.preventDefault());
-window.addEventListener("focus", () => document.body.style.pointerEvents = "none");
-
-/* ===============================
-   SECRET UNLOCK: 5 FINGERS
-================================ */
-let unlockTimer = null;
-
-document.addEventListener("touchstart", e => {
-  if (e.touches.length === 5) {
-    unlockTimer = setTimeout(() => {
-      alert("Update completed 😈");
-      location.reload();
-    }, 6000);
-  } else resetUnlock();
-});
-
-document.addEventListener("touchend", resetUnlock);
-document.addEventListener("touchcancel", resetUnlock);
-
-function resetUnlock() {
-  clearTimeout(unlockTimer);
-  unlockTimer = null;
-}
-
-/* ===============================
-   ANDROID VOLUME UNLOCK
-================================ */
-let volCount = 0;
-let volTimer = null;
-
-window.addEventListener("keydown", e => {
-  if (!/Android/i.test(navigator.userAgent)) return;
-  if (e.key === "AudioVolumeDown") {
-    volCount++;
-    clearTimeout(volTimer);
-    volTimer = setTimeout(() => volCount = 0, 2000);
-    if (volCount >= 5) {
-      alert("Update completed 😈");
-      location.reload();
-    }
+/* ===== Secret Exit =====
+   CTRL + ALT + E
+*/
+document.addEventListener("keydown",e=>{
+  if(e.ctrlKey && e.altKey && e.key.toLowerCase()==="e"){
+    alert("Simulation terminated.");
+    location.reload();
   }
 });
 </script>
-
 </body>
 </html>
