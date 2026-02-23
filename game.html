@@ -14,71 +14,46 @@
 
 <style>
 /* ===============================
-   GLOBAL HARDENING
+   HARDENING
 ================================ */
 *{
   box-sizing:border-box;
   -webkit-user-select:none;
-  -webkit-touch-callout:none;
   user-select:none;
 }
 html,body{
   margin:0;
-  height:100svh;
+  height:100%;
   overflow:hidden;
   font-family:Inter,system-ui,sans-serif;
   color:#e7ecff;
-  -webkit-tap-highlight-color:transparent;
+  background:#05060c;
   touch-action:manipulation;
 }
 
 /* ===============================
-   THEME
+   MATRIX BACKGROUND
 ================================ */
-:root{
-  --bg0:#05060c;
-  --bg1:#070a14;
-  --bg2:#071425;
-  --accent:#22d3ee;
-  --accentBorder:rgba(34,211,238,.55);
-  --accentSoft:rgba(34,211,238,.18);
-  --muted:rgba(231,236,255,.65);
-  --card:rgba(10,14,28,.78);
-}
-
-/* ===============================
-   LAYOUT
-================================ */
-body{
-  display:grid;
-  place-items:center;
-  background:
-    radial-gradient(1200px 600px at 15% 10%, rgba(124,58,237,.18), transparent 55%),
-    radial-gradient(900px 520px at 85% 20%, rgba(34,211,238,.18), transparent 55%),
-    linear-gradient(180deg, var(--bg1), var(--bg0), var(--bg2));
-}
-
-/* MATRIX */
 #matrixRain{
   position:fixed;
   inset:0;
-  pointer-events:none;
   z-index:0;
+  pointer-events:none;
 }
 
-/* CARD */
+/* ===============================
+   CARD
+================================ */
 .card{
   position:relative;
   z-index:1;
   width:min(760px,96vw);
-  max-height:calc(100svh - 8px);
-  padding:24px 20px 18px;
+  height:96svh;
+  margin:auto;
+  padding:20px;
   border-radius:26px;
-  border:1px solid var(--accentBorder);
-  background:var(--card);
-  box-shadow:
-    0 0 0 1px var(--accentSoft),
-    0 24px 70px rgba(0,0,0,.7);
+  border:1px solid rgba(34,211,238,.55);
+  background:rgba(10,14,28,.78);
   backdrop-filter:blur(14px);
   display:flex;
   flex-direction:column;
@@ -87,47 +62,42 @@ body{
 
 .logo{
   font-family:Orbitron;
-  color:var(--accent);
+  color:#22d3ee;
   letter-spacing:.18em;
 }
-
 h1{
   font-family:Orbitron;
-  font-size:26px;
   margin:6px 0;
 }
-
-.muted{ color:var(--muted); font-size:14px; }
+.muted{ opacity:.65; }
 
 /* ===============================
-   GAME AREA
+   GAME CONTAINER
 ================================ */
 .gameWrap{
-  margin:12px 0 0;
+  margin:12px 0;
   border-radius:16px;
-  border:1px solid var(--accentBorder);
+  border:1px solid rgba(34,211,238,.55);
   overflow:hidden;
   background:#02030a;
-  flex:1.6;
   display:flex;
   flex-direction:column;
 }
 
-/* Visible playfield */
+/* 🔑 FIXED HEIGHTS (NO FLEX BUGS) */
 #game{
   width:100%;
-  flex:1;
-  min-height:480px;
-  touch-action:none;
+  height:420px;
   display:block;
 }
 
-/* TRUE HUD BAR */
+/* HUD */
 .hud{
+  height:44px;
   display:flex;
   justify-content:space-between;
   align-items:center;
-  padding:10px 16px;
+  padding:0 16px;
   font-family:Orbitron;
   font-size:13px;
   letter-spacing:.14em;
@@ -136,43 +106,34 @@ h1{
     rgba(6,10,18,.98),
     rgba(4,8,16,1)
   );
-  border-top:1px solid var(--accentBorder);
-  box-shadow:0 -8px 24px rgba(0,0,0,.8);
+  border-top:1px solid rgba(34,211,238,.55);
 }
 
-/* CONTROLS + ACTIONS */
-.controls,
-.actions{
+/* ===============================
+   CONTROLS
+================================ */
+.controls,.actions{
   display:flex;
   gap:12px;
-  padding:12px;
+  margin-top:12px;
 }
 
-.joystick,
-.fire,
-.btn{
+.joystick,.fire,.btn{
   flex:1;
-  min-height:72px;
-  padding:16px;
+  height:72px;
   border-radius:16px;
-  border:1px solid var(--accentBorder);
-  background:rgba(6,10,18,.88);
+  border:1px solid rgba(34,211,238,.55);
+  background:#020a14;
+  color:#e7ecff;
   font-family:Orbitron;
-  font-size:13px;
   letter-spacing:.14em;
   display:flex;
   align-items:center;
   justify-content:center;
-  color:#e7ecff;
-  text-decoration:none;
   text-transform:uppercase;
-  touch-action:none;
+  text-decoration:none;
 }
-
-.fire{
-  background:rgba(34,211,238,.18);
-  box-shadow:inset 0 0 18px rgba(34,211,238,.25);
-}
+.fire{ background:rgba(34,211,238,.18); }
 </style>
 </head>
 
@@ -187,8 +148,6 @@ h1{
 
   <div class="gameWrap">
     <canvas id="game"></canvas>
-
-    <!-- REAL HUD -->
     <div class="hud">
       <div id="score">SCORE 00000</div>
       <div id="lives">LIVES 10</div>
@@ -211,52 +170,45 @@ h1{
 /* ===============================
    MATRIX RAIN
 ================================ */
-const mc=document.getElementById("matrixRain");
-const mctx=mc.getContext("2d");
-function resizeMatrix(){ mc.width=innerWidth; mc.height=innerHeight; }
-resizeMatrix(); addEventListener("resize",resizeMatrix);
+const m = document.getElementById("matrixRain");
+const mctx = m.getContext("2d");
+function resizeMatrix(){
+  m.width = innerWidth;
+  m.height = innerHeight;
+}
+resizeMatrix(); addEventListener("resize", resizeMatrix);
 
 const chars="アカサタナハマヤラ0123456789";
-const fontSize=14;
-let cols=Math.floor(innerWidth/fontSize);
+const fs=14;
+let cols=Math.floor(innerWidth/fs);
 let drops=Array(cols).fill(1);
 setInterval(()=>{
   mctx.fillStyle="rgba(5,6,12,.18)";
-  mctx.fillRect(0,0,mc.width,mc.height);
-  mctx.font="600 "+fontSize+"px monospace";
+  mctx.fillRect(0,0,m.width,m.height);
+  mctx.font="600 "+fs+"px monospace";
   mctx.fillStyle="rgba(34,211,238,.75)";
   for(let i=0;i<drops.length;i++){
-    mctx.fillText(chars[Math.random()*chars.length|0],i*fontSize,drops[i]*fontSize);
-    if(drops[i]*fontSize>innerHeight&&Math.random()>0.97) drops[i]=0;
+    mctx.fillText(chars[Math.random()*chars.length|0],i*fs,drops[i]*fs);
+    if(drops[i]*fs>innerHeight&&Math.random()>0.97) drops[i]=0;
     drops[i]++;
   }
 },50);
 
 /* ===============================
-   GAME LOGIC
+   GAME LOGIC (CLIPPED)
 ================================ */
-const g=document.getElementById("game");
-const ctx=g.getContext("2d");
+const c = document.getElementById("game");
+const ctx = c.getContext("2d");
 
-let w,h;
-function resizeGame(){
-  w=g.width=g.clientWidth;
-  h=g.height=g.clientHeight;
-}
-resizeGame(); addEventListener("resize",resizeGame);
+c.width = c.clientWidth;
+c.height = c.clientHeight;
 
-/* Bottom gutter hides ship + bullet origin */
-const GUTTER = 28;
+const PLAYFIELD = c.height - 20; // 🔑 hard clip line
 
-const ship={
-  x:w/2,
-  targetX:w/2,
-  y:h - GUTTER + 8,   // 🔑 BELOW visible area
-  w:50,
-  h:10
-};
-
-let bullets=[], enemies=[];
+let shipX = c.width/2;
+let targetX = shipX;
+let bullets=[];
+let enemies=[];
 let score=0;
 let lives=10;
 let high=Number(localStorage.getItem("fmHighScore")||0);
@@ -270,81 +222,62 @@ const posters=[
 function spawn(){
   const img=new Image();
   img.src=posters[Math.random()*posters.length|0];
-  enemies.push({ x:Math.random()*(w-70), y:-100, w:70, h:105, img });
+  enemies.push({x:Math.random()*(c.width-60),y:-90,w:60,h:90,img});
 }
-
 function shoot(){
-  bullets.push({
-    x:ship.x,
-    y:ship.y - 16,  // 🔑 spawn ABOVE gutter
-    w:4.4,
-    h:9
-  });
+  bullets.push({x:shipX,y:PLAYFIELD+20});
 }
 
-/* JOYSTICK */
-const joy=document.getElementById("joy");
-let joyX=0, joyActive=false;
-
-joy.addEventListener("touchstart",e=>{
-  e.preventDefault(); e.stopPropagation();
-  joyActive=true;
-  joyX=e.touches[0].clientX;
-},{passive:false});
-
-joy.addEventListener("touchmove",e=>{
-  if(!joyActive) return;
-  e.preventDefault(); e.stopPropagation();
-  ship.targetX+=(e.touches[0].clientX-joyX)*0.55;
-  joyX=e.touches[0].clientX;
-},{passive:false});
-
-joy.addEventListener("touchend",()=>joyActive=false,{passive:false});
+/* MOVE */
+let lastX=0, active=false;
+joy.ontouchstart=e=>{active=true;lastX=e.touches[0].clientX;e.preventDefault();}
+joy.ontouchmove=e=>{
+  if(!active)return;
+  targetX+=(e.touches[0].clientX-lastX)*0.55;
+  lastX=e.touches[0].clientX;
+  e.preventDefault();
+};
+joy.ontouchend=()=>active=false;
 
 /* FIRE */
-document.getElementById("fire").addEventListener("touchstart",e=>{
-  e.preventDefault(); e.stopPropagation();
-  shoot();
-},{passive:false});
+fire.ontouchstart=e=>{shoot();e.preventDefault();};
 
 /* RESET */
-document.getElementById("reset").onclick=()=>{
+reset.onclick=()=>{
   bullets=[]; enemies=[];
   score=0; lives=10;
 };
 
-/* LOOP */
 function loop(){
-  ctx.clearRect(0,0,w,h);
+  ctx.clearRect(0,0,c.width,c.height);
 
-  ship.x+=(ship.targetX-ship.x)*0.16;
-  ship.x=Math.max(0,Math.min(w,ship.x));
+  shipX+=(targetX-shipX)*0.16;
+  shipX=Math.max(20,Math.min(c.width-20,shipX));
 
-  /* BULLETS */
   bullets.forEach(b=>b.y-=12);
   ctx.fillStyle="#7dd3fc";
   bullets.forEach(b=>{
-    if(b.y < h - GUTTER){
-      ctx.fillRect(b.x-b.w/2,b.y,b.w,b.h);
+    if(b.y<PLAYFIELD){
+      ctx.fillRect(b.x-2,b.y,4,9);
     }
   });
 
-  /* ENEMIES */
   enemies.forEach((e,i)=>{
     e.y+=1.6;
     ctx.drawImage(e.img,e.x,e.y,e.w,e.h);
     bullets.forEach((b,j)=>{
-      if(
-        b.y < h - GUTTER &&
-        b.x>e.x&&b.x<e.x+e.w&&
-        b.y>e.y&&b.y<e.y+e.h
-      ){
+      if(b.y<PLAYFIELD &&
+         b.x>e.x&&b.x<e.x+e.w&&
+         b.y>e.y&&b.y<e.y+e.h){
         enemies.splice(i,1);
         bullets.splice(j,1);
         score+=10;
       }
     });
-    if(e.y>h){ enemies.splice(i,1); lives--; }
+    if(e.y>c.height){
+      enemies.splice(i,1);
+      lives--;
+    }
   });
 
   if(score>high){
@@ -352,15 +285,14 @@ function loop(){
     localStorage.setItem("fmHighScore",high);
   }
 
-  document.getElementById("score").textContent=`SCORE ${String(score).padStart(5,"0")}`;
-  document.getElementById("lives").textContent=`LIVES ${lives}`;
-  document.getElementById("high").textContent=`BEST ${String(high).padStart(5,"0")}`;
+  scoreEl.textContent=`SCORE ${String(score).padStart(5,"0")}`;
+  livesEl.textContent=`LIVES ${lives}`;
+  highEl.textContent=`BEST ${String(high).padStart(5,"0")}`;
 
-  if(lives>0){
-    if(Math.random()<0.03) spawn();
-    requestAnimationFrame(loop);
-  }
+  if(Math.random()<0.03) spawn();
+  if(lives>0) requestAnimationFrame(loop);
 }
+const scoreEl=score,livesEl=lives,highEl=high;
 loop();
 </script>
 
