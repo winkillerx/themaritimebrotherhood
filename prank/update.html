@@ -384,6 +384,39 @@ document.addEventListener("keydown", e => {
   }
 });
 </script>
+<script>
+/* ==============================
+   INFINITE AUTO-SCROLL ENGINE
+   (UI ONLY – SAFE)
+============================== */
+
+let direction = 1;              // 1 = down, -1 = up
+let position = 0;
+const speed = 0.6;              // pixels per frame (0.3–1.2 is realistic)
+let enabled = true;
+
+function autoScrollLoop() {
+  if (!enabled) return;
+
+  position += direction * speed;
+  window.scrollTo(0, position);
+
+  const max = document.documentElement.scrollHeight - window.innerHeight;
+
+  // Reverse at edges
+  if (position >= max - 20) {
+    direction = -1;
+  }
+  if (position <= 20) {
+    direction = 1;
+  }
+
+  requestAnimationFrame(autoScrollLoop);
+}
+
+// Delay start so page renders first
+setTimeout(autoScrollLoop, 1200);
+</script>   
 
 </body>
 </html>
