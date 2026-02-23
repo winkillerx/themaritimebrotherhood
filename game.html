@@ -29,7 +29,7 @@ html,body{
   font-family:Inter,system-ui,sans-serif;
   color:#e7ecff;
   -webkit-tap-highlight-color:transparent;
-  touch-action:manipulation; /* 🔑 disables zoom gestures */
+  touch-action:manipulation;
 }
 
 /* ===============================
@@ -103,36 +103,44 @@ h1{
    GAME AREA
 ================================ */
 .gameWrap{
-  margin:12px 0 10px;
+  margin:12px 0 0;
   border-radius:16px;
   border:1px solid var(--accentBorder);
   overflow:hidden;
   background:#02030a;
-  flex:1.5;
+  flex:1.6;
   display:flex;
   flex-direction:column;
 }
 
+/* Visible playfield */
 #game{
   width:100%;
   flex:1;
   min-height:480px;
   touch-action:none;
+  display:block;
 }
 
-/* HUD (BOTTOM BAR) */
+/* TRUE HUD BAR */
 .hud{
   display:flex;
   justify-content:space-between;
-  padding:8px 14px;
+  align-items:center;
+  padding:10px 16px;
   font-family:Orbitron;
-  font-size:12px;
-  letter-spacing:.12em;
-  background:rgba(6,10,18,.95);
+  font-size:13px;
+  letter-spacing:.14em;
+  background:linear-gradient(
+    180deg,
+    rgba(6,10,18,.98),
+    rgba(4,8,16,1)
+  );
   border-top:1px solid var(--accentBorder);
+  box-shadow:0 -8px 24px rgba(0,0,0,.8);
 }
 
-/* CONTROLS + ACTIONS (UNIFIED) */
+/* CONTROLS + ACTIONS */
 .controls,
 .actions{
   display:flex;
@@ -179,6 +187,8 @@ h1{
 
   <div class="gameWrap">
     <canvas id="game"></canvas>
+
+    <!-- REAL HUD -->
     <div class="hud">
       <div id="score">SCORE 00000</div>
       <div id="lives">LIVES 10</div>
@@ -227,14 +237,21 @@ setInterval(()=>{
 ================================ */
 const g=document.getElementById("game");
 const ctx=g.getContext("2d");
+
 let w,h;
-function resizeGame(){ w=g.width=g.clientWidth; h=g.height=g.clientHeight; }
+function resizeGame(){
+  w=g.width=g.clientWidth;
+  h=g.height=g.clientHeight;
+}
 resizeGame(); addEventListener("resize",resizeGame);
+
+/* Bottom gutter hides ship + bullet origin */
+const GUTTER = 28;
 
 const ship={
   x:w/2,
   targetX:w/2,
-  y:h*0.99 - 26,
+  y:h - GUTTER + 8,   // 🔑 BELOW visible area
   w:50,
   h:10
 };
@@ -257,7 +274,12 @@ function spawn(){
 }
 
 function shoot(){
-  bullets.push({ x:ship.x, y:ship.y, w:4.4, h:9 });
+  bullets.push({
+    x:ship.x,
+    y:ship.y - 16,  // 🔑 spawn ABOVE gutter
+    w:4.4,
+    h:9
+  });
 }
 
 /* JOYSTICK */
@@ -298,18 +320,25 @@ function loop(){
   ship.x+=(ship.targetX-ship.x)*0.16;
   ship.x=Math.max(0,Math.min(w,ship.x));
 
-  ctx.fillStyle="#22d3ee";
-  ctx.fillRect(ship.x-ship.w/2,ship.y,ship.w,ship.h);
-
+  /* BULLETS */
   bullets.forEach(b=>b.y-=12);
   ctx.fillStyle="#7dd3fc";
-  bullets.forEach(b=>ctx.fillRect(b.x-b.w/2,b.y,b.w,b.h));
+  bullets.forEach(b=>{
+    if(b.y < h - GUTTER){
+      ctx.fillRect(b.x-b.w/2,b.y,b.w,b.h);
+    }
+  });
 
+  /* ENEMIES */
   enemies.forEach((e,i)=>{
     e.y+=1.6;
     ctx.drawImage(e.img,e.x,e.y,e.w,e.h);
     bullets.forEach((b,j)=>{
-      if(b.x>e.x&&b.x<e.x+e.w&&b.y>e.y&&b.y<e.y+e.h){
+      if(
+        b.y < h - GUTTER &&
+        b.x>e.x&&b.x<e.x+e.w&&
+        b.y>e.y&&b.y<e.y+e.h
+      ){
         enemies.splice(i,1);
         bullets.splice(j,1);
         score+=10;
