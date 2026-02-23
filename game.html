@@ -27,12 +27,13 @@
 
 body{
   margin:0;
-  min-height:100svh;
+  height:100svh;               /* 🔑 fixes mobile Safari */
   display:grid;
   place-items:center;
   font-family:Inter,system-ui,sans-serif;
   color:#e7ecff;
-  overflow:hidden;
+  overflow:hidden;             /* no page scroll */
+
   background:
     radial-gradient(1200px 600px at 15% 10%, rgba(124,58,237,.18), transparent 55%),
     radial-gradient(900px 520px at 85% 20%, rgba(34,211,238,.18), transparent 55%),
@@ -49,14 +50,17 @@ body{
 .card{
   position:relative;
   z-index:1;
-  width:min(680px,96vw);
-  padding:32px;
-  border-radius:28px;
+  width:min(680px, 96vw);
+  max-height:calc(100svh - 16px);   /* 🔑 fits screen */
+  padding:24px 20px 20px;
+  border-radius:24px;
   border:1px solid var(--accentBorder);
   background:var(--card);
   backdrop-filter: blur(14px);
-  box-shadow:0 28px 90px rgba(0,0,0,.7);
+  box-shadow:0 24px 70px rgba(0,0,0,.7);
   text-align:center;
+  display:flex;
+  flex-direction:column;
 }
 
 .logo{
@@ -75,26 +79,30 @@ h1{
 .muted{ color:var(--muted); font-size:14px; }
 
 .gameWrap{
-  margin-top:18px;
-  border-radius:18px;
+  position:relative;
+  margin:14px 0 12px;
+  border-radius:16px;
   border:1px solid var(--accentBorder);
   overflow:hidden;
   background:#02030a;
+  flex:1;                       /* 🔑 fills remaining space */
+  display:flex;
+  flex-direction:column;
 }
 
 #game{
   display:block;
   width:100%;
-  height:560px; /* 🔑 LONGER GAME AREA */
+  flex:1;                       /* 🔑 adaptive height */
   touch-action:none;
 }
 
 .hud{
   display:flex;
   justify-content:space-between;
-  padding:8px 14px;
+  padding:6px 12px;
   font-family:Orbitron;
-  font-size:13px;
+  font-size:12px;
   letter-spacing:.1em;
   background:rgba(6,10,18,.9);
   border-top:1px solid var(--accentBorder);
@@ -103,21 +111,19 @@ h1{
 .controls{
   display:flex;
   justify-content:space-between;
-  padding:12px;
-  gap:12px;
+  padding:10px;
+  gap:10px;
 }
 
 .joystick, .fire{
   flex:1;
-  padding:14px;
-  border-radius:14px;
+  padding:12px;
+  border-radius:12px;
   border:1px solid var(--accentBorder);
-  color:#e7ecff;
-  background:rgba(6,10,18,.8);
+  background:rgba(6,10,18,.85);
   font-family:Orbitron;
+  font-size:12px;
   letter-spacing:.12em;
-  user-select:none;
-  touch-action:none;
 }
 
 .fire{
