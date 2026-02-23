@@ -1,17 +1,27 @@
 {
   "version": 2,
-  "rewrites": [
+
+  "routes": [
+    { "handle": "filesystem" },
+
     {
-      "source": "/t/:type/:id",
-      "destination": "/api/share?type=:type&id=:id"
+      "src": "^/t/(?<type>[^/]+)/(?<id>[^/]+)$",
+      "dest": "/api/share?type=$type&id=$id"
     },
+
     {
-      "source": "/",
-      "destination": "/movies/index.html"
+      "src": "^/$",
+      "dest": "/movies/index.html"
     },
+
     {
-      "source": "/:path*",
-      "destination": "/movies/:path*"
+      "src": "^/(.*)$",
+      "dest": "/movies/$1"
+    },
+
+    {
+      "src": "/.*",
+      "dest": "/404.html"
     }
   ]
 }
