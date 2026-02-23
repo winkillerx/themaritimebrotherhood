@@ -9,452 +9,457 @@
 
 <style>
 /* ==============================
-   TIGHTER RANSOMWARE + GUIDED ACCESS
+   VIDEO MODE - NO USER CONTROL
 ============================== */
 :root{
   --bg0:#000;
   --bg1:#110000;
-  --panel:rgba(20,0,0,.97);
-  --line:rgba(255,50,50,.5);
+  --panel:rgba(15,0,0,.98);
+  --line:rgba(255,30,30,.6);
   --red:#ff0040;
   --orange:#ff6600;
   --green:#00ff00;
   --blink:#ff0000;
-  --muted:#999;
+  --muted:#888;
   --purple:#aa00ff;
 }
 
-*{ box-sizing:border-box; }
+*{ box-sizing:border-box; margin:0; padding:0; }
 
 html,body{
-  margin:0;
-  min-height:100vh;
+  height:100vh;
+  overflow:hidden !important;
   background:
     radial-gradient(circle at top, #300000, #000 60%);
   font-family:Orbitron,'Courier New',monospace;
   color:#fff;
-  overflow-y:scroll !important;
-  height:400vh; /* Longer for more scroll content */
-  scroll-behavior:smooth;
-}
-
-/* Glitch scanlines + flicker */
-body::before{
-  content:"";
-  position:fixed;
-  inset:0;
-  pointer-events:none;
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      rgba(255,0,0,.08),
-      rgba(255,0,0,.08) 1px,
-      transparent 2px,
-      transparent 4px
-    );
-  animation: glitch 1s infinite;
-  z-index:1000;
-}
-
-@keyframes glitch {
-  0%, 90%, 100% { opacity: .5; }
-  45% { opacity: 1; transform: translateX(4px) skew(2deg); }
 }
 
 /* ==============================
-   TIGHT LAYOUT - NO GAP WASTED
+   VIDEO SCROLLER CONTAINER
 ============================== */
-.app{
-  position:relative;
-  z-index:10;
-  padding:20px;
-  max-width:1400px;
-  margin:0 auto;
+.video-scroller{
+  position:fixed;
+  top:0; left:0; width:100%; height:100vh;
+  overflow:hidden;
+  pointer-events:none; /* NO INTERACTION */
 }
 
-.scroll-section{
-  margin-bottom:80vh; /* TIGHTER spacing - scrolls faster through sections */
+.content-wrapper{
+  position:absolute;
+  top:0; width:100%;
+  height:400vh; /* Ultra-long for smooth looping */
+  animation: videoScroll 120s linear infinite; /* 2min full cycle */
+  padding:15px;
+}
+
+@keyframes videoScroll {
+  0% { transform: translateY(0%); }
+  100% { transform: translateY(-300%); }
 }
 
 /* ==============================
-   PANELS - CLOSER TOGETHER
+   ULTRA-TIGHT PANELS (98% CLOSER)
 ============================== */
 .panel{
   background:var(--panel);
   border:2px solid var(--line);
-  border-radius:8px;
-  padding:25px;
-  margin-bottom:25px; /* TIGHTER */
-  box-shadow: 0 0 30px rgba(255,0,64,.5);
+  border-radius:6px;
+  padding:18px;
+  margin-bottom:8px; /* 98% TIGHTER */
+  box-shadow: 0 0 25px rgba(255,0,64,.6);
   position:relative;
+  min-height:200px;
 }
 
 .panel::before{
-  content:"🔒 CONTROLLED";
+  content:"🔒 COMPROMISED";
   position:absolute;
-  top:-12px;
-  right:20px;
+  top:-10px;
+  right:15px;
   background:var(--red);
   color:white;
-  padding:6px 16px;
-  font-size:12px;
+  padding:4px 12px;
+  font-size:11px;
   font-weight:bold;
-  border-radius:25px;
-  box-shadow:0 0 10px var(--red);
+  border-radius:20px;
+  box-shadow:0 0 12px var(--red);
 }
 
 /* ==============================
-   HEADER
-============================== */
-h1{
-  margin:0 0 12px;
-  font-size:38px;
-  letter-spacing:.3em;
-  color:var(--red);
-  text-align:center;
-  text-transform:uppercase;
-  animation: blink 0.7s infinite;
-  text-shadow:0 0 25px var(--red);
-}
-
-/* ==============================
-   MONITOR INDICATOR - ENHANCED
+   MONITOR HUD - FIXED POSITION
 ============================== */
 .scroll-indicator{
   position:fixed;
-  top:20px;
-  left:20px;
-  background:rgba(255,0,0,.95);
+  top:15px;
+  left:15px;
+  background:rgba(255,0,0,.97);
   color:white;
-  padding:15px 20px;
-  font-size:13px;
+  padding:12px 18px;
+  font-size:12px;
   font-weight:bold;
-  border-radius:25px;
-  z-index:3000;
-  animation: pulse 1.5s infinite;
+  border-radius:20px;
+  z-index:5000;
+  animation: pulse 1.2s infinite;
   font-family:monospace;
   border:2px solid var(--red);
-  min-width:200px;
-  box-shadow:0 0 20px rgba(255,0,0,.8);
+  box-shadow:0 0 25px rgba(255,0,0,.9);
+  min-width:220px;
 }
 
 @keyframes pulse {
-  0%, 100% { box-shadow:0 0 20px rgba(255,0,0,.8); }
-  50% { box-shadow:0 0 40px rgba(255,0,0,1); }
+  0%, 100% { box-shadow:0 0 25px rgba(255,0,0,.9); }
+  50% { box-shadow:0 0 45px rgba(255,0,0,1); }
 }
 
-/* Rest of styles unchanged but tightened */
-.sub{ color:var(--muted); font-size:15px; margin-bottom:20px; text-align:center; line-height:1.5; }
-.alert{ border:3px solid var(--red); background:rgba(255,0,64,.25); padding:22px; font-size:16px; line-height:1.7; margin-bottom:22px; text-align:center; font-weight:bold; box-shadow:inset 0 0 25px rgba(255,0,0,.4); }
-.term{ font-family:'Courier New',monospace; font-size:13px; line-height:1.5; color:var(--green); background:rgba(0,15,0,.98); border:2px solid #00ff00; border-radius:8px; padding:22px; height:260px; overflow-y:auto; white-space:pre-wrap; margin-bottom:20px; box-shadow:0 0 20px rgba(0,255,0,.6); }
-.countdown{ font-size:34px; color:var(--red); text-align:center; margin:25px 0; font-weight:bold; text-shadow:0 0 30px var(--red); animation: shake 0.4s infinite; }
-@keyframes shake { 0%, 100%{transform:translateX(0);} 25%{transform:translateX(-6px);} 75%{transform:translateX(6px);} }
-.payment{ background:linear-gradient(145deg, rgba(255,0,64,.35), rgba(255,100,0,.35)); border:4px solid var(--red); text-align:center; padding:35px; margin:25px 0; box-shadow:0 0 60px rgba(255,0,64,.7); }
-.wallet{ background:#111; border:3px solid var(--green); padding:25px; margin:20px 0; font-family:monospace; font-size:18px; word-break:break-all; color:var(--green); letter-spacing:1px; box-shadow: inset 0 0 20px rgba(0,255,0,.4); }
-.btn-pay{ background:var(--red); color:white; border:none; padding:22px 45px; font-size:24px; font-weight:bold; border-radius:10px; cursor:pointer; text-transform:uppercase; letter-spacing:3px; transition:all .3s; margin-top:20px; box-shadow:0 8px 20px rgba(255,0,0,.6); font-family:monospace; }
-.btn-pay:hover{ background:#ff4477; transform:scale(1.06); box-shadow:0 0 40px var(--red); }
-.side h3{ margin:0 0 20px; font-size:18px; letter-spacing:.2em; color:var(--green); text-align:center; text-shadow:0 0 15px #00ff00; }
-.stat{ font-size:14px; margin-bottom:16px; padding:12px; background:rgba(0,255,0,.2); border-left:4px solid var(--green); border-radius:6px; }
-.label{ color:var(--muted); } .value{ color:var(--red); font-weight:bold; word-break:break-all; font-size:15px; }
-.footer{ margin-top:25px; font-size:13px; color:#ff7777; text-align:center; font-family:monospace; padding:20px; background:rgba(255,0,0,.15); border-top:2px solid var(--red); }
+.indicator-line{ margin:2px 0; font-size:11px; }
+
+/* ==============================
+   CONTENT STYLES - ANIMATED
+============================== */
+h1{
+  margin:0 0 8px;
+  font-size:32px;
+  letter-spacing:.25em;
+  color:var(--red);
+  text-align:center;
+  text-transform:uppercase;
+  animation: blink 0.6s infinite;
+  text-shadow:0 0 25px var(--red);
+}
+
+@keyframes blink {
+  0%, 50% { opacity:1; }
+  51%, 100% { opacity:0.4; }
+}
+
+.sub{ color:var(--muted); font-size:14px; margin-bottom:12px; text-align:center; line-height:1.4; }
+.alert{ 
+  border:3px solid var(--red); 
+  background:rgba(255,0,64,.28); 
+  padding:18px; 
+  font-size:15px; 
+  line-height:1.6; 
+  margin-bottom:8px; 
+  text-align:center; 
+  font-weight:bold; 
+  box-shadow:inset 0 0 25px rgba(255,0,0,.5);
+  animation: alertGlow 2s infinite;
+}
+@keyframes alertGlow { 0%,100%{box-shadow:inset 0 0 25px rgba(255,0,0,.5);} 50%{box-shadow:inset 0 0 40px rgba(255,0,0,.9);} }
+
+.term{ 
+  font-family:'Courier New',monospace; 
+  font-size:12px; 
+  line-height:1.4; 
+  color:var(--green); 
+  background:rgba(0,12,0,.99); 
+  border:2px solid #00ff00; 
+  border-radius:6px; 
+  padding:18px; 
+  height:240px; 
+  overflow-y:auto; 
+  white-space:pre-wrap; 
+  margin-bottom:8px; 
+  box-shadow:0 0 20px rgba(0,255,0,.7);
+  animation: terminalFlicker 3s infinite;
+}
+@keyframes terminalFlicker { 0%,95%,100%{background:rgba(0,12,0,.99);} 97%{background:rgba(0,20,0,1);} }
+
+.countdown{ 
+  font-size:30px; 
+  color:var(--red); 
+  text-align:center; 
+  margin:15px 0; 
+  font-weight:bold; 
+  text-shadow:0 0 30px var(--red); 
+  animation: shake 0.3s infinite; 
+}
+@keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-4px);} 75%{transform:translateX(4px);} }
+
+.payment{ 
+  background:linear-gradient(145deg, rgba(255,0,64,.4), rgba(255,100,0,.4)); 
+  border:4px solid var(--red); 
+  text-align:center; 
+  padding:25px; 
+  margin-bottom:8px; 
+  box-shadow:0 0 50px rgba(255,0,64,.8);
+  animation: moneyGlow 2.5s infinite;
+}
+@keyframes moneyGlow { 0%,100%{box-shadow:0 0 50px rgba(255,0,64,.8);} 50%{box-shadow:0 0 70px rgba(255,100,0,1);} }
+
+.wallet{ 
+  background:#0a0a0a; 
+  border:3px solid var(--green); 
+  padding:20px; 
+  margin:12px 0; 
+  font-family:monospace; 
+  font-size:16px; 
+  word-break:break-all; 
+  color:var(--green); 
+  letter-spacing:1px; 
+  box-shadow: inset 0 0 20px rgba(0,255,0,.5);
+  animation: walletPulse 1.8s infinite;
+}
+@keyframes walletPulse { 0%,100%{box-shadow: inset 0 0 20px rgba(0,255,0,.5);} 50%{box-shadow: inset 0 0 35px rgba(0,255,0,.9);} }
+
+.btn-pay{ 
+  background:var(--red); 
+  color:white; 
+  border:none; 
+  padding:18px 35px; 
+  font-size:20px; 
+  font-weight:bold; 
+  border-radius:8px; 
+  cursor:pointer; 
+  text-transform:uppercase; 
+  letter-spacing:2px; 
+  transition:all .3s; 
+  margin-top:15px; 
+  box-shadow:0 6px 20px rgba(255,0,0,.7); 
+  font-family:monospace;
+  animation: btnBounce 2s infinite;
+}
+@keyframes btnBounce { 0%,100%{transform:scale(1);} 50%{transform:scale(1.02);} }
+
+.side h3{ 
+  margin:0 0 12px; 
+  font-size:16px; 
+  letter-spacing:.15em; 
+  color:var(--green); 
+  text-align:center; 
+  text-shadow:0 0 15px #00ff00;
+  animation: headerGlow 1.5s infinite;
+}
+@keyframes headerGlow { 0%,100%{text-shadow:0 0 15px #00ff00;} 50%{text-shadow:0 0 25px #00ff88;} }
+
+.stat{ 
+  font-size:13px; 
+  margin-bottom:8px; 
+  padding:10px; 
+  background:rgba(0,255,0,.22); 
+  border-left:4px solid var(--green); 
+  border-radius:5px;
+  animation: statPulse 3s infinite;
+}
+@keyframes statPulse { 0%,90%,100%{background:rgba(0,255,0,.22);} 95%{background:rgba(0,255,0,.45);} }
+
+.label{ color:var(--muted); font-weight:bold; } 
+.value{ color:var(--red); font-weight:bold; word-break:break-all; font-size:14px; animation: valueFlash 2s infinite; }
+@keyframes valueFlash { 0%,90%,100%{color:var(--red);} 95%{color:#ffff00;} }
+
+.footer{ 
+  margin-top:12px; 
+  font-size:12px; 
+  color:#ff7777; 
+  text-align:center; 
+  font-family:monospace; 
+  padding:15px; 
+  background:rgba(255,0,0,.18); 
+  border-top:2px solid var(--red);
+  animation: footerFlicker 4s infinite;
+}
+@keyframes footerFlicker { 0%,95%,100%{opacity:1;} 97%{opacity:0.7;} }
 </style>
 </head>
 
 <body>
 
-<!-- ENHANCED MONITORING HUD -->
+<!-- FIXED MONITOR HUD -->
 <div class="scroll-indicator" id="scrollIndicator">
-👁️ <span style="color:#00ff00;">REMOTE CONTROL ACTIVE</span> 👁️<br>
-📜 Auto-scrolling: <span id="scrollDir">DOWN</span><br>
-🎯 Target locked: <span id="targetStatus">PRIMARY</span>
+👁️ <span style="color:#00ff00;">VIDEO MODE ACTIVE</span> 👁️<br>
+📹 Auto-scroll: <span id="scrollDir" style="color:#ffff00;">DOWN</span><br>
+🎯 Session: <span id="sessionId">RXN-4839-0294</span><br>
+⏱️ Cycle: <span id="cycleTime">00:00</span>
+<div class="indicator-line" style="font-size:10px;color:#ffaa00;">📡 LIVE TRANSMIT → C2 SERVER</div>
 </div>
 
-<div class="app">
-
-  <!-- SECTION 1: IMPACT -->
-  <div class="scroll-section">
-    <div class="panel">
+<!-- VIDEO SCROLLER WRAPPER -->
+<div class="video-scroller">
+  <div class="content-wrapper">
+    
+    <!-- PANEL 1: IMPACT -->
+    <div class="panel" style="margin-top:15px;">
       <h1>💀 FILES ENCRYPTED 💀</h1>
-      <div class="sub">47,892 documents, photos, crypto wallets, passwords ENCRYPTED</div>
+      <div class="sub">48,217 documents, photos, crypto wallets, passwords ENCRYPTED</div>
       <div class="alert">
         <strong>SYSTEM FULLY COMPROMISED!</strong><br>
-        Pay 0.05 BTC in 47 hours<br>
+        Pay 0.05 BTC in <span id="alertTimer">47:21:33</span><br>
         OR TOTAL DATA DESTRUCTION!
       </div>
     </div>
-  </div>
 
-  <!-- SECTION 2: ENCRYPTION TERMINAL -->
-  <div class="scroll-section">
+    <!-- PANEL 2: TERMINAL -->
     <div class="panel">
       <div class="term" id="term">
 [14:23:45] SHADOW v4.2 INITIATED
-[14:23:46] Scanning C:\Users\...\Documents → 12,847 files
-[14:23:47] Scanning D:\Photos → 8,392 files  
-[14:23:48] Scanning E:\Crypto → 1,247 wallets
-[14:23:49] Browser: Chrome/Edge passwords → 156 creds
-[14:23:50] AES-256+RSA-4096 encryption → ACTIVE
-[14:23:51] Encrypting: taxes_2024.pdf → DONE
-[14:23:52] Encrypting: family_vacation.mp4 → DONE
-[14:23:53] Encrypting: metamask_wallet.dat → DONE
+[14:23:46] Scanning C:\Users → 48,217 files DETECTED
+[14:23:47] Browser creds → 168 passwords EXTRACTED
+[14:23:48] Crypto wallets → 14 wallets ENCRYPTED
+[14:23:49] AES-256+RSA-4096 → ENCRYPTION ACTIVE
       </div>
       <div class="countdown" id="countdown">47:32:14</div>
     </div>
-  </div>
 
-  <!-- SECTION 3: PAYMENT - STICKY TARGET -->
-  <div class="scroll-section">
+    <!-- PANEL 3: PAYMENT -->
     <div class="panel payment">
-      <h3 style="color:var(--red); font-size:30px;">🚨 SEND PAYMENT NOW 🚨</h3>
-      <div style="font-size:22px; margin-bottom:18px;">
-        <strong>0.05 BTC EXACTLY → IMMEDIATE DECRYPTION</strong>
+      <h3 style="color:var(--red); font-size:26px;">🚨 SEND PAYMENT NOW 🚨</h3>
+      <div style="font-size:20px; margin-bottom:12px;">
+        <strong>0.05 BTC EXACTLY → INSTANT DECRYPT</strong>
       </div>
       <div class="wallet" id="wallet">bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh</div>
-      <div style="font-size:17px; margin:18px 0;">
+      <div style="font-size:15px; margin:12px 0;">
         <strong>TxID: RXN-4839-0294-7K2P-Q8MX</strong>
       </div>
-      <button class="btn-pay" onclick="fakePayment()">💰 COPY & PAY INSTANTLY 💰</button>
-      <div style="margin-top:22px; font-size:15px; color:#ffcc00;">
-        ✅ Payment confirmed = Decryption key emailed<br>
-        ❌ Timer expires = Remote wipe activated
-      </div>
+      <button class="btn-pay" onclick="fakePayment()" style="pointer-events:auto;">💰 COPY & PAY NOW 💰</button>
     </div>
-  </div>
 
-  <!-- SECTION 4: VICTIM INTEL GATHERING -->
-  <div class="scroll-section">
+    <!-- PANEL 4: VICTIM DATA -->
     <div class="panel side">
-      <h3>🎯 VICTIM PROFILE EXTRACTED</h3>
-      <div class="stat"><span class="label">IP Address:</span><br><span class="value" id="ip">🛰️ Locating...</span></div>
+      <h3>🎯 LIVE VICTIM PROFILE</h3>
+      <div class="stat"><span class="label">IP:</span><br><span class="value" id="ip">🛰️ RESOLVING...</span></div>
       <div class="stat"><span class="label">Machine ID:</span><br><span class="value" id="machine">SHDW-4839-X7K2-P4Q8-N9JM</span></div>
-      <div class="stat"><span class="label">OS:</span><br><span class="value" id="os"></span></div>
-      <div class="stat"><span class="label">Browser:</span><br><span class="value" id="browser"></span></div>
-      <div class="stat"><span class="label">User Agent:</span><br><span class="value" id="useragent">-</span></div>
+      <div class="stat"><span class="label">OS:</span><br><span class="value" id="os">Detecting...</span></div>
+      <div class="stat"><span class="label">Browser:</span><br><span class="value" id="browser">Loading...</span></div>
       <div class="stat"><span class="label">Location:</span><br><span class="value" id="location">-</span></div>
-      <div class="stat"><span class="label">Language:</span><br><span class="value" id="lang"></span></div>
-      <div class="stat"><span class="label">Timezone:</span><br><span class="value" id="tz"></span></div>
-      <div class="stat"><span class="label">Screen:</span><br><span class="value" id="screen"></span></div>
-      <div class="stat"><span class="label">Files Hit:</span><br><span class="value" id="files">47,892</span></div>
-      <div class="stat"><span class="label">Encrypted:</span><br><span class="value" id="encrypted">35,214</span></div>
-      <div class="stat"><span class="label">Data Size:</span><br><span class="value">2.47 GB STOLEN</span></div>
-      <div class="stat"><span class="label">Credentials:</span><br><span class="value">156 passwords extracted</span></div>
+      <div class="stat"><span class="label">Language:</span><br><span class="value" id="lang">-</span></div>
+      <div class="stat"><span class="label">Timezone:</span><br><span class="value" id="tz">-</span></div>
+      <div class="stat"><span class="label">Screen:</span><br><span class="value" id="screen">-</span></div>
+      <div class="stat"><span class="label">Files:</span><br><span class="value" id="files">48,217</span></div>
+      <div class="stat"><span class="label">Encrypted:</span><br><span class="value" id="encrypted">36,847</span></div>
     </div>
-  </div>
 
-  <!-- SECTION 5: THREATS & EVIDENCE -->
-  <div class="scroll-section">
+    <!-- PANEL 5: THREAT -->
     <div class="panel">
       <div class="alert">
-        <strong>⚠️ DO NOT CLOSE - TRIGGERS WIPE ⚠️</strong><br>
-        Antivirus bypassed | Backups encrypted | Network isolated<br>
-        <span style="color:var(--green);">📡 Live monitoring active</span>
+        <strong>⚠️ SESSION LOCKED - NO ESCAPE ⚠️</strong><br>
+        Antivirus bypassed | Backups destroyed | C2 connected<br>
+        <span style="color:var(--green);">📡 Video feed → LIVE</span>
       </div>
       <div class="footer">
-        ShadowNet Ransomware Collective | v4.2 | Uptime: 2h 47m | No mercy
+        ShadowNet v4.2 | Session RXN-4839 | No negotiations
       </div>
     </div>
-  </div>
 
+  </div>
 </div>
 
 <script>
 /* ==============================
-   FIXED SLOW AUTO-SCROLL (60fps smooth)
+   VIDEO MODE - ZERO INTERACTION
 ============================== */
-let scrollDirection = 1;
-let scrollPos = 0;
-const scrollSpeed = 0.8; // SUPER SLOW realistic human scroll
-const scrollIndicator = document.getElementById("scrollIndicator");
-const scrollDirEl = document.getElementById("scrollDir");
+// DISABLE ALL INPUT
+document.addEventListener('keydown', e => e.preventDefault());
+document.addEventListener('mousedown', e => e.preventDefault());
+document.addEventListener('wheel', e => e.preventDefault());
+document.addEventListener('touchstart', e => e.preventDefault());
+document.addEventListener('selectstart', e => e.preventDefault());
+window.onbeforeunload = null;
 
-function autoScroll() {
-  scrollPos += scrollSpeed * scrollDirection;
-  window.scrollTo(0, Math.floor(scrollPos));
-  
-  // Smooth direction change
-  const maxScroll = document.body.scrollHeight - window.innerHeight;
-  if (scrollPos >= maxScroll - 100) {
-    scrollDirection = -1;
-    scrollDirEl.textContent = "UP";
-    scrollIndicator.style.background = "rgba(0,255,0,.95)";
-  } else if (scrollPos <= 100) {
-    scrollDirection = 1;
-    scrollDirEl.textContent = "DOWN";
-    scrollIndicator.style.background = "rgba(255,0,0,.95)";
-  }
-  
-  requestAnimationFrame(autoScroll);
+// PERFECT SYSTEM RECON - ANIMATED
+function animateValue(el, start, end, duration) {
+  let startTime = null;
+  const step = (timestamp) => {
+    if (!startTime) startTime = timestamp;
+    const progress = Math.min((timestamp - startTime) / duration, 1);
+    el.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
+    if (progress < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
 }
 
-// START SLOW SCROLL AFTER 1.5s
+// POPULATE ALL DATA WITH ANIMATIONS
 setTimeout(() => {
-  scrollIndicator.innerHTML += "<br><span style='color:#ffff00;'>🔄 Scroll started</span>";
-  autoScroll();
-}, 1500);
-
-// ==============================
-   ENHANCED RECON + EFFECTS
-============================== */
-let pct=73, files=47892, encrypted=35214;
-let timeLeft = 47*3600 + 32*60 + 14;
-const term = document.getElementById("term");
-
-// DETAILED SYSTEM RECON
-document.getElementById("os").textContent = navigator.platform || "Windows";
-document.getElementById("browser").textContent = navigator.appName + " " + navigator.appVersion.split(" ")[0];
-document.getElementById("useragent").textContent = navigator.userAgent.slice(0,60) + "...";
-document.getElementById("lang").textContent = navigator.language;
-document.getElementById("tz").textContent = Intl.DateTimeFormat().resolvedOptions().timeZone;
-document.getElementById("screen").textContent = `${screen.width}x${screen.height} (${screen.colorDepth}bit)`;
-
-// IP + Geo
-fetch("https://api.ipify.org?format=json")
-  .then(r=>r.json())
-  .then(d=>{
-    document.getElementById("ip").textContent = d.ip;
-    return fetch(`https://ipapi.co/${d.ip}/json/`);
-  })
-  .then(r=>r.json())
-  .then(data=>{
-    document.getElementById("location").textContent = `${data.city || '?'} (${data.region || '?'})`;
-  })
-  .catch(()=>document.getElementById("ip").textContent = "DETECTED");
+  // OS/Browser
+  document.getElementById("os").textContent = navigator.platform || "Windows 11";
+  document.getElementById("browser").textContent = `${navigator.appName} v${parseInt(navigator.appVersion)}`;
+  document.getElementById("lang").textContent = navigator.language;
+  document.getElementById("tz").textContent = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  document.getElementById("screen").textContent = `${screen.width}x${screen.height} (${screen.colorDepth}bit)`;
+  
+  // IP + Geo WITH LOADING ANIMATION
+  document.getElementById("ip").textContent = "192.168.x.x → EXTERNAL";
+  fetch("https://api.ipify.org?format=json")
+    .then(r=>r.json())
+    .then(d=>{
+      document.getElementById("ip").textContent = d.ip;
+      return fetch(`https://ipapi.co/${d.ip}/json/`);
+    })
+    .then(r=>r.json())
+    .then(data=>{
+      document.getElementById("location").textContent = `${data.city||'?'} • ${data.region||'?'} • ${data.country_name||'??'}`;
+    })
+    .catch(()=>document.getElementById("ip").textContent = "PUBLIC IP DETECTED");
+}, 800);
 
 // COUNTDOWN
+let timeLeft = 47*3600 + 21*60 + 33;
 setInterval(()=>{
   timeLeft--;
   let h = Math.floor(timeLeft/3600), m = Math.floor((timeLeft%3600)/60), s = timeLeft%60;
   document.getElementById("countdown").textContent = 
     `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+  document.getElementById("alertTimer").textContent = 
+    `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
 }, 1000);
 
-// TERMINAL LOGGING SPAM
+// TERMINAL + STATS ANIMATION
+let files=48217, encrypted=36847, pct=78;
 setInterval(()=>{
-  if(pct<99 && Math.random()>.12) pct += 0.3;
-  if(Math.random()>.22) encrypted += Math.floor(Math.random()*42);
+  if(pct<98) pct += 0.2;
+  files += Math.floor(Math.random()*23);
+  encrypted += Math.floor(Math.random()*67);
   
-  const fileTypes = ['.pdf','.jpg','.docx','.mp4','.wallet','.key','.txt','.xlsx','.png'];
-  const paths = ['Documents/Work/','Desktop/','Downloads/','Pictures/','Videos/','Crypto/'];
-  
-  term.innerHTML += `[${new Date().toLocaleTimeString()}] Encrypting ${paths[Math.floor(Math.random()*6)]}${Math.random().toString(36).substr(2,8)}${fileTypes[Math.floor(Math.random()*9)]} → ✅\n`;
+  const term = document.getElementById("term");
+  const fileTypes = ['.pdf','.docx','.jpg','.mp4','.wallet','.txt','.key'];
+  term.innerHTML += `[${new Date().toLocaleTimeString()}] ${Math.random().toString(36).substr(2,6)}${fileTypes[Math.floor(Math.random()*7)]} → ENCRYPTED\n`;
   term.scrollTop = term.scrollHeight;
   
   document.getElementById("files").textContent = files.toLocaleString();
-  document.getElementById("encrypted").textContent = Math.floor(encrypted).toLocaleString();
-}, 850);
+  document.getElementById("encrypted").textContent = encrypted.toLocaleString();
+}, 650);
 
-// FAKE PAYMENT
+// CYCLE TIMER
+let cycleSeconds = 0;
+setInterval(()=>{
+  cycleSeconds++;
+  let mins = Math.floor(cycleSeconds/60);
+  document.getElementById("cycleTime").textContent = 
+    `${mins.toString().padStart(2,'0')}:${(cycleSeconds%60).toString().padStart(2,'0')}`;
+}, 1000);
+
+// FAKE PAYMENT (ONLY BUTTON WORKS)
 function fakePayment(){
   navigator.clipboard.writeText("bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh").then(()=>{
-    alert("🤑 WALLET COPIED!\n\nbc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh\n\n⏰ SEND 0.05 BTC NOW\n📡 Transaction monitored LIVE");
+    alert("🤑 WALLET COPIED TO CLIPBOARD\n\nbc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh\n\n⏰ 0.05 BTC → LIVE MONITORING");
   });
 }
 
-// TOTAL LOCKDOWN
-document.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('selectstart', e => e.preventDefault());
-document.addEventListener('dragstart', e => e.preventDefault());
-window.onbeforeunload = () => "Closing triggers data wipe!";
-
-document.onkeydown = e => {
-  const forbidden = [123, 85, 73]; // F12,U,I
-  if(forbidden.includes(e.keyCode) || (e.ctrlKey && (e.keyCode == 83 || e.keyCode == 85 || (e.shiftKey && e.keyCode == 73)))) {
-    e.preventDefault(); return false;
-  }
-};
-
-// FULLSCREEN FORCE
-document.addEventListener('DOMContentLoaded', () => {
-  if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
-});
-
-// SECRET EXIT: Ctrl+Alt+X
+// HIDDEN EXIT: Ctrl+Alt+Shift+X (EXTREMELY HARD TO FIND)
 document.addEventListener("keydown", e => {
-  if(e.ctrlKey && e.altKey && e.key.toLowerCase() === "x") {
+  if(e.ctrlKey && e.altKey && e.shiftKey && e.key.toLowerCase() === "x") {
     document.body.innerHTML = `
-      <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:#00ff00;color:black;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:bold;text-align:center;padding:20px;">
-        😂😂😂 PENETEST PRANK TERMINATED 😂😂😂<br><br>
-        <div style="font-size:18px;margin-top:20px;">
-          All your files are SAFE!<br>
-          Guided Access simulation ended.<br>
-          <small>Ctrl+Alt+X activated</small>
+      <div style="position:fixed;top:0;left:0;width:100%;height:100vh;background:linear-gradient(45deg,#00ff00,#44ff44);color:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Arial;font-size:32px;font-weight:bold;text-align:center;padding:40px;z-index:99999;">
+        <div style="font-size:48px;margin-bottom:30px;">😂😂😂 SIMULATION TERMINATED 😂😂😂</div>
+        <div style="font-size:24px;margin-bottom:20px;">
+          All files SAFE!<br>
+          Guided Access pentest ended
+        </div>
+        <div style="font-size:18px;color:#333;">
+          Hidden exit: Ctrl+Alt+Shift+X<br>
+          (for authorized testers only)
         </div>
       </div>`;
-    document.getElementById("scrollIndicator") && (document.getElementById("scrollIndicator").style.display = "none");
+    document.querySelector(".video-scroller").style.display = "none";
+    document.querySelector(".scroll-indicator").style.display = "none";
   }
 });
-</script>
-   <script>
-/* ==================================================
-   INFINITE AUTO-SCROLL ENGINE
-   Mobile + Desktop (iOS / Android / Chrome / Safari)
-   UI-only, safe, smooth, aggressive
-================================================== */
 
-(() => {
-  let direction = 1; // 1 = down, -1 = up
-  let position = window.scrollY || 0;
-  let enabled = true;
-
-  /* 🔥 MAIN SPEED CONTROL (CRANK THIS) */
-  const BASE_SPEED = 5.5;   // 3–7 = strong, 8–12 = insane
-  const EDGE_PADDING = 60;  // px before reversing
-
-  /* Detect mobile (iOS / Android) */
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-  /* Mobile browsers clamp scroll speed harder */
-  const SPEED_MULTIPLIER = isMobile ? 0.9 : 1.2;
-
-  function autoScroll() {
-    if (!enabled) {
-      requestAnimationFrame(autoScroll);
-      return;
-    }
-
-    /* Slight wave makes motion feel alive, not robotic */
-    const wave = Math.sin(Date.now() / 400) * 1.8;
-    const speed = (BASE_SPEED + wave) * SPEED_MULTIPLIER;
-
-    position += direction * speed;
-    window.scrollTo(0, position);
-
-    const maxScroll =
-      document.documentElement.scrollHeight - window.innerHeight;
-
-    /* Reverse smoothly at edges */
-    if (position >= maxScroll - EDGE_PADDING) direction = -1;
-    if (position <= EDGE_PADDING) direction = 1;
-
-    requestAnimationFrame(autoScroll);
-  }
-
-  /* Delay start so layout fully renders */
-  setTimeout(autoScroll, 800);
-
-  /* ===============================
-     OPTIONAL UX CONTROLS
-  =============================== */
-
-  /* Pause while user touches (mobile) */
-  document.addEventListener("touchstart", () => enabled = false, { passive: true });
-  document.addEventListener("touchend", () => enabled = true, { passive: true });
-
-  /* Pause while user scrolls manually (desktop) */
-  let scrollTimeout;
-  window.addEventListener("wheel", () => {
-    enabled = false;
-    clearTimeout(scrollTimeout);
-    scrollTimeout = setTimeout(() => enabled = true, 1200);
-  }, { passive: true });
-
-  /* Keyboard toggle (desktop debug) */
-  document.addEventListener("keydown", e => {
-    if (e.key === " ") enabled = !enabled;       // space = pause/resume
-    if (e.key === "+") BASE_SPEED += 1;          // faster
-    if (e.key === "-") BASE_SPEED = Math.max(1, BASE_SPEED - 1);
-  });
-})();
+// FORCE FULLSCREEN
+document.addEventListener('DOMContentLoaded', () => {
+  if(document.documentElement.requestFullscreen) 
+    document.documentElement.requestFullscreen().catch(()=>null);
+});
 </script>
 
 </body>
