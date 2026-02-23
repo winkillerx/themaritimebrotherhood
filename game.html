@@ -222,6 +222,9 @@ let enemies=[];
 let score=0;
 let lives=10;
 let high=Number(localStorage.getItem("fmHighScore")||0);
+/* 🔑 POSTERS 25% SMALLER */
+const ENEMY_W=45;
+const ENEMY_H=67.5;
 
 const posters=[
   "https://image.tmdb.org/t/p/w500/8UlWHLMpgZm9bx6QYh0NFoq67TZ.jpg",
@@ -271,8 +274,10 @@ function loop(){
   shipX+=(targetX-shipX)*0.14;
   shipX=Math.max(30,Math.min(c.width-30,shipX));
 
-  /* SHOOT BAR */
-  const BAR_Y = PLAYFIELD - 10;
+  /* 🔑 SHOOT BAR 25% LONGER */
+  const BAR_W=68;
+  const BAR_H=6;
+  const BAR_Y=PLAYFIELD-10;
   ctx.fillStyle="#22d3ee";
   ctx.shadowColor="rgba(34,211,238,.6)";
   ctx.shadowBlur=12;
