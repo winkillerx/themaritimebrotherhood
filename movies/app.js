@@ -1985,7 +1985,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const delta = x - lastX;
 
         // ✅ 35% reduced sensitivity
-        ship.x += delta * 0.0975;
+        ship.x += delta * 0.11;
         ship.x = Math.max(0, Math.min(canvas.width, ship.x));
 
         lastX = x;
