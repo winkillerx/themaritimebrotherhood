@@ -2,24 +2,25 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport"
-  content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>System Breach • FilmMatrix</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>YOUR FILES ARE ENCRYPTED • PAY OR LOSE EVERYTHING</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&display=swap" rel="stylesheet">
 
 <style>
 /* ==============================
-   FILMMATRIX CYBER THEME
+   RANSOMWARE PRANK THEME
 ============================== */
 :root{
-  --bg0:#05060c;
-  --bg1:#070a14;
-  --panel:rgba(10,14,28,.72);
-  --line:rgba(120,170,255,.18);
-  --cyan:#4fdcff;
-  --red:#ff3b5c;
-  --muted:#8fa3bf;
+  --bg0:#000;
+  --bg1:#110000;
+  --panel:rgba(20,0,0,.85);
+  --line:rgba(255,50,50,.3);
+  --red:#ff0040;
+  --orange:#ff6600;
+  --green:#00ff00;
+  --blink:#ff0000;
+  --muted:#888;
 }
 
 *{ box-sizing:border-box; }
@@ -28,9 +29,10 @@ html,body{
   margin:0;
   min-height:100%;
   background:
-    radial-gradient(circle at top, #0b1430, #05060c 70%);
-  font-family:Orbitron,system-ui,sans-serif;
-  color:white;
+    radial-gradient(circle at top, #200000, #000 70%);
+  font-family:Orbitron,'Courier New',monospace;
+  color:#fff;
+  overflow:hidden;
 }
 
 /* Safe areas (iOS) */
@@ -42,7 +44,7 @@ body{
     env(safe-area-inset-left);
 }
 
-/* Scanlines */
+/* Glitch scanlines */
 body::before{
   content:"";
   position:fixed;
@@ -51,12 +53,18 @@ body::before{
   background:
     repeating-linear-gradient(
       to bottom,
-      rgba(255,255,255,.03),
-      rgba(255,255,255,.03) 1px,
+      rgba(255,0,0,.05),
+      rgba(255,0,0,.05) 1px,
       transparent 2px,
       transparent 4px
     );
+  animation: glitch 2s infinite;
   z-index:0;
+}
+
+@keyframes glitch {
+  0%, 100% { opacity: .3; }
+  50% { opacity: .7; transform: translateX(2px); }
 }
 
 /* ==============================
@@ -69,6 +77,7 @@ body::before{
   grid-template-columns: 1fr;
   gap:20px;
   padding:22px;
+  height:100vh;
 }
 
 @media(min-width:900px){
@@ -83,93 +92,166 @@ body::before{
 ============================== */
 .panel{
   background:var(--panel);
-  border:1px solid var(--line);
-  border-radius:14px;
-  padding:22px;
+  border:2px solid var(--line);
+  border-radius:0;
+  padding:25px;
+  box-shadow: 0 0 30px rgba(255,0,64,.3);
 }
 
 /* ==============================
    HEADER
 ============================== */
 h1{
-  margin:0 0 6px;
-  font-size:26px;
-  letter-spacing:.14em;
+  margin:0 0 10px;
+  font-size:32px;
+  letter-spacing:.2em;
   color:var(--red);
+  text-align:center;
+  text-transform:uppercase;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: .3; }
 }
 
 .sub{
   color:var(--muted);
-  font-size:12px;
-  margin-bottom:18px;
+  font-size:14px;
+  margin-bottom:25px;
+  text-align:center;
+  line-height:1.5;
 }
 
 /* ==============================
    ALERT
 ============================== */
 .alert{
-  border:1px solid rgba(255,59,92,.45);
-  background:rgba(255,59,92,.08);
-  padding:16px;
-  font-size:13px;
+  border:2px solid var(--red);
+  background:rgba(255,0,64,.15);
+  padding:20px;
+  font-size:15px;
   line-height:1.6;
-  margin-bottom:20px;
+  margin-bottom:25px;
+  text-align:center;
+  font-weight:bold;
 }
 
 /* ==============================
    TERMINAL
 ============================== */
 .term{
-  font-family:monospace;
-  font-size:12px;
-  line-height:1.6;
-  color:#7dd3fc;
-  background:rgba(0,0,0,.35);
-  border:1px solid var(--line);
-  border-radius:10px;
-  padding:14px;
-  height:220px;
-  overflow:hidden;
-}
-
-@media(max-width:600px){
-  .term{ height:180px; }
+  font-family:'Courier New',monospace;
+  font-size:13px;
+  line-height:1.5;
+  color:var(--green);
+  background:rgba(0,10,0,.9);
+  border:1px solid #00ff00;
+  border-radius:5px;
+  padding:18px;
+  height:240px;
+  overflow-y:auto;
+  white-space:pre-wrap;
 }
 
 .progress{
-  margin-top:14px;
-  font-size:13px;
-  color:var(--cyan);
+  margin-top:18px;
+  font-size:16px;
+  color:var(--orange);
+  font-weight:bold;
+  text-align:center;
+}
+
+/* ==============================
+   PAYMENT PANEL
+============================== */
+.payment{
+  background:linear-gradient(145deg, rgba(255,0,64,.2), rgba(255,100,0,.2));
+  border:3px solid var(--red);
+  text-align:center;
+  padding:30px;
+}
+
+.wallet{
+  background:#000;
+  border:2px solid var(--green);
+  padding:20px;
+  margin:20px 0;
+  font-family:monospace;
+  font-size:16px;
+  word-break:break-all;
+  color:var(--green);
+}
+
+.btn-pay{
+  background:var(--red);
+  color:white;
+  border:none;
+  padding:15px 30px;
+  font-size:18px;
+  font-weight:bold;
+  border-radius:5px;
+  cursor:pointer;
+  text-transform:uppercase;
+  letter-spacing:2px;
+  transition:all .3s;
+  margin-top:15px;
+}
+
+.btn-pay:hover{
+  background:#ff3366;
+  transform:scale(1.05);
+  box-shadow:0 0 20px var(--red);
 }
 
 /* ==============================
    SIDEBAR STATS
 ============================== */
 .side h3{
-  margin:0 0 14px;
-  font-size:14px;
-  letter-spacing:.12em;
-  color:var(--cyan);
+  margin:0 0 18px;
+  font-size:16px;
+  letter-spacing:.15em;
+  color:var(--green);
+  text-align:center;
 }
 
 .stat{
-  font-size:12px;
-  margin-bottom:12px;
+  font-size:13px;
+  margin-bottom:15px;
+  padding:8px;
+  background:rgba(0,255,0,.1);
+  border-left:3px solid var(--green);
 }
 
 .label{ color:var(--muted); }
 .value{
-  color:var(--cyan);
+  color:var(--red);
+  font-weight:bold;
   word-break:break-all;
+}
+
+/* ==============================
+   COUNTDOWN
+============================== */
+.countdown{
+  font-size:24px;
+  color:var(--red);
+  text-align:center;
+  margin:20px 0;
+  font-weight:bold;
+  text-shadow:0 0 10px var(--red);
 }
 
 /* ==============================
    FOOTER
 ============================== */
 .footer{
-  margin-top:18px;
-  font-size:11px;
-  color:#5f708f;
+  margin-top:20px;
+  font-size:12px;
+  color:#ff6666;
+  text-align:center;
+  font-family:monospace;
 }
 </style>
 </head>
@@ -180,86 +262,129 @@ h1{
 
   <!-- MAIN PANEL -->
   <div class="panel">
-    <h1>⚠ SYSTEM BREACH</h1>
-    <div class="sub">Unauthorized encryption process detected • Session isolated</div>
+    <h1>💀 YOUR FILES ENCRYPTED 💀</h1>
+    <div class="sub">All your documents, photos, and data have been ENCRYPTED</div>
 
     <div class="alert">
-      Critical system activity indicates a
-      <strong>simulated ransomware event</strong>.<br>
-      Files appear inaccessible due to encryption routines.<br><br>
-      <strong>Do not close this window.</strong>
+      YOUR SYSTEM HAS BEEN COMPROMISED!<br>
+      <strong>47,892 FILES ENCRYPTED</strong><br><br>
+      Pay <strong>0.05 BTC</strong> within 48 hours or lose everything forever!<br>
+      <strong>Closing this window will DELETE all files immediately!</strong>
     </div>
 
     <div class="term" id="term">
-      Initializing encryption engine…<br>
+Initializing SHADOW ransomware v3.7…
+[14:23:45] Scanning drives: C:\ D:\ E:\ 
+[14:23:46] Found 47,892 valuable files
+[14:23:47] AES-256 encryption started
+[14:23:48] Encrypting Documents/Personal/
+[14:23:49] Encrypting Pictures/Family/
     </div>
 
     <div class="progress" id="prog">
-      Encrypting user files: 0%
+      Encryption Progress: 73%
+    </div>
+
+    <div class="countdown" id="countdown">
+      47:32:14 REMAINING
+    </div>
+
+    <div class="payment">
+      <h3>💰 PAYMENT INSTRUCTIONS 💰</h3>
+      <div>Send <strong>0.05 BTC</strong> exactly</div>
+      <div class="wallet" id="wallet">
+        bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
+      </div>
+      <div>Payment ID: RXN-4839-0294</div>
+      <button class="btn-pay" onclick="fakePayment()">COPY WALLET & PAY NOW</button>
     </div>
 
     <div class="footer">
-      Incident ID: FM-RX-A77 • Response Mode: ISOLATED
+      ShadowNet Ransomware Group • No negotiations • Support: shadowsupport@proton.me
     </div>
   </div>
 
   <!-- SIDE PANEL -->
   <div class="panel side">
-    <h3>TARGET SYSTEM</h3>
+    <h3>🔥 INFECTED SYSTEM</h3>
 
-    <div class="stat"><span class="label">Public IP</span><br><span class="value" id="ip">Detecting…</span></div>
-    <div class="stat"><span class="label">Browser</span><br><span class="value" id="browser"></span></div>
+    <div class="stat"><span class="label">Victim IP</span><br><span class="value" id="ip">Scanning...</span></div>
+    <div class="stat"><span class="label">Machine ID</span><br><span class="value" id="machine">SHDW-4839-X7K2</span></div>
     <div class="stat"><span class="label">OS</span><br><span class="value" id="os"></span></div>
-    <div class="stat"><span class="label">Device</span><br><span class="value" id="device"></span></div>
-    <div class="stat"><span class="label">Resolution</span><br><span class="value" id="res"></span></div>
-    <div class="stat"><span class="label">Timezone</span><br><span class="value" id="tz"></span></div>
-    <div class="stat"><span class="label">Locale</span><br><span class="value" id="lang"></span></div>
-    <div class="stat"><span class="label">Encrypted Files</span><br><span class="value" id="files">0</span></div>
+    <div class="stat"><span class="label">User</span><br><span class="value" id="user"></span></div>
+    <div class="stat"><span class="label">Total Files</span><br><span class="value" id="files">47,892</span></div>
+    <div class="stat"><span class="label">Encrypted</span><br><span class="value" id="encrypted">35,214</span></div>
+    <div class="stat"><span class="label">Drives Hit</span><br><span class="value" id="drives">C:\ D:\ E:\</span></div>
   </div>
 
 </div>
 
 <script>
 /* ==============================
-   FAKE ENCRYPTION
+   FAKE RANSOMWARE EFFECTS
 ============================== */
-let pct=0, files=0;
+let pct=73, files=47892, encrypted=35214;
 const term=document.getElementById("term");
 const prog=document.getElementById("prog");
 const filesEl=document.getElementById("files");
+const encEl=document.getElementById("encrypted");
+const countdownEl=document.getElementById("countdown");
 
+let timeLeft = 47*3600 + 32*60 + 14; // 47h 32m 14s
+
+// Countdown timer
 setInterval(()=>{
-  if(pct<97 && Math.random()>.25) pct++;
-  files+=Math.floor(Math.random()*6);
-  prog.textContent=`Encrypting user files: ${pct}%`;
-  filesEl.textContent=files.toLocaleString();
-  term.innerHTML+=`[${new Date().toLocaleTimeString()}] Encrypting block ${Math.floor(Math.random()*9000)}…<br>`;
-  term.scrollTop=term.scrollHeight;
-},900);
+  timeLeft--;
+  let h = Math.floor(timeLeft / 3600);
+  let m = Math.floor((timeLeft % 3600) / 60);
+  let s = timeLeft % 60;
+  countdownEl.textContent = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')} REMAINING`;
+}, 1000);
 
-/* ==============================
-   SYSTEM INFO
-============================== */
-browser.textContent=navigator.userAgent;
-os.textContent=navigator.platform;
-device.textContent=/mobile/i.test(navigator.userAgent)?"Mobile":"Desktop";
-res.textContent=`${screen.width} × ${screen.height}`;
-tz.textContent=Intl.DateTimeFormat().resolvedOptions().timeZone;
-lang.textContent=navigator.language;
+// Fake encryption progress
+setInterval(()=>{
+  if(pct<99 && Math.random()>.2) pct++;
+  if(Math.random()>.3) encrypted+=Math.floor(Math.random()*23);
+  prog.textContent=`Encryption Progress: ${pct}%`;
+  filesEl.textContent=files.toLocaleString();
+  encEl.textContent=encrypted.toLocaleString();
+  
+  term.innerHTML+=`[${new Date().toLocaleTimeString()}] Encrypting ${['.jpg','.docx','.pdf','.mp4','.wallet'][Math.floor(Math.random()*5)]} files...\n`;
+  term.scrollTop=term.scrollHeight;
+}, 1200);
+
+// System info
+document.getElementById("os").textContent=navigator.platform;
+document.getElementById("user").textContent="CurrentUser";
 
 fetch("https://api.ipify.org?format=json")
   .then(r=>r.json())
-  .then(d=>ip.textContent=d.ip)
-  .catch(()=>ip.textContent="Unavailable");
+  .then(d=>document.getElementById("ip").textContent=d.ip)
+  .catch(()=>document.getElementById("ip").textContent="Detected");
 
-/* ==============================
-   SECRET EXIT
-   CTRL + ALT + E
-============================== */
+// Fake payment button
+function fakePayment(){
+  navigator.clipboard.writeText("bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh");
+  alert("🤑 WALLET COPIED! Send 0.05 BTC NOW or lose everything!");
+}
+
+// Disable right-click, F12, Ctrl+Shift+I
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.onkeydown = function(e) {
+  if(e.keyCode==123 || (e.ctrlKey && e.shiftKey && e.keyCode==73)) return false;
+};
+
+// SECRET EXIT: CTRL + ALT + X (don't tell anyone!)
 document.addEventListener("keydown",e=>{
-  if(e.ctrlKey && e.altKey && e.key.toLowerCase()==="e"){
-    alert("Simulation ended.");
-    location.reload();
+  if(e.ctrlKey && e.altKey && e.key.toLowerCase()==="x"){
+    document.body.innerHTML="<h1>😂 PRANK OVER! Your files are safe!</h1>";
+  }
+});
+
+// Fullscreen on load (prank effect)
+document.addEventListener('DOMContentLoaded', function() {
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen();
   }
 });
 </script>
