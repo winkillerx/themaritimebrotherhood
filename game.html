@@ -8,8 +8,6 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#05060c">
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@600;700;800&display=swap" rel="stylesheet">
 
 <style>
@@ -26,8 +24,8 @@ html,body{
   height:100%;
   overflow:hidden;
   font-family:Inter,system-ui,sans-serif;
-  color:#e7ecff;
   background:#05060c;
+  color:#e7ecff;
   touch-action:manipulation;
 }
 
@@ -84,7 +82,7 @@ h1{
   flex-direction:column;
 }
 
-/* 🔑 FIXED HEIGHTS (NO FLEX BUGS) */
+/* FIXED HEIGHT (NO FLEX BUGS) */
 #game{
   width:100%;
   height:420px;
@@ -126,6 +124,7 @@ h1{
   background:#020a14;
   color:#e7ecff;
   font-family:Orbitron;
+  font-size:13px;
   letter-spacing:.14em;
   display:flex;
   align-items:center;
@@ -133,13 +132,15 @@ h1{
   text-transform:uppercase;
   text-decoration:none;
 }
-/* Normalize button text size across iOS */
+
+/* FIX iOS BUTTON FONT */
 button.btn{
-  font-size:13px;          /* match MOVE / FIRE exactly */
+  font-size:13px;
   letter-spacing:.14em;
   appearance:none;
   -webkit-appearance:none;
 }
+
 .fire{ background:rgba(34,211,238,.18); }
 </style>
 </head>
@@ -179,6 +180,7 @@ button.btn{
 ================================ */
 const m = document.getElementById("matrixRain");
 const mctx = m.getContext("2d");
+
 function resizeMatrix(){
   m.width = innerWidth;
   m.height = innerHeight;
@@ -189,6 +191,7 @@ const chars="アカサタナハマヤラ0123456789";
 const fs=14;
 let cols=Math.floor(innerWidth/fs);
 let drops=Array(cols).fill(1);
+
 setInterval(()=>{
   mctx.fillStyle="rgba(5,6,12,.18)";
   mctx.fillRect(0,0,m.width,m.height);
@@ -202,7 +205,7 @@ setInterval(()=>{
 },50);
 
 /* ===============================
-   GAME LOGIC (CLIPPED)
+   GAME LOGIC
 ================================ */
 const c = document.getElementById("game");
 const ctx = c.getContext("2d");
@@ -210,7 +213,7 @@ const ctx = c.getContext("2d");
 c.width = c.clientWidth;
 c.height = c.clientHeight;
 
-const PLAYFIELD = c.height - 20; // 🔑 hard clip line
+const PLAYFIELD = c.height - 20;
 
 let shipX = c.width/2;
 let targetX = shipX;
@@ -231,12 +234,13 @@ function spawn(){
   img.src=posters[Math.random()*posters.length|0];
   enemies.push({x:Math.random()*(c.width-60),y:-90,w:60,h:90,img});
 }
+
 function shoot(){
   bullets.push({
     x: shipX,
-    y: PLAYFIELD + 40,   // 🔑 well BELOW visible region
-    w: 4.8,              // 🔑 +20% width (was 4)
-    h: 10.8              // 🔑 +20% height (was 9)
+    y: PLAYFIELD - 12,
+    w: 4.8,   // +20%
+    h: 10.8   // +20%
   });
 }
 
@@ -263,34 +267,31 @@ reset.onclick=()=>{
 function loop(){
   ctx.clearRect(0,0,c.width,c.height);
 
-  shipX+=(targetX-shipX)*0.16;
-  shipX=Math.max(20,Math.min(c.width-20,shipX));
+  /* SMOOTH SHIP */
+  shipX+=(targetX-shipX)*0.14;
+  shipX=Math.max(30,Math.min(c.width-30,shipX));
 
-  /* BULLETS — HARD CLIPPED */
-ctx.fillStyle="#7dd3fc";
+  /* SHOOT BAR */
+  const BAR_Y = PLAYFIELD - 10;
+  ctx.fillStyle="#22d3ee";
+  ctx.shadowColor="rgba(34,211,238,.6)";
+  ctx.shadowBlur=12;
+  ctx.fillRect(shipX-27,BAR_Y,54,6);
+  ctx.shadowBlur=0;
 
-bullets.forEach(b=>{
-  if(b.y > PLAYFIELD){
-    b.y -= 14;   // move but DO NOT draw yet
-    return;
-  }
+  /* BULLETS */
+  ctx.fillStyle="#7dd3fc";
+  bullets.forEach(b=>{
+    b.y-=14;
+    ctx.fillRect(b.x-b.w/2,b.y,b.w,b.h);
+  });
 
-  b.y -= 14;
-  ctx.fillRect(
-    b.x - b.w / 2,
-    b.y,
-    b.w,
-    b.h
-  );
-});
-
+  /* ENEMIES */
   enemies.forEach((e,i)=>{
     e.y+=1.6;
     ctx.drawImage(e.img,e.x,e.y,e.w,e.h);
     bullets.forEach((b,j)=>{
-      if(b.y<PLAYFIELD &&
-         b.x>e.x&&b.x<e.x+e.w&&
-         b.y>e.y&&b.y<e.y+e.h){
+      if(b.x>e.x&&b.x<e.x+e.w&&b.y>e.y&&b.y<e.y+e.h){
         enemies.splice(i,1);
         bullets.splice(j,1);
         score+=10;
@@ -314,7 +315,11 @@ bullets.forEach(b=>{
   if(Math.random()<0.03) spawn();
   if(lives>0) requestAnimationFrame(loop);
 }
-const scoreEl=score,livesEl=lives,highEl=high;
+
+const scoreEl=document.getElementById("score");
+const livesEl=document.getElementById("lives");
+const highEl=document.getElementById("high");
+
 loop();
 </script>
 
