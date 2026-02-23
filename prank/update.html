@@ -260,6 +260,34 @@ h1{
   animation: footerFlicker 4s infinite;
 }
 @keyframes footerFlicker { 0%,95%,100%{opacity:1;} 97%{opacity:0.7;} }
+/* ======================================
+   FIX: NO OVERLAP / SAFE SCROLL LAYOUT
+====================================== */
+
+/* Sections can grow if content is taller */
+.section{
+  min-height:100vh;
+  padding:15px;
+}
+
+/* Stack panels vertically with real spacing */
+.stack{
+  display:flex;
+  flex-direction:column;
+  gap:16px; /* exact spacing you wanted */
+}
+
+/* Kill margin-based spacing (causes overlap) */
+.panel,
+.payment{
+  margin-bottom:0 !important;
+}
+
+/* Safety buffer for transform animation edges */
+.content-wrapper{
+  padding-top:40px;
+  padding-bottom:40px;
+}
 </style>
 </head>
 
