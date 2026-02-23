@@ -384,39 +384,78 @@ document.addEventListener("keydown", e => {
   }
 });
 </script>
-<script>
-/* ==============================
+   <script>
+/* ==================================================
    INFINITE AUTO-SCROLL ENGINE
-   (UI ONLY – SAFE)
-============================== */
+   Mobile + Desktop (iOS / Android / Chrome / Safari)
+   UI-only, safe, smooth, aggressive
+================================================== */
 
-let direction = 1;              // 1 = down, -1 = up
-let position = 0;
-const speed = 0.6;              // pixels per frame (0.3–1.2 is realistic)
-let enabled = true;
+(() => {
+  let direction = 1; // 1 = down, -1 = up
+  let position = window.scrollY || 0;
+  let enabled = true;
 
-function autoScrollLoop() {
-  if (!enabled) return;
+  /* 🔥 MAIN SPEED CONTROL (CRANK THIS) */
+  const BASE_SPEED = 5.5;   // 3–7 = strong, 8–12 = insane
+  const EDGE_PADDING = 60;  // px before reversing
 
-  position += direction * speed;
-  window.scrollTo(0, position);
+  /* Detect mobile (iOS / Android) */
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-  const max = document.documentElement.scrollHeight - window.innerHeight;
+  /* Mobile browsers clamp scroll speed harder */
+  const SPEED_MULTIPLIER = isMobile ? 0.9 : 1.2;
 
-  // Reverse at edges
-  if (position >= max - 20) {
-    direction = -1;
+  function autoScroll() {
+    if (!enabled) {
+      requestAnimationFrame(autoScroll);
+      return;
+    }
+
+    /* Slight wave makes motion feel alive, not robotic */
+    const wave = Math.sin(Date.now() / 400) * 1.8;
+    const speed = (BASE_SPEED + wave) * SPEED_MULTIPLIER;
+
+    position += direction * speed;
+    window.scrollTo(0, position);
+
+    const maxScroll =
+      document.documentElement.scrollHeight - window.innerHeight;
+
+    /* Reverse smoothly at edges */
+    if (position >= maxScroll - EDGE_PADDING) direction = -1;
+    if (position <= EDGE_PADDING) direction = 1;
+
+    requestAnimationFrame(autoScroll);
   }
-  if (position <= 20) {
-    direction = 1;
-  }
 
-  requestAnimationFrame(autoScrollLoop);
-}
+  /* Delay start so layout fully renders */
+  setTimeout(autoScroll, 800);
 
-// Delay start so page renders first
-setTimeout(autoScrollLoop, 1200);
-</script>   
+  /* ===============================
+     OPTIONAL UX CONTROLS
+  =============================== */
+
+  /* Pause while user touches (mobile) */
+  document.addEventListener("touchstart", () => enabled = false, { passive: true });
+  document.addEventListener("touchend", () => enabled = true, { passive: true });
+
+  /* Pause while user scrolls manually (desktop) */
+  let scrollTimeout;
+  window.addEventListener("wheel", () => {
+    enabled = false;
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => enabled = true, 1200);
+  }, { passive: true });
+
+  /* Keyboard toggle (desktop debug) */
+  document.addEventListener("keydown", e => {
+    if (e.key === " ") enabled = !enabled;       // space = pause/resume
+    if (e.key === "+") BASE_SPEED += 1;          // faster
+    if (e.key === "-") BASE_SPEED = Math.max(1, BASE_SPEED - 1);
+  });
+})();
+</script>
 
 </body>
 </html>
