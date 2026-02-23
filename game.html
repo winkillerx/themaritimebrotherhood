@@ -47,7 +47,7 @@ html,body{
   z-index:1;
   width:min(760px,96vw);
   height:90svh;
-margin: 35px auto auto;
+  margin:35px auto auto;
   padding:20px;
   border-radius:26px;
   border:1px solid rgba(34,211,238,.55);
@@ -67,7 +67,6 @@ h1{
   font-family:Orbitron;
   margin:6px 0;
 }
-.muted{ opacity:.65; }
 
 /* ===============================
    GAME CONTAINER
@@ -82,7 +81,6 @@ h1{
   flex-direction:column;
 }
 
-/* FIXED HEIGHT (NO FLEX BUGS) */
 #game{
   width:100%;
   height:420px;
@@ -99,11 +97,7 @@ h1{
   font-family:Orbitron;
   font-size:13px;
   letter-spacing:.14em;
-  background:linear-gradient(
-    180deg,
-    rgba(6,10,18,.98),
-    rgba(4,8,16,1)
-  );
+  background:linear-gradient(180deg, rgba(6,10,18,.98), rgba(4,8,16,1));
   border-top:1px solid rgba(34,211,238,.55);
 }
 
@@ -184,24 +178,25 @@ function resizeMatrix(){
   m.width = innerWidth;
   m.height = innerHeight;
 }
-resizeMatrix(); addEventListener("resize", resizeMatrix);
+resizeMatrix();
+addEventListener("resize", resizeMatrix);
 
-const chars="アカサタナハマヤラ0123456789";
-const fs=14;
-let cols=Math.floor(innerWidth/fs);
-let drops=Array(cols).fill(1);
+const chars = "アカサタナハマヤラ0123456789";
+const fs = 14;
+let cols = Math.floor(innerWidth / fs);
+let drops = Array(cols).fill(1);
 
-setInterval(()=>{
-  mctx.fillStyle="rgba(5,6,12,.18)";
+setInterval(() => {
+  mctx.fillStyle = "rgba(5,6,12,.18)";
   mctx.fillRect(0,0,m.width,m.height);
-  mctx.font="600 "+fs+"px monospace";
-  mctx.fillStyle="rgba(34,211,238,.75)";
-  for(let i=0;i<drops.length;i++){
-    mctx.fillText(chars[Math.random()*chars.length|0],i*fs,drops[i]*fs);
-    if(drops[i]*fs>innerHeight&&Math.random()>0.97) drops[i]=0;
+  mctx.font = "600 " + fs + "px monospace";
+  mctx.fillStyle = "rgba(34,211,238,.75)";
+  for (let i=0; i<drops.length; i++){
+    mctx.fillText(chars[Math.random()*chars.length|0], i*fs, drops[i]*fs);
+    if (drops[i]*fs > innerHeight && Math.random() > 0.97) drops[i] = 0;
     drops[i]++;
   }
-},50);
+}, 50);
 
 /* ===============================
    GAME LOGIC
@@ -209,133 +204,175 @@ setInterval(()=>{
 const c = document.getElementById("game");
 const ctx = c.getContext("2d");
 
-c.width = c.clientWidth;
-c.height = c.clientHeight;
-
-const PLAYFIELD = c.height - 20;
+function resizeGame(){
+  c.width = c.clientWidth;
+  c.height = c.clientHeight;
+}
+resizeGame();
+addEventListener("resize", resizeGame);
 
 let shipX = c.width/2;
 let targetX = shipX;
-let bullets=[];
-let enemies=[];
-let score=0;
-let lives=10;
-let high=Number(localStorage.getItem("fmHighScore")||0);
-let gameRunning = true;
-/* 🔑 POSTERS 25% SMALLER */
-const ENEMY_W = 34;     // was 45
-const ENEMY_H = 50.6;  // was 67.5 (keep ratio)
 
-const posters=[
+let bullets = [];
+let enemies = [];
+
+let score = 0;
+let lives = 10;
+let high = Number(localStorage.getItem("fmHighScore") || 0);
+
+let gameRunning = true;
+let rafId = null;
+
+/* Posters smaller */
+const ENEMY_W = 34;
+const ENEMY_H = 50.6;
+
+const posters = [
   "https://image.tmdb.org/t/p/w500/8UlWHLMpgZm9bx6QYh0NFoq67TZ.jpg",
   "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
   "https://image.tmdb.org/t/p/w500/6DrHO1jr3qVrViUO6s6kFiAGM7.jpg"
 ];
 
 function spawn(){
-  const img=new Image();
-  img.src=posters[Math.random()*posters.length|0];
-  enemies.push({x:Math.random()*(c.width-60),y:-90,w:60,h:90,img});
-}
-
-function shoot(){
-  bullets.push({
-    x: shipX,
-    y: PLAYFIELD - 12,
-    w: 4.8,   // +20%
-    h: 10.8   // +20%
+  const img = new Image();
+  img.src = posters[Math.random()*posters.length|0];
+  enemies.push({
+    x: Math.random() * (c.width - ENEMY_W),
+    y: -ENEMY_H,
+    w: ENEMY_W,
+    h: ENEMY_H,
+    img
   });
 }
 
+/* Playfield baseline */
+function playfieldY(){
+  return c.height - 20;
+}
+
+/* Bullets 20% bigger */
+function shoot(){
+  bullets.push({
+    x: shipX,
+    y: playfieldY() - 12,
+    w: 4.8,
+    h: 10.8
+  });
+}
+
+/* DOM refs */
+const scoreEl = document.getElementById("score");
+const livesEl = document.getElementById("lives");
+const highEl  = document.getElementById("high");
+const joy     = document.getElementById("joy");
+const fire    = document.getElementById("fire");
+const reset   = document.getElementById("reset");
+
 /* MOVE */
-let lastX=0, active=false;
-joy.ontouchstart=e=>{active=true;lastX=e.touches[0].clientX;e.preventDefault();}
-joy.ontouchmove=e=>{
-  if(!active)return;
-  targetX+=(e.touches[0].clientX-lastX)*0.55;
-  lastX=e.touches[0].clientX;
+let lastX = 0, active = false;
+joy.ontouchstart = e => { active = true; lastX = e.touches[0].clientX; e.preventDefault(); };
+joy.ontouchmove  = e => {
+  if(!active) return;
+  targetX += (e.touches[0].clientX - lastX) * 0.55;
+  lastX = e.touches[0].clientX;
   e.preventDefault();
 };
-joy.ontouchend=()=>active=false;
+joy.ontouchend = () => active = false;
 
 /* FIRE */
-fire.ontouchstart=e=>{shoot();e.preventDefault();};
+fire.ontouchstart = e => { shoot(); e.preventDefault(); };
 
-/* RESET */
+/* RESET (works even after death) */
 reset.onclick = () => {
   bullets = [];
   enemies = [];
   score = 0;
   lives = 10;
 
-  gameRunning = true;   // 🔑 re-enable loop
-  loop();               // 🔑 restart animation
+  gameRunning = true;
+
+  // prevent double loops
+  if (rafId !== null) cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(loop);
 };
 
 function loop(){
   ctx.clearRect(0,0,c.width,c.height);
 
-  /* SMOOTH SHIP */
-  shipX+=(targetX-shipX)*0.14;
-  shipX=Math.max(30,Math.min(c.width-30,shipX));
+  const PLAYFIELD = playfieldY();
 
-  /* 🔑 SHOOT BAR 25% LONGER */
-  const BAR_W=85;
-  const BAR_H=6;
-  const BAR_Y=PLAYFIELD-10;
-  ctx.fillStyle="#22d3ee";
-  ctx.shadowColor="rgba(34,211,238,.6)";
-  ctx.shadowBlur=12;
-  ctx.fillRect(shipX-27,BAR_Y,54,6);
-  ctx.shadowBlur=0;
+  /* Ship smoothing */
+  shipX += (targetX - shipX) * 0.14;
+  shipX = Math.max(40, Math.min(c.width - 40, shipX));
 
-  /* BULLETS */
-  ctx.fillStyle="#7dd3fc";
-  bullets.forEach(b=>{
-    b.y-=14;
-    ctx.fillRect(b.x-b.w/2,b.y,b.w,b.h);
-  });
+  /* Shootbar 25% longer */
+  const BAR_W = 85;
+  const BAR_H = 6;
+  const BAR_Y = PLAYFIELD - 10;
 
-  /* ENEMIES */
-  enemies.forEach((e,i)=>{
-    e.y+=1.6;
-    ctx.drawImage(e.img,e.x,e.y,e.w,e.h);
-    bullets.forEach((b,j)=>{
-      if(b.x>e.x&&b.x<e.x+e.w&&b.y>e.y&&b.y<e.y+e.h){
+  ctx.fillStyle = "#22d3ee";
+  ctx.shadowColor = "rgba(34,211,238,.6)";
+  ctx.shadowBlur = 12;
+  ctx.fillRect(shipX - BAR_W/2, BAR_Y, BAR_W, BAR_H);
+  ctx.shadowBlur = 0;
+
+  /* Bullets */
+  ctx.fillStyle = "#7dd3fc";
+  for (let i = bullets.length - 1; i >= 0; i--){
+    const b = bullets[i];
+    b.y -= 14;
+    ctx.fillRect(b.x - b.w/2, b.y, b.w, b.h);
+
+    if (b.y < -30) bullets.splice(i,1);
+  }
+
+  /* Enemies */
+  for (let i = enemies.length - 1; i >= 0; i--){
+    const e = enemies[i];
+    e.y += 1.6;
+    ctx.drawImage(e.img, e.x, e.y, e.w, e.h);
+
+    // collisions
+    for (let j = bullets.length - 1; j >= 0; j--){
+      const b = bullets[j];
+      if (b.x > e.x && b.x < e.x + e.w && b.y > e.y && b.y < e.y + e.h){
         enemies.splice(i,1);
         bullets.splice(j,1);
-        score+=10;
+        score += 10;
+        break;
       }
-    });
-    if (e.y > c.height) {
-  enemies.splice(i,1);
-  lives--;
-  if (lives <= 0) {
-    gameRunning = false;
-  }
-}
-  });
+    }
 
-  if(score>high){
-    high=score;
-    localStorage.setItem("fmHighScore",high);
+    // missed enemy
+    if (e.y > c.height){
+      enemies.splice(i,1);
+      lives--;
+      if (lives <= 0){
+        gameRunning = false;
+      }
+    }
   }
 
-  scoreEl.textContent=`SCORE ${String(score).padStart(5,"0")}`;
-  livesEl.textContent=`LIVES ${lives}`;
-  highEl.textContent=`BEST ${String(high).padStart(5,"0")}`;
+  if (score > high){
+    high = score;
+    localStorage.setItem("fmHighScore", high);
+  }
 
-  if(Math.random()<0.03) spawn();
-  if (gameRunning) {
-  requestAnimationFrame(loop);
+  scoreEl.textContent = `SCORE ${String(score).padStart(5,"0")}`;
+  livesEl.textContent = `LIVES ${lives}`;
+  highEl.textContent  = `BEST ${String(high).padStart(5,"0")}`;
+
+  if (gameRunning){
+    if (Math.random() < 0.03) spawn();
+    rafId = requestAnimationFrame(loop);
+  } else {
+    rafId = null;
+  }
 }
 
-
-const scoreEl=document.getElementById("score");
-const livesEl=document.getElementById("lives");
-const highEl=document.getElementById("high");
-
-loop();
+/* start */
+rafId = requestAnimationFrame(loop);
 </script>
 
 </body>
