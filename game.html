@@ -133,6 +133,13 @@ h1{
   text-transform:uppercase;
   text-decoration:none;
 }
+/* Normalize button text size across iOS */
+button.btn{
+  font-size:13px;          /* match MOVE / FIRE exactly */
+  letter-spacing:.14em;
+  appearance:none;
+  -webkit-appearance:none;
+}
 .fire{ background:rgba(34,211,238,.18); }
 </style>
 </head>
@@ -225,7 +232,12 @@ function spawn(){
   enemies.push({x:Math.random()*(c.width-60),y:-90,w:60,h:90,img});
 }
 function shoot(){
-  bullets.push({x:shipX,y:PLAYFIELD+20});
+  bullets.push({
+    x: shipX,
+    y: PLAYFIELD + 40,   // 🔑 well BELOW visible region
+    w: 4.8,              // 🔑 +20% width (was 4)
+    h: 10.8              // 🔑 +20% height (was 9)
+  });
 }
 
 /* MOVE */
@@ -254,13 +266,23 @@ function loop(){
   shipX+=(targetX-shipX)*0.16;
   shipX=Math.max(20,Math.min(c.width-20,shipX));
 
-  bullets.forEach(b=>b.y-=12);
-  ctx.fillStyle="#7dd3fc";
-  bullets.forEach(b=>{
-    if(b.y<PLAYFIELD){
-      ctx.fillRect(b.x-2,b.y,4,9);
-    }
-  });
+  /* BULLETS — HARD CLIPPED */
+ctx.fillStyle="#7dd3fc";
+
+bullets.forEach(b=>{
+  if(b.y > PLAYFIELD){
+    b.y -= 14;   // move but DO NOT draw yet
+    return;
+  }
+
+  b.y -= 14;
+  ctx.fillRect(
+    b.x - b.w / 2,
+    b.y,
+    b.w,
+    b.h
+  );
+});
 
   enemies.forEach((e,i)=>{
     e.y+=1.6;
