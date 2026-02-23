@@ -253,12 +253,22 @@ function playfieldY(){
 
 /* Bullets 20% bigger */
 function shoot(){
-  bullets.push({
-    x: shipX,
-    y: playfieldY() - 12,
-    w: 4.8,
-    h: 10.8
-  });
+  const spread = 15; // distance between cannons
+
+  bullets.push(
+    {
+      x: shipX - spread,
+      y: playfieldY() - 12,
+      w: 4.8,
+      h: 10.8
+    },
+    {
+      x: shipX + spread,
+      y: playfieldY() - 12,
+      w: 4.8,
+      h: 10.8
+    }
+  );
 }
 
 /* DOM refs */
