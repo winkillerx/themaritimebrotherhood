@@ -107,7 +107,7 @@ h1{
   border:1px solid var(--accentBorder);
   overflow:hidden;
   background:#02030a;
-  flex:1.4;                 /* 🔑 LONGER GAME */
+  flex:1.4;
   display:flex;
   flex-direction:column;
 }
@@ -176,6 +176,7 @@ h1{
   font-family:Orbitron;
   letter-spacing:.12em;
   text-transform:uppercase;
+  text-decoration:none; /* 🔑 no underline */
 }
 </style>
 </head>
@@ -246,9 +247,17 @@ let w,h;
 function resizeGame(){ w=g.width=g.clientWidth; h=g.height=g.clientHeight; }
 resizeGame(); addEventListener("resize",resizeGame);
 
-const ship={ x:w/2, targetX:w/2, y:h-26, w:50, h:10 };
+const ship={
+  x:w/2,
+  targetX:w/2,
+  y:h*0.99 - 26,     // 🔑 lifted ~1%
+  w:50,
+  h:10
+};
+
 let bullets=[], enemies=[];
-let score=0, lives=5;
+let score=0;
+let lives=5;
 let high=Number(localStorage.getItem("fmHighScore")||0);
 
 const posters=[
@@ -263,7 +272,14 @@ function spawn(){
   enemies.push({ x:Math.random()*(w-70), y:-100, w:70, h:105, img });
 }
 
-function shoot(){ bullets.push({ x:ship.x, y:ship.y }); }
+function shoot(){
+  bullets.push({
+    x:ship.x,
+    y:ship.y,
+    w:4.4,   // 🔑 +10% thickness
+    h:9      // 🔑 +10% height
+  });
+}
 
 /* JOYSTICK */
 const joy=document.getElementById("joy");
@@ -279,7 +295,7 @@ joy.addEventListener("touchmove",e=>{
   if(!joyActive) return;
   e.preventDefault(); e.stopPropagation();
   const dx=e.touches[0].clientX-joyX;
-  ship.targetX+=dx*0.6;
+  ship.targetX+=dx*0.55; // 🔑 refined tuning
   joyX=e.touches[0].clientX;
 },{passive:false});
 
@@ -297,15 +313,17 @@ fire.addEventListener("touchstart",e=>{
 
 /* RESET */
 document.getElementById("reset").onclick=()=>{
-  bullets=[]; enemies=[];
-  score=0; lives=5;
+  bullets=[];
+  enemies=[];
+  score=0;
+  lives=5;
 };
 
 /* LOOP */
 function loop(){
   ctx.clearRect(0,0,w,h);
 
-  ship.x+=(ship.targetX-ship.x)*0.15;
+  ship.x+=(ship.targetX-ship.x)*0.16;
   ship.x=Math.max(0,Math.min(w,ship.x));
 
   ctx.fillStyle="#22d3ee";
@@ -313,7 +331,7 @@ function loop(){
 
   bullets.forEach(b=>b.y-=12);
   ctx.fillStyle="#7dd3fc";
-  bullets.forEach(b=>ctx.fillRect(b.x-2,b.y,4,8));
+  bullets.forEach(b=>ctx.fillRect(b.x-b.w/2,b.y,b.w,b.h));
 
   enemies.forEach((e,i)=>{
     e.y+=1.6;
@@ -325,7 +343,10 @@ function loop(){
         score+=10;
       }
     });
-    if(e.y>h){ enemies.splice(i,1); lives--; }
+    if(e.y>h){
+      enemies.splice(i,1);
+      lives--;
+    }
   });
 
   if(score>high){
