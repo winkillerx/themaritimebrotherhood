@@ -1779,3 +1779,169 @@ document.addEventListener("DOMContentLoaded", () => {
 
   setInterval(draw, 33);
 })();
+/* ============================================================
+   🎮 FILM MATRIX INVADERS — FINAL
+============================================================ */
+(() => {
+  const unlock = document.getElementById("fmUnlock");
+  const canvas = document.getElementById("fmGame");
+  const hud = document.getElementById("fmGameHUD");
+  const mobileUI = document.getElementById("fmMobileControls");
+
+  if (!unlock || !canvas) return;
+
+  const ctx = canvas.getContext("2d");
+
+  const scoreEl = document.getElementById("fmScore");
+  const livesEl = document.getElementById("fmLives");
+  const bestEl  = document.getElementById("fmBest");
+
+  let running = false;
+  let score = 0;
+  let lives = 3;
+  let level = 1;
+
+  const BEST_KEY = "fmInvadersBest";
+  bestEl.textContent = `BEST: ${localStorage.getItem(BEST_KEY) || 0}`;
+
+  const ship = { x:0, y:0, w:52, h:14 };
+  const bullets = [];
+  const enemies = [];
+
+  const isTouch = matchMedia("(pointer: coarse)").matches;
+
+  function resize(){
+    canvas.width = innerWidth;
+    canvas.height = innerHeight;
+    ship.y = canvas.height - 40;
+  }
+
+  function posters(){
+    return [...document.querySelectorAll(".popPoster")]
+      .map(p => p.src)
+      .slice(0,20);
+  }
+
+  function spawnEnemy(boss=false){
+    const img = new Image();
+    const pool = posters();
+    img.src = pool[Math.floor(Math.random()*pool.length)] || "";
+
+    enemies.push({
+      x: Math.random()*(canvas.width-(boss?120:60)),
+      y: -120,
+      w: boss?120:60,
+      h: boss?180:90,
+      speed: boss?0.6:0.8+level*0.15,
+      boss,
+      img
+    });
+  }
+
+  function shoot(){
+    bullets.push({ x: ship.x, y: ship.y });
+  }
+
+  function update(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    ctx.fillStyle="#22d3ee";
+    ctx.fillRect(ship.x-ship.w/2, ship.y, ship.w, ship.h);
+
+    ctx.fillStyle="#ff2bd6";
+    bullets.forEach(b=>{
+      b.y-=12;
+      ctx.fillRect(b.x-2,b.y,4,10);
+    });
+
+    enemies.forEach((e,ei)=>{
+      e.y+=e.speed;
+      ctx.drawImage(e.img,e.x,e.y,e.w,e.h);
+
+      bullets.forEach((b,bi)=>{
+        if(b.x>e.x&&b.x<e.x+e.w&&b.y>e.y&&b.y<e.y+e.h){
+          bullets.splice(bi,1);
+          enemies.splice(ei,1);
+          score+=e.boss?250:10;
+          level=1+Math.floor(score/150);
+          scoreEl.textContent=`SCORE: ${score}`;
+        }
+      });
+
+      if(e.y>canvas.height){
+        enemies.splice(ei,1);
+        lives--;
+        livesEl.textContent=`LIVES: ${lives}`;
+        if(lives<=0) gameOver();
+      }
+    });
+
+    if(score>0 && score%500===0 && !enemies.some(e=>e.boss)) spawnEnemy(true);
+    if(Math.random()<0.012+level*0.003) spawnEnemy();
+
+    running && requestAnimationFrame(update);
+  }
+
+  function start(){
+    resize();
+    bullets.length=enemies.length=0;
+    score=0; lives=3; level=1;
+    scoreEl.textContent="SCORE: 0";
+    livesEl.textContent="LIVES: 3";
+
+    canvas.classList.remove("hidden");
+    hud.classList.remove("hidden");
+    mobileUI && mobileUI.classList.toggle("hidden", !isTouch);
+
+    running=true;
+    update();
+  }
+
+  function gameOver(){
+    running=false;
+    canvas.classList.add("glitch");
+
+    const best=Math.max(score,localStorage.getItem(BEST_KEY)||0);
+    localStorage.setItem(BEST_KEY,best);
+
+    setTimeout(stop,900);
+  }
+
+  function stop(){
+    running=false;
+    canvas.classList.add("hidden");
+    hud.classList.add("hidden");
+    mobileUI && mobileUI.classList.add("hidden");
+    canvas.classList.remove("glitch");
+  }
+
+  unlock.onclick=start;
+
+  /* Desktop */
+  window.addEventListener("mousemove",e=>!isTouch&&running&&(ship.x=e.clientX));
+  window.addEventListener("click",()=>!isTouch&&running&&shoot());
+  window.addEventListener("keydown",e=>e.key==="Escape"&&stop());
+
+  /* Mobile */
+  if(isTouch){
+    const stick=document.getElementById("fmStick");
+    const inner=stick.querySelector(".fmStickInner");
+    const fire=document.getElementById("fmFire");
+    const exit=document.getElementById("fmExit");
+
+    let origin=0;
+
+    stick.addEventListener("touchstart",e=>origin=e.touches[0].clientX);
+    stick.addEventListener("touchmove",e=>{
+      e.preventDefault();
+      const d=Math.max(-40,Math.min(40,e.touches[0].clientX-origin));
+      ship.x+=d*.35;
+      inner.style.transform=`translateX(${d}px)`;
+    },{passive:false});
+    stick.addEventListener("touchend",()=>inner.style.transform="translateX(0)");
+    fire.addEventListener("touchstart",e=>{e.preventDefault();shoot();});
+    exit.addEventListener("touchstart",e=>{e.preventDefault();stop();});
+  }
+
+  window.addEventListener("resize",resize);
+})();
