@@ -47,7 +47,7 @@ html,body{
   z-index:1;
   width:min(760px,96vw);
   height:90svh;
-margin: 40px auto auto;
+margin: 35px auto auto;
   padding:20px;
   border-radius:26px;
   border:1px solid rgba(34,211,238,.55);
@@ -221,9 +221,10 @@ let enemies=[];
 let score=0;
 let lives=10;
 let high=Number(localStorage.getItem("fmHighScore")||0);
+let gameRunning = true;
 /* 🔑 POSTERS 25% SMALLER */
-const ENEMY_W=45;
-const ENEMY_H=67.5;
+const ENEMY_W = 34;     // was 45
+const ENEMY_H = 50.6;  // was 67.5 (keep ratio)
 
 const posters=[
   "https://image.tmdb.org/t/p/w500/8UlWHLMpgZm9bx6QYh0NFoq67TZ.jpg",
@@ -261,9 +262,14 @@ joy.ontouchend=()=>active=false;
 fire.ontouchstart=e=>{shoot();e.preventDefault();};
 
 /* RESET */
-reset.onclick=()=>{
-  bullets=[]; enemies=[];
-  score=0; lives=10;
+reset.onclick = () => {
+  bullets = [];
+  enemies = [];
+  score = 0;
+  lives = 10;
+
+  gameRunning = true;   // 🔑 re-enable loop
+  loop();               // 🔑 restart animation
 };
 
 function loop(){
@@ -274,7 +280,7 @@ function loop(){
   shipX=Math.max(30,Math.min(c.width-30,shipX));
 
   /* 🔑 SHOOT BAR 25% LONGER */
-  const BAR_W=68;
+  const BAR_W=85;
   const BAR_H=6;
   const BAR_Y=PLAYFIELD-10;
   ctx.fillStyle="#22d3ee";
@@ -301,10 +307,13 @@ function loop(){
         score+=10;
       }
     });
-    if(e.y>c.height){
-      enemies.splice(i,1);
-      lives--;
-    }
+    if (e.y > c.height) {
+  enemies.splice(i,1);
+  lives--;
+  if (lives <= 0) {
+    gameRunning = false;
+  }
+}
   });
 
   if(score>high){
@@ -317,8 +326,10 @@ function loop(){
   highEl.textContent=`BEST ${String(high).padStart(5,"0")}`;
 
   if(Math.random()<0.03) spawn();
-  if(lives>0) requestAnimationFrame(loop);
+  if (gameRunning) {
+  requestAnimationFrame(loop);
 }
+
 
 const scoreEl=document.getElementById("score");
 const livesEl=document.getElementById("lives");
