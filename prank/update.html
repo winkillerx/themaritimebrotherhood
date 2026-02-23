@@ -36,7 +36,7 @@ html,body{
 }
 
 /* ==============================
-   FIXED INFINITE LOOP SCROLLER
+   FIXED INFINITE LOOP SCROLLER - SLOWER 25%
 ============================== */
 .video-scroller{
   position:fixed;
@@ -49,7 +49,7 @@ html,body{
   position:absolute;
   top:0; width:100%;
   height:200vh; /* Exactly 2 screens for perfect loop */
-  animation: infiniteVerticalScroll 20s linear infinite; /* PERFECT LOOP */
+  animation: infiniteVerticalScroll 26.666s linear infinite; /* SLOWED 25% (20s→26.67s) */
 }
 
 @keyframes infiniteVerticalScroll {
@@ -59,14 +59,14 @@ html,body{
 }
 
 /* ==============================
-   ULTRA-TIGHT PANELS (98% CLOSER)
+   FIXED PANELS - 2% GAP (16px → 16px total)
 ============================== */
 .panel{
   background:var(--panel);
   border:2px solid var(--line);
   border-radius:6px;
   padding:18px;
-  margin-bottom:8px;
+  margin-bottom:16px; /* FIXED: 2% gap = 16px */
   box-shadow: 0 0 25px rgba(255,0,64,.6);
   position:relative;
   min-height:200px;
@@ -115,7 +115,7 @@ html,body{
 .indicator-line{ margin:2px 0; font-size:11px; }
 
 /* ==============================
-   CONTENT STYLES - ANIMATED (UNCHANGED)
+   CONTENT STYLES - ANIMATED
 ============================== */
 h1{
   margin:0 0 8px;
@@ -182,7 +182,7 @@ h1{
   border:4px solid var(--red); 
   text-align:center; 
   padding:25px; 
-  margin-bottom:8px; 
+  margin-bottom:16px; /* FIXED: Matches 2% gap */
   box-shadow:0 0 50px rgba(255,0,64,.8);
   animation: moneyGlow 2.5s infinite;
 }
@@ -268,7 +268,7 @@ h1{
 <!-- FIXED MONITOR HUD -->
 <div class="scroll-indicator" id="scrollIndicator">
 👁️ <span style="color:#00ff00;">VIDEO MODE ACTIVE</span> 👁️<br>
-📹 Auto-scroll: <span id="scrollDir" style="color:#ffff00;">DOWN</span><br>
+📹 Auto-scroll: <span id="scrollDir" style="color:#ffff00;">DOWN</span> (26.7s cycle)<br>
 🎯 Session: <span id="sessionId">RXN-4839-0294</span><br>
 ⏱️ Cycle: <span id="cycleTime">00:00</span>
 <div class="indicator-line" style="font-size:10px;color:#ffaa00;">📡 LIVE TRANSMIT → C2 SERVER</div>
@@ -280,7 +280,7 @@ h1{
     
     <!-- TOP HALF: DOWNWARD CONTENT -->
     <div style="height:100vh; padding:15px;">
-      <!-- PANEL 1: IMPACT -->
+      <!-- PANEL 1: IMPACT (16px gap) -->
       <div class="panel">
         <h1>💀 FILES ENCRYPTED 💀</h1>
         <div class="sub">48,217 documents, photos, crypto wallets, passwords ENCRYPTED</div>
@@ -291,7 +291,7 @@ h1{
         </div>
       </div>
 
-      <!-- PANEL 2: TERMINAL -->
+      <!-- PANEL 2: TERMINAL (16px gap) -->
       <div class="panel">
         <div class="term" id="term">
 [14:23:45] SHADOW v4.2 INITIATED
@@ -303,7 +303,7 @@ h1{
         <div class="countdown" id="countdown">47:32:14</div>
       </div>
 
-      <!-- PANEL 3: PAYMENT -->
+      <!-- PANEL 3: PAYMENT (16px gap) -->
       <div class="panel payment">
         <h3 style="color:var(--red); font-size:26px;">🚨 SEND PAYMENT NOW 🚨</h3>
         <div style="font-size:20px; margin-bottom:12px;">
@@ -317,9 +317,9 @@ h1{
       </div>
     </div>
 
-    <!-- BOTTOM HALF: UPWARD CONTENT (DUPLICATE) -->
+    <!-- BOTTOM HALF: UPWARD CONTENT (NO OVERLAP) -->
     <div style="height:100vh; padding:15px;">
-      <!-- PANEL 4: VICTIM DATA -->
+      <!-- PANEL 4: VICTIM DATA (16px gap) -->
       <div class="panel side">
         <h3>🎯 LIVE VICTIM PROFILE</h3>
         <div class="stat"><span class="label">IP:</span><br><span class="value" id="ip">🛰️ RESOLVING...</span></div>
@@ -334,7 +334,7 @@ h1{
         <div class="stat"><span class="label">Encrypted:</span><br><span class="value" id="encrypted">36,847</span></div>
       </div>
 
-      <!-- PANEL 5: THREAT -->
+      <!-- PANEL 5: THREAT (16px gap) -->
       <div class="panel">
         <div class="alert">
           <strong>⚠️ SESSION LOCKED - NO ESCAPE ⚠️</strong><br>
@@ -352,7 +352,7 @@ h1{
 
 <script>
 /* ==============================
-   VIDEO MODE - ZERO INTERACTION (UNCHANGED)
+   ALL SCRIPTS UNCHANGED
 ============================== */
 // DISABLE ALL INPUT
 document.addEventListener('keydown', e => e.preventDefault());
@@ -362,16 +362,15 @@ document.addEventListener('touchstart', e => e.preventDefault());
 document.addEventListener('selectstart', e => e.preventDefault());
 window.onbeforeunload = null;
 
-// DIRECTION INDICATOR
+// DIRECTION INDICATOR - SYNCED TO 26.67s CYCLE
 const scrollDirEl = document.getElementById("scrollDir");
 let directionDown = true;
 setInterval(() => {
   directionDown = !directionDown;
   scrollDirEl.textContent = directionDown ? "DOWN" : "UP";
   scrollDirEl.style.color = directionDown ? "#ffff00" : "#00ff88";
-}, 10000); // Changes every 10s
+}, 13333); // 13.333s (half of 26.67s cycle)
 
-// PERFECT SYSTEM RECON - ANIMATED (UNCHANGED)
 function animateValue(el, start, end, duration) {
   let startTime = null;
   const step = (timestamp) => {
@@ -383,7 +382,6 @@ function animateValue(el, start, end, duration) {
   requestAnimationFrame(step);
 }
 
-// POPULATE ALL DATA WITH ANIMATIONS (UNCHANGED)
 setTimeout(() => {
   document.getElementById("os").textContent = navigator.platform || "Windows 11";
   document.getElementById("browser").textContent = `${navigator.appName} v${parseInt(navigator.appVersion)}`;
@@ -405,7 +403,6 @@ setTimeout(() => {
     .catch(()=>document.getElementById("ip").textContent = "PUBLIC IP DETECTED");
 }, 800);
 
-// COUNTDOWN (UNCHANGED)
 let timeLeft = 47*3600 + 21*60 + 33;
 setInterval(()=>{
   timeLeft--;
@@ -416,7 +413,6 @@ setInterval(()=>{
     `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
 }, 1000);
 
-// TERMINAL + STATS ANIMATION (UNCHANGED)
 let files=48217, encrypted=36847, pct=78;
 setInterval(()=>{
   if(pct<98) pct += 0.2;
@@ -432,7 +428,6 @@ setInterval(()=>{
   document.getElementById("encrypted").textContent = encrypted.toLocaleString();
 }, 650);
 
-// CYCLE TIMER (UNCHANGED)
 let cycleSeconds = 0;
 setInterval(()=>{
   cycleSeconds++;
@@ -441,14 +436,12 @@ setInterval(()=>{
     `${mins.toString().padStart(2,'0')}:${(cycleSeconds%60).toString().padStart(2,'0')}`;
 }, 1000);
 
-// FAKE PAYMENT (UNCHANGED)
 function fakePayment(){
   navigator.clipboard.writeText("bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh").then(()=>{
     alert("🤑 WALLET COPIED TO CLIPBOARD\n\nbc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh\n\n⏰ 0.05 BTC → LIVE MONITORING");
   });
 }
 
-// HIDDEN EXIT: Ctrl+Alt+Shift+X (UNCHANGED)
 document.addEventListener("keydown", e => {
   if(e.ctrlKey && e.altKey && e.shiftKey && e.key.toLowerCase() === "x") {
     document.body.innerHTML = `
@@ -468,7 +461,6 @@ document.addEventListener("keydown", e => {
   }
 });
 
-// FORCE FULLSCREEN (UNCHANGED)
 document.addEventListener('DOMContentLoaded', () => {
   if(document.documentElement.requestFullscreen) 
     document.documentElement.requestFullscreen().catch(()=>null);
