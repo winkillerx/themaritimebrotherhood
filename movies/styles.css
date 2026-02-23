@@ -172,47 +172,25 @@ body[data-theme="pink"]{
   }
 }
 /* ===============================
-   Analytics Footer Link
+   Analytics Footer Link — BLENDED
    =============================== */
 
-.analyticsLink {
-  font-family: Orbitron, system-ui, sans-serif;
-  font-size: 0.75rem;
-  letter-spacing: 0.12em;
+.analyticsLink{
+  font-family: inherit;          /* SAME font as footer */
+  font-size: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
 
-  color: #22d3ee;
+  color: var(--muted);           /* SAME grey as footer text */
   text-decoration: none;
 
-  position: relative;
-  transition: color 0.25s ease, text-shadow 0.25s ease;
+  transition: opacity .2s ease, text-shadow .2s ease;
 }
 
-.analyticsLink::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -2px;
-  width: 100%;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    #22d3ee,
-    transparent
-  );
-  opacity: 0;
-  transition: opacity 0.25s ease;
-}
-
-.analyticsLink:hover {
-  color: #7dd3fc;
-  text-shadow:
-    0 0 6px rgba(34, 211, 238, 0.6),
-    0 0 12px rgba(34, 211, 238, 0.4);
-}
-
-.analyticsLink:hover::after {
-  opacity: 1;
+/* Optional: very subtle hover so users know it's clickable */
+.analyticsLink:hover{
+  opacity: .85;
+  text-shadow: 0 0 6px rgba(231,236,255,.25);
 }
 /* ===============================
    MATRIX CANVAS — TRUE FULLSCREEN
