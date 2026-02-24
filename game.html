@@ -104,10 +104,17 @@ h1{
 /* ===============================
    CONTROLS
 ================================ */
-.controls,.actions{
+.controls,
+.actions{
   display:flex;
   gap:12px;
   margin-top:12px;
+}
+
+/* 🔑 FORCE SAME WIDTH & HEIGHT AS CONTROLS */
+.actions .btn{
+  height:72px;
+  flex:1;
 }
 
 .joystick,.fire,.btn{
@@ -128,9 +135,11 @@ h1{
 }
 
 /* FIX iOS BUTTON FONT */
-button.btn{
+button.btn,
+a.btn{
   font-size:13px;
   letter-spacing:.14em;
+  padding:0;                 /* 🔑 remove browser defaults */
   appearance:none;
   -webkit-appearance:none;
 }
